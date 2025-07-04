@@ -173,7 +173,7 @@ struct RatingsView: View {
                 .padding(.bottom, 32)
             }
             // Centre content and cap width on iPad.
-            .constrainedToDevice()
+            .constrainedToDevice(usePadding: false)
             .navigationTitle("Рейтинги")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

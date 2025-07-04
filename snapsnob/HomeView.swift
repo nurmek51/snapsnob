@@ -39,10 +39,24 @@ struct HomeView: View {
     
     // MARK: - Card Size Helper
     private var cardSize: CGSize {
-        // Cap the usable width on iPad so cards keep an iPhone-like size.
-        let screenWidth = min(UIScreen.main.bounds.width, 640)
-        let cardWidth = screenWidth - 40 // 20 pt margin on each side
-        let cardHeight = cardWidth * 1.3 // 4:3 aspect ratio with some extra height
+        let screenWidth = UIScreen.main.bounds.width
+        let screenHeight = UIScreen.main.bounds.height
+
+        // On iPad we allow the card to expand more to take advantage of the larger screen
+        let maxCardWidth: CGFloat
+        let maxCardHeight: CGFloat
+        
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            // For iPad, use more of the screen real estate
+            maxCardWidth = min(screenWidth * 0.85, 700)
+            maxCardHeight = min(screenHeight * 0.65, 900)
+        } else {
+            maxCardWidth = screenWidth
+            maxCardHeight = screenHeight * 0.7
+        }
+
+        let cardWidth = maxCardWidth - 40 // 20-pt horizontal margin inside the content
+        let cardHeight = min(cardWidth * 1.3, maxCardHeight) // Keep aspect ratio but respect max height
         return CGSize(width: cardWidth, height: cardHeight)
     }
     
@@ -195,8 +209,8 @@ struct HomeView: View {
                 .padding(.top, 4) // minimal gap after header
         }
         // Leave space for tab-bar / bottom safe area
-        .padding(.bottom, 120)
-        .constrainedToDevice()
+        .padding(.bottom, UIDevice.current.userInterfaceIdiom == .pad ? 100 : 120)
+        .constrainedToDevice(usePadding: false)
     }
     
     @ViewBuilder
@@ -205,18 +219,18 @@ struct HomeView: View {
             // Title
             HStack {
                 Text("Серии фото")
-                    .font(.title)
+                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .largeTitle : .title)
                     .fontWeight(.bold)
                     .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                 Spacer()
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 40 : 20)
             .padding(.bottom, 12)
             
             HStack(alignment: .top, spacing: 0) {
                 // Stories Row - Conveyor style
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 16) {
+                    HStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 24 : 16) {
                         ForEach(Array(photoManager.photoSeries.enumerated()), id: \.offset) { index, series in
                             StoryCircle(
                                 series: series,
@@ -230,7 +244,7 @@ struct HomeView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 40 : 20)
                 }
                 
                 // Spacer to push trash icon to the right
@@ -245,33 +259,35 @@ struct HomeView: View {
                         ZStack {
                             Circle()
                                 .fill(AppColors.secondaryBackground(for: themeManager.isDarkMode))
-                                .frame(width: 74, height: 74)
+                                .frame(width: UIDevice.current.userInterfaceIdiom == .pad ? 90 : 74, 
+                                       height: UIDevice.current.userInterfaceIdiom == .pad ? 90 : 74)
                             
                             Image(systemName: "trash")
-                                .font(.title2)
+                                .font(UIDevice.current.userInterfaceIdiom == .pad ? .title : .title2)
                                 .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                                 .scaleEffect(trashIconScale)
                                 .rotationEffect(.degrees(trashIconRotation))
                             
                             if !photoManager.trashedPhotos.isEmpty {
                                 Text("\(photoManager.trashedPhotos.count)")
-                                    .font(.caption2)
+                                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .caption : .caption2)
                                     .fontWeight(.bold)
                                     .foregroundColor(.white)
-                                    .padding(4)
+                                    .padding(UIDevice.current.userInterfaceIdiom == .pad ? 6 : 4)
                                     .background(Color.red)
                                     .clipShape(Circle())
-                                    .offset(x: 20, y: -20)
+                                    .offset(x: UIDevice.current.userInterfaceIdiom == .pad ? 25 : 20, 
+                                           y: UIDevice.current.userInterfaceIdiom == .pad ? -25 : -20)
                             }
                         }
                     }
                     Text("Корзина")
-                        .font(.caption)
+                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption)
                         .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                         .lineLimit(1)
-                        .frame(width: 74)
+                        .frame(width: UIDevice.current.userInterfaceIdiom == .pad ? 90 : 74)
                 }
-                .padding(.trailing, 20)
+                .padding(.trailing, UIDevice.current.userInterfaceIdiom == .pad ? 40 : 20)
             }
 
             // Progress Counter (rated / total)
@@ -280,14 +296,15 @@ struct HomeView: View {
             VStack(spacing: 4) {
                 HStack {
                     Text("\(rated)/\(total) фото оценено")
-                        .font(.caption)
+                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption)
                         .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                     Spacer()
                 }
                 ProgressView(value: Double(rated), total: Double(max(total, 1)))
                     .accentColor(AppColors.accent(for: themeManager.isDarkMode))
+                    .frame(height: UIDevice.current.userInterfaceIdiom == .pad ? 8 : 4)
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 40 : 20)
             .padding(.top, 8)
         }
         .padding(.bottom, 10)
@@ -352,38 +369,38 @@ struct HomeView: View {
                 // Action buttons overlay
                 VStack {
                     Spacer()
-                    HStack(spacing: 24) {
+                    HStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 40 : 24) {
                         // Trash
                         Button(action: { handleAction(.trash) }) {
                             Image(systemName: "xmark")
                                 .foregroundColor(.white)
-                                .font(.title2)
+                                .font(UIDevice.current.userInterfaceIdiom == .pad ? .title : .title2)
                                 .fontWeight(.semibold)
                         }
-                        .buttonStyle(TransparentCircleButtonStyle())
+                        .buttonStyle(TransparentCircleButtonStyle(size: UIDevice.current.userInterfaceIdiom == .pad ? 70 : 56))
                         .disabled(isProcessingAction)
                         
                         // Favourite
                         Button(action: { handleAction(.favorite) }) {
                             Image(systemName: photo.isFavorite ? "heart.fill" : "heart")
                                 .foregroundColor(.white)
-                                .font(.title2)
+                                .font(UIDevice.current.userInterfaceIdiom == .pad ? .title : .title2)
                                 .fontWeight(.semibold)
                         }
-                        .buttonStyle(TransparentCircleButtonStyle())
+                        .buttonStyle(TransparentCircleButtonStyle(size: UIDevice.current.userInterfaceIdiom == .pad ? 70 : 56))
                         .disabled(isProcessingAction)
                         
                         // Keep
                         Button(action: { handleAction(.keep) }) {
                             Image(systemName: "checkmark")
                                 .foregroundColor(.white)
-                                .font(.title2)
+                                .font(UIDevice.current.userInterfaceIdiom == .pad ? .title : .title2)
                                 .fontWeight(.semibold)
                         }
-                        .buttonStyle(TransparentCircleButtonStyle())
+                        .buttonStyle(TransparentCircleButtonStyle(size: UIDevice.current.userInterfaceIdiom == .pad ? 70 : 56))
                         .disabled(isProcessingAction)
                     }
-                    .padding(.bottom, 30)
+                    .padding(.bottom, UIDevice.current.userInterfaceIdiom == .pad ? 50 : 30)
                     .opacity(photoOpacity)
                 }
             }
@@ -685,8 +702,17 @@ struct StoryCircle: View {
         series.photos.contains { $0.isFavorite }
     }
     
+    // Responsive sizing
+    private var circleSize: CGFloat {
+        UIDevice.current.userInterfaceIdiom == .pad ? 95 : 75
+    }
+    
+    private var frameWidth: CGFloat {
+        UIDevice.current.userInterfaceIdiom == .pad ? 100 : 78
+    }
+    
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 8 : 4) {
             Button(action: {
                 print("📱 Story circle tapped: \(series.title)")
                 onTap()
@@ -694,26 +720,28 @@ struct StoryCircle: View {
                 // Photo fills entire outer frame; stroke overlays directly so no inner white ring.
                 PhotoImageView(
                     photo: series.thumbnailPhoto,
-                    targetSize: CGSize(width: 75, height: 75)
+                    targetSize: CGSize(width: circleSize, height: circleSize)
                 )
                 .clipShape(Circle())
                 .overlay(
                     Circle()
                         .stroke(
                             isViewed ? AppColors.secondaryText(for: themeManager.isDarkMode).opacity(0.2) : AppColors.accent(for: themeManager.isDarkMode),
-                            lineWidth: isViewed ? 2 : 2 // thinner ring when unviewed too
+                            lineWidth: UIDevice.current.userInterfaceIdiom == .pad ? 3 : 2
                         )
                 )
-                .shadow(color: isViewed ? .clear : .purple.opacity(0.3), radius: 6, x: 0, y: 2)
+                .shadow(color: isViewed ? .clear : .purple.opacity(0.3), radius: UIDevice.current.userInterfaceIdiom == .pad ? 8 : 6, x: 0, y: 2)
                 .overlay(
                     Group {
                         if hasFavourite {
                             Image(systemName: "heart.fill")
                                 .foregroundColor(.white)
-                                .font(.system(size: 12))
-                                .background(Circle().fill(Color.white).frame(width: 18,height:18))
+                                .font(.system(size: UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12))
+                                .background(Circle().fill(Color.white).frame(width: UIDevice.current.userInterfaceIdiom == .pad ? 24 : 18,
+                                                                           height: UIDevice.current.userInterfaceIdiom == .pad ? 24 : 18))
                                 .clipShape(Circle())
-                                .offset(x: 24, y: 24)
+                                .offset(x: UIDevice.current.userInterfaceIdiom == .pad ? 30 : 24, 
+                                       y: UIDevice.current.userInterfaceIdiom == .pad ? 30 : 24)
                         }
                     }
                 )
@@ -722,11 +750,11 @@ struct StoryCircle: View {
             .scaleEffect(isViewed ? 0.95 : 1.0)
             
             Text(series.title)
-                .font(.caption)
+                .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption)
                 .fontWeight(.medium)
                 .foregroundColor(isViewed ? AppColors.secondaryText(for: themeManager.isDarkMode) : AppColors.primaryText(for: themeManager.isDarkMode))
                 .lineLimit(1)
-                .frame(width: 78)
+                .frame(width: frameWidth)
         }
     }
 }

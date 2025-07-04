@@ -154,7 +154,7 @@ struct CategoriesView: View {
                 .padding(.bottom, 32)
             }
             // Keep the familiar iPhone width on larger screens.
-            .constrainedToDevice()
+            .constrainedToDevice(usePadding: false)
             .navigationViewStyle(.stack)
             .navigationTitle("Категории")
             .navigationBarTitleDisplayMode(.inline)

@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct PhotoRatingApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var photoManager = PhotoManager()
     @StateObject private var aiAnalysisManager: AIAnalysisManager
     @StateObject private var fullScreenPhotoManager = FullScreenPhotoManager()
