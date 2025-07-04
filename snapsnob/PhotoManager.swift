@@ -16,6 +16,7 @@ struct Photo: Identifiable, Hashable {
     var categoryConfidence: Float = 0.0
     var isFavorite: Bool = false // New: whether the user marked this photo as favourite
     var isReviewed: Bool = false // Photo has been kept (skipped) by user
+    var isSuperStar: Bool = false // New: whether the user marked this photo as super star (best of the best)
     
     var creationDate: Date {
         asset.creationDate ?? Date()
@@ -502,6 +503,36 @@ class PhotoManager: ObservableObject {
     // Total number of favourite (starred) photos
     var favoritePhotosCount: Int {
         displayPhotos.filter { $0.isFavorite }.count
+    }
+    
+    // MARK: - Super Star / Best of the Best
+    /// Mark or unmark a photo as super star (best of the best).
+    func setSuperStar(_ photo: Photo, isSuperStar: Bool = true) {
+        // Update local model copies
+        if let index = allPhotos.firstIndex(where: { $0.id == photo.id }) {
+            allPhotos[index].isSuperStar = isSuperStar
+        }
+
+        if let displayIndex = displayPhotos.firstIndex(where: { $0.id == photo.id }) {
+            displayPhotos[displayIndex].isSuperStar = isSuperStar
+        }
+
+        // Send change notification
+        DispatchQueue.main.async {
+            self.objectWillChange.send()
+        }
+    }
+    
+    /// Toggle super star status for a given photo.
+    func toggleSuperStar(_ photo: Photo) {
+        if let updated = allPhotos.first(where: { $0.id == photo.id }) {
+            setSuperStar(updated, isSuperStar: !updated.isSuperStar)
+        }
+    }
+    
+    // Total number of super star photos
+    var superStarPhotosCount: Int {
+        displayPhotos.filter { $0.isSuperStar }.count
     }
     
     // MARK: - Reviewed / Keep

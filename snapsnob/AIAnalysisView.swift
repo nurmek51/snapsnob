@@ -21,8 +21,8 @@ struct AIAnalysisView: View {
         return categorizedPhotosFiltered.compactMap { category, photos -> VisionCategory? in
             guard !photos.isEmpty else { return nil }
 
-            // Build a preview array with at most 6 photos, but keep total for accurate display
-            let preview = photos.prefix(6).map { photo -> VisionPhoto in
+            // Build a preview array with only the first photo to use as a thumbnail
+            let preview = photos.prefix(1).map { photo -> VisionPhoto in
                 VisionPhoto(
                     photo: photo,
                     confidence: Int(photo.categoryConfidence * 100),
@@ -218,12 +218,7 @@ struct AIAnalysisView: View {
                         // Vision Categories Tab
                         VisionCategoriesView(
                             categories: visionCategories,
-                            onCategoryTap: { category in
-                                withAnimation(AppAnimations.modal) {
-                                    selectedCategory = PhotoCategory.allCases.first { $0.rawValue == category }
-                                    showingCategoryPhotos = true
-                                }
-                            },
+                            onCategoryTap: { _ in }, // Disabled – no grid view
                             onPhotoTap: { photo in
                                 withAnimation(AppAnimations.modal) {
                                     fullScreenPhotoManager.selectedPhoto = photo
@@ -415,13 +410,7 @@ struct VisionCategoryCard: View {
                     .padding(.vertical, 4)
                     .background(Color.blue.opacity(0.2))
                     .clipShape(Capsule())
-                
-                Button(action: {
-                    onCategoryTap(category.name)
-                }) {
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(.blue)
-                }
+                // Removed chevron button to make card non-interactive
             }
             
             ScrollView(.horizontal, showsIndicators: false) {

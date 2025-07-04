@@ -7,6 +7,9 @@ struct AlbumDetailView: View {
     @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
     @State private var lastLoggedPhotoCount: Int = 0
+    // Multi-selection state
+    @State private var isSelecting = false
+    @State private var selectedPhotos: Set<Photo> = []
 
     // Always fetch the latest photos from PhotoManager in case the album updated after view was presented
     private var photos: [Photo] {
@@ -23,21 +26,12 @@ struct AlbumDetailView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ScrollView {
-                    LazyVGrid(columns: [
-                        GridItem(.flexible()),
-                        GridItem(.flexible()),
-                        GridItem(.flexible())
-                    ], spacing: 12) {
-                        ForEach(photos) { photo in
-                            PhotoImageView(photo: photo, targetSize: CGSize(width: 110, height: 110))
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                                .onTapGesture {
-                                    fullScreenPhotoManager.selectedPhoto = photo
-                                }
-                        }
-                    }
-                    .padding()
+                SelectablePhotoGrid(
+                    photos: photos,
+                    selected: $selectedPhotos,
+                    isSelecting: $isSelecting
+                ) { tapped in
+                    fullScreenPhotoManager.selectedPhoto = tapped
                 }
             }
         }
@@ -45,9 +39,36 @@ struct AlbumDetailView: View {
         .navigationTitle(album.title)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Готово") { dismiss() }
-                    .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button("Готово") {
+                    if isSelecting {
+                        isSelecting = false
+                        selectedPhotos.removeAll()
+                    } else {
+                        dismiss()
+                    }
+                }
+                .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+            }
+
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
+                if isSelecting {
+                    Button("Выбрать все") {
+                        selectedPhotos = Set(photos)
+                    }
+
+                    Button(role: .destructive) {
+                        for photo in selectedPhotos {
+                            photoManager.moveToTrash(photo)
+                        }
+                        isSelecting = false
+                        selectedPhotos.removeAll()
+                    } label: {
+                        Image(systemName: "trash")
+                    }
+                } else {
+                    Button("Выбрать") { isSelecting = true }
+                }
             }
         }
         // Full-screen photo presentation – keeps the sheet visible behind

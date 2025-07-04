@@ -1,7 +1,7 @@
 import SwiftUI
 import Photos
 
-struct RatingsView: View {
+struct FavoritesView: View {
     @EnvironmentObject var photoManager: PhotoManager
     @EnvironmentObject var aiManager: AIAnalysisManager
     @EnvironmentObject var themeManager: ThemeManager
@@ -10,6 +10,7 @@ struct RatingsView: View {
     @State private var showingFullScreen = false
     @State private var expandedMonths: Set<String> = []
     @State private var showingThemeSelector = false
+    @State private var isSwipeMode = false
     
     // Recent favourite photos (up to 6 most recent)
     private var topFavouritePhotos: [Photo] {
@@ -18,6 +19,12 @@ struct RatingsView: View {
         let sorted = favourites.sorted { $0.creationDate > $1.creationDate }
         let limited = Array(sorted.prefix(6))
         return limited
+    }
+    
+    // Super star photos (Best of the Best)
+    private var superStarPhotos: [Photo] {
+        let superStars = photoManager.displayPhotos.filter { $0.isSuperStar }
+        return superStars.sorted { $0.creationDate > $1.creationDate }
     }
     
     // Favourite photos grouped by month
@@ -57,124 +64,21 @@ struct RatingsView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 24) {
-                    // Dashboard Section (Always at top)
-                    VStack(spacing: 16) {
-                        HStack {
-                            // Themed dashboard cards
-                            StatCard(title: "Всего фото", value: "\(photoManager.totalPhotosCount)", color: AppColors.accent(for: themeManager.isDarkMode))
-                            StatCard(title: "Избранные", value: "\(photoManager.favoritePhotosCount)", color: AppColors.secondaryText(for: themeManager.isDarkMode))
-                        }
-                        
-                        HStack {
-                            StatCard(title: "За неделю", value: "+\(photoManager.photosLastWeek)", color: AppColors.accent(for: themeManager.isDarkMode))
-                            Spacer()
-                        }
-                    }
-                    .padding(.horizontal, 20)
+                    dashboardSection
                     
-                    // Top 6 Photos Section
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Text("Недавние избранные")
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                                .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
-                            Spacer()
-                        }
-                        .padding(.horizontal, 20)
-                        
-                        if topFavouritePhotos.isEmpty {
-                            VStack(spacing: 16) {
-                                                            Text("Пока нет избранных фото")
-                                .font(.body)
-                                .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 20)
-                        } else {
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 12) {
-                                    ForEach(topFavouritePhotos) { photo in
-                                        VStack(spacing: 8) {
-                                            PhotoImageView(
-                                                photo: photo,
-                                                targetSize: CGSize(width: 80, height: 80)
-                                            )
-                                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                                            .onTapGesture {
-                                                print("🖼️ RatingsView: Top rated photo tapped for fullscreen: \(photo.asset.localIdentifier)")
-                                                withAnimation(AppAnimations.modal) {
-                                                    selectedPhoto = photo
-                                                    showingFullScreen = true
-                                                }
-                                                print("🔍 RatingsView: selectedPhoto set, showingFullScreen = \(showingFullScreen)")
-                                            }
-                                            
-                                            Button(action: {
-                                                // Remove from favourites
-                                                photoManager.setFavorite(photo, isFavorite: false)
-                                            }) {
-                                                Image(systemName: "heart.fill")
-                                                    .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
-                                                    .font(.caption2)
-                                            }
-                                            .buttonStyle(PlainButtonStyle())
-                                        }
-                                    }
-                                }
-                                .padding(.horizontal, 20)
-                            }
-                        }
+                    if !superStarPhotos.isEmpty {
+                        bestOfBestSection
                     }
                     
-                    // Monthly Photo Sections
-                    if favouritesByMonth.isEmpty {
-                        VStack(spacing: 16) {
-                            Image(systemName: "heart.slash")
-                                .font(.system(size: 50))
-                                .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                            
-                            Text("Нет избранных фотографий")
-                                .font(.body)
-                                .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 40)
-                    } else {
-                        VStack(spacing: 16) {
-                            ForEach(favouritesByMonth, id: \.month) { monthSection in
-                                MonthlyPhotoSection(
-                                    month: monthSection.month,
-                                    photos: monthSection.photos,
-                                    photoManager: photoManager,
-                                    isExpanded: expandedMonths.contains(monthSection.month),
-                                    onToggle: {
-                                        if expandedMonths.contains(monthSection.month) {
-                                            expandedMonths.remove(monthSection.month)
-                                        } else {
-                                            expandedMonths.insert(monthSection.month)
-                                        }
-                                    },
-                                    onPhotoTap: { photo in
-                                        print("🖼️ RatingsView: Monthly photo tapped for fullscreen: \(photo.asset.localIdentifier)")
-                                        withAnimation(AppAnimations.modal) {
-                                            selectedPhoto = photo
-                                            showingFullScreen = true
-                                        }
-                                        print("🔍 RatingsView: selectedPhoto set, showingFullScreen = \(showingFullScreen)")
-                                    }
-                                )
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                    }
+                    topFavoritesSection
+                    
+                    monthlyPhotosSection
                 }
                 .padding(.top, 8)
                 .padding(.bottom, 32)
             }
-            // Centre content and cap width on iPad.
             .constrainedToDevice(usePadding: false)
-            .navigationTitle("Рейтинги")
+            .navigationTitle("Избранное")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -204,7 +108,7 @@ struct RatingsView: View {
             .overlay {
                 if showingFullScreen, let photo = selectedPhoto {
                     FullScreenPhotoView(photo: photo, photoManager: photoManager) {
-                        print("🖼️ RatingsView: Dismissing fullscreen photo view")
+                        print("🖼️ FavoritesView: Dismissing fullscreen photo view")
                         withAnimation(AppAnimations.modal) {
                             showingFullScreen = false
                             selectedPhoto = nil
@@ -215,15 +119,249 @@ struct RatingsView: View {
                 }
             }
             .onChange(of: showingFullScreen) { oldValue, newValue in
-                print("🔄 RatingsView: showingFullScreen changed from \(oldValue) to \(newValue)")
+                print("🔄 FavoritesView: showingFullScreen changed from \(oldValue) to \(newValue)")
                 if newValue {
-                    print("🔍 RatingsView: selectedPhoto when showing fullscreen: \(selectedPhoto?.asset.localIdentifier ?? "nil")")
+                    print("🔍 FavoritesView: selectedPhoto when showing fullscreen: \(selectedPhoto?.asset.localIdentifier ?? "nil")")
                 }
             }
             .background(AppColors.background(for: themeManager.isDarkMode))
         }
         .background(AppColors.background(for: themeManager.isDarkMode))
         .navigationViewStyle(.stack)
+    }
+    
+    // MARK: - Dashboard Section
+    private var dashboardSection: some View {
+        VStack(spacing: 16) {
+            HStack {
+                StatCard(title: "Всего фото", value: "\(photoManager.totalPhotosCount)", color: AppColors.accent(for: themeManager.isDarkMode))
+                StatCard(title: "Избранные", value: "\(photoManager.favoritePhotosCount)", color: AppColors.secondaryText(for: themeManager.isDarkMode))
+            }
+            
+            HStack {
+                StatCard(title: "За неделю", value: "+\(photoManager.photosLastWeek)", color: AppColors.accent(for: themeManager.isDarkMode))
+                StatCard(title: "Лучшие", value: "\(photoManager.superStarPhotosCount)", color: .yellow)
+            }
+            
+            swipeModeToggle
+        }
+        .padding(.horizontal, 20)
+    }
+    
+    // MARK: - Swipe Mode Toggle
+    private var swipeModeToggle: some View {
+        Button(action: {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                isSwipeMode.toggle()
+            }
+        }) {
+            HStack(spacing: 12) {
+                Image(systemName: isSwipeMode ? "hand.draw.fill" : "hand.draw")
+                    .font(.title3)
+                    .foregroundColor(isSwipeMode ? .white : AppColors.accent(for: themeManager.isDarkMode))
+                
+                Text(isSwipeMode ? "Обычный режим" : "Режим свайпа")
+                    .font(.headline)
+                    .fontWeight(.medium)
+                    .foregroundColor(isSwipeMode ? .white : AppColors.primaryText(for: themeManager.isDarkMode))
+                
+                Spacer()
+                
+                if isSwipeMode {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.left")
+                                .font(.caption2)
+                                .foregroundColor(.white.opacity(0.8))
+                            Text("Убрать")
+                                .font(.caption2)
+                                .foregroundColor(.white.opacity(0.8))
+                        }
+                        
+                        HStack(spacing: 4) {
+                            Text("Лучшие")
+                                .font(.caption2)
+                                .foregroundColor(.white.opacity(0.8))
+                            Image(systemName: "arrow.right")
+                                .font(.caption2)
+                                .foregroundColor(.white.opacity(0.8))
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(isSwipeMode ? 
+                        AnyShapeStyle(LinearGradient(colors: [AppColors.accent(for: themeManager.isDarkMode), AppColors.accent(for: themeManager.isDarkMode).opacity(0.8)], startPoint: .leading, endPoint: .trailing)) :
+                        AnyShapeStyle(AppColors.cardBackground(for: themeManager.isDarkMode))
+                    )
+                    .shadow(color: AppColors.shadow(for: themeManager.isDarkMode), radius: 8, x: 0, y: 2)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    // MARK: - Best of Best Section
+    private var bestOfBestSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                HStack(spacing: 8) {
+                    Image(systemName: "star.fill")
+                        .foregroundColor(.yellow)
+                        .font(.title3)
+                    
+                    Text("Лучшие из лучших")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
+                }
+                
+                Spacer()
+                
+                Text("\(superStarPhotos.count)")
+                    .font(.caption)
+                    .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule()
+                            .fill(AppColors.secondaryBackground(for: themeManager.isDarkMode))
+                    )
+            }
+            .padding(.horizontal, 20)
+            
+            if isSwipeMode {
+                SwipeablePhotoGrid(
+                    photos: superStarPhotos,
+                    photoManager: photoManager
+                ) { photo in
+                    withAnimation(AppAnimations.modal) {
+                        selectedPhoto = photo
+                        showingFullScreen = true
+                    }
+                }
+                .padding(.horizontal, 20)
+            } else {
+                LazyVGrid(columns: [
+                    GridItem(.flexible()),
+                    GridItem(.flexible()),
+                    GridItem(.flexible())
+                ], spacing: 12) {
+                    ForEach(superStarPhotos) { photo in
+                        SuperStarPhotoCard(photo: photo, onTap: {
+                            withAnimation(AppAnimations.modal) {
+                                selectedPhoto = photo
+                                showingFullScreen = true
+                            }
+                        })
+                    }
+                }
+                .padding(.horizontal, 20)
+            }
+        }
+    }
+    
+    // MARK: - Top Favorites Section
+    private var topFavoritesSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Недавние избранные")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            
+            if topFavouritePhotos.isEmpty {
+                VStack(spacing: 16) {
+                    Text("Пока нет избранных фото")
+                        .font(.body)
+                        .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(topFavouritePhotos) { photo in
+                            VStack(spacing: 8) {
+                                PhotoImageView(
+                                    photo: photo,
+                                    targetSize: CGSize(width: 80, height: 80)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .onTapGesture {
+                                    print("🖼️ RatingsView: Top rated photo tapped for fullscreen: \(photo.asset.localIdentifier)")
+                                    withAnimation(AppAnimations.modal) {
+                                        selectedPhoto = photo
+                                        showingFullScreen = true
+                                    }
+                                }
+                                
+                                Button(action: {
+                                    photoManager.setFavorite(photo, isFavorite: false)
+                                }) {
+                                    Image(systemName: "heart.fill")
+                                        .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+                                        .font(.caption2)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Monthly Photos Section
+    private var monthlyPhotosSection: some View {
+        Group {
+            if favouritesByMonth.isEmpty {
+                VStack(spacing: 16) {
+                    Image(systemName: "heart.slash")
+                        .font(.system(size: 50))
+                        .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                    
+                    Text("Нет избранных фотографий")
+                        .font(.body)
+                        .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 40)
+            } else {
+                VStack(spacing: 16) {
+                    ForEach(favouritesByMonth, id: \.month) { monthSection in
+                        MonthlyPhotoSection(
+                            month: monthSection.month,
+                            photos: monthSection.photos,
+                            photoManager: photoManager,
+                            isSwipeMode: isSwipeMode,
+                            isExpanded: expandedMonths.contains(monthSection.month),
+                            onToggle: {
+                                if expandedMonths.contains(monthSection.month) {
+                                    expandedMonths.remove(monthSection.month)
+                                } else {
+                                    expandedMonths.insert(monthSection.month)
+                                }
+                            },
+                            onPhotoTap: { photo in
+                                print("🖼️ FavoritesView: Monthly photo tapped for fullscreen: \(photo.asset.localIdentifier)")
+                                withAnimation(AppAnimations.modal) {
+                                    selectedPhoto = photo
+                                    showingFullScreen = true
+                                }
+                            }
+                        )
+                    }
+                }
+                .padding(.horizontal, 20)
+            }
+        }
     }
     
     private func refreshRatings() {
@@ -239,6 +377,7 @@ struct MonthlyPhotoSection: View {
     let month: String
     let photos: [Photo]
     let photoManager: PhotoManager
+    let isSwipeMode: Bool
     let isExpanded: Bool
     let onToggle: () -> Void
     let onPhotoTap: (Photo) -> Void
@@ -281,18 +420,28 @@ struct MonthlyPhotoSection: View {
             
             // Photos Grid (Expandable)
             if isExpanded {
-                LazyVGrid(columns: [
-                    GridItem(.flexible()),
-                    GridItem(.flexible()),
-                    GridItem(.flexible())
-                ], spacing: 12) {
-                    ForEach(sortedPhotos) { photo in
-                        FavouritePhotoCard(photo: photo, onTap: {
-                            onPhotoTap(photo)
-                        })
+                if isSwipeMode {
+                    SwipeablePhotoGrid(
+                        photos: sortedPhotos,
+                        photoManager: photoManager
+                    ) { photo in
+                        onPhotoTap(photo)
                     }
+                    .padding(.horizontal, 12) // Adjust padding for grid
+                } else {
+                    LazyVGrid(columns: [
+                        GridItem(.flexible()),
+                        GridItem(.flexible()),
+                        GridItem(.flexible())
+                    ], spacing: 12) {
+                        ForEach(sortedPhotos) { photo in
+                            FavouritePhotoCard(photo: photo, onTap: {
+                                onPhotoTap(photo)
+                            })
+                        }
+                    }
+                    .animation(.easeInOut(duration: 0.3), value: isExpanded)
                 }
-                .animation(.easeInOut(duration: 0.3), value: isExpanded)
             }
         }
     }
@@ -329,6 +478,50 @@ struct FavouritePhotoCard: View {
     }
 }
 
+struct SuperStarPhotoCard: View {
+    @EnvironmentObject var photoManager: PhotoManager
+    @EnvironmentObject var themeManager: ThemeManager
+    let photo: Photo
+    let onTap: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            // Photo with super star badge
+            ZStack(alignment: .topTrailing) {
+                PhotoImageView(
+                    photo: photo,
+                    targetSize: CGSize(width: 100, height: 100)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .onTapGesture {
+                    onTap()
+                }
+                
+                // Super star badge
+                Image(systemName: "star.fill")
+                    .foregroundColor(.yellow)
+                    .font(.system(size: 12))
+                    .padding(4)
+                    .background(
+                        Circle()
+                            .fill(.black.opacity(0.6))
+                    )
+                    .padding(4)
+            }
+            
+            // Remove super star button
+            Button(action: {
+                photoManager.setSuperStar(photo, isSuperStar: false)
+            }) {
+                Image(systemName: "star.fill")
+                    .foregroundColor(.yellow)
+                    .font(.caption2)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+    }
+}
+
 #Preview {
-    RatingsView()
+    FavoritesView()
 }

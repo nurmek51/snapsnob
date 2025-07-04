@@ -7,6 +7,9 @@ struct CategoryDetailView: View {
     @EnvironmentObject var fullScreenPhotoManager: FullScreenPhotoManager
     @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
+    // Multi-selection state
+    @State private var isSelecting = false
+    @State private var selectedPhotos: Set<Photo> = []
     
     // Real photos for the category from AI analysis
     private var categoryPhotos: [Photo] {
@@ -14,35 +17,51 @@ struct CategoryDetailView: View {
     }
     
     var body: some View {
-        ScrollView {
-            LazyVGrid(columns: [
-                GridItem(.flexible()),
-                GridItem(.flexible()),
-                GridItem(.flexible())
-            ], spacing: 12) {
-                ForEach(categoryPhotos) { photo in
-                    PhotoImageView(
-                        photo: photo,
-                        targetSize: CGSize(width: 110, height: 110)
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .onTapGesture {
-                        fullScreenPhotoManager.selectedPhoto = photo
-                    }
-                }
-            }
-            .padding()
+        SelectablePhotoGrid(
+            photos: categoryPhotos,
+            selected: $selectedPhotos,
+            isSelecting: $isSelecting
+        ) { tappedPhoto in
+            fullScreenPhotoManager.selectedPhoto = tappedPhoto
         }
         .background(AppColors.background(for: themeManager.isDarkMode))
         .navigationTitle(category.rawValue)
         .navigationBarTitleDisplayMode(.large)
         // Full-screen handled globally by ContentView
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
+            // Leading: always 'Готово' to close view
+            ToolbarItem(placement: .navigationBarLeading) {
                 Button("Готово") {
-                    dismiss()
+                    if isSelecting {
+                        // Reset selection but stay on screen
+                        isSelecting = false
+                        selectedPhotos.removeAll()
+                    } else {
+                        dismiss()
+                    }
                 }
                 .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+            }
+
+            // Trailing: 'Выбрать' when idle; 'Выбрать все' + Trash when selecting
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
+                if isSelecting {
+                    Button("Выбрать все") {
+                        selectedPhotos = Set(categoryPhotos)
+                    }
+
+                    Button(role: .destructive) {
+                        for photo in selectedPhotos {
+                            photoManager.moveToTrash(photo)
+                        }
+                        isSelecting = false
+                        selectedPhotos.removeAll()
+                    } label: {
+                        Image(systemName: "trash")
+                    }
+                } else {
+                    Button("Выбрать") { isSelecting = true }
+                }
             }
         }
         // Full-screen photo presentation over this sheet, keeping it visible behind.

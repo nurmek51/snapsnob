@@ -19,7 +19,7 @@ struct ContentView: View {
                     Text("Категории")
                 }
             
-            RatingsView()
+            FavoritesView()
                 .tabItem {
                     Image(systemName: "heart.fill")
                     Text("Избранные")
