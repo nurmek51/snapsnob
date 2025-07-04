@@ -172,6 +172,8 @@ struct RatingsView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 32)
             }
+            // Centre content and cap width on iPad.
+            .constrainedToDevice()
             .navigationTitle("Рейтинги")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -221,6 +223,7 @@ struct RatingsView: View {
             .background(AppColors.background(for: themeManager.isDarkMode))
         }
         .background(AppColors.background(for: themeManager.isDarkMode))
+        .navigationViewStyle(.stack)
     }
     
     private func refreshRatings() {

@@ -39,8 +39,9 @@ struct HomeView: View {
     
     // MARK: - Card Size Helper
     private var cardSize: CGSize {
-        let screenWidth = UIScreen.main.bounds.width
-        let cardWidth = screenWidth - 40 // 20pt margin on each side
+        // Cap the usable width on iPad so cards keep an iPhone-like size.
+        let screenWidth = min(UIScreen.main.bounds.width, 640)
+        let cardWidth = screenWidth - 40 // 20 pt margin on each side
         let cardHeight = cardWidth * 1.3 // 4:3 aspect ratio with some extra height
         return CGSize(width: cardWidth, height: cardHeight)
     }
@@ -65,6 +66,8 @@ struct HomeView: View {
         }
         .background(AppColors.background(for: themeManager.isDarkMode))
         .navigationBarHidden(true)
+        // Force single-column behaviour on iPad to match the iPhone UX.
+        .navigationViewStyle(.stack)
         .onAppear {
             print("📱 HomeView appeared")
             loadInitialPhotos()
@@ -193,6 +196,7 @@ struct HomeView: View {
         }
         // Leave space for tab-bar / bottom safe area
         .padding(.bottom, 120)
+        .constrainedToDevice()
     }
     
     @ViewBuilder

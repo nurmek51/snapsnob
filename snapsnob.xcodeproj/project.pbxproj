@@ -256,6 +256,8 @@
 				DEVELOPMENT_TEAM = DJDVY4P58A;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Snapsnob необходимо разрешение для сохранения отредактированных фотографий в медиатеку.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Для отображения и анализа ваших фотографий приложению Snapsnob требуется доступ к медиатеке.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -271,8 +273,6 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Для отображения и анализа ваших фотографий приложению Snapsnob требуется доступ к медиатеке.";
-				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Snapsnob необходимо разрешение для сохранения отредактированных фотографий в медиатеку.";
 			};
 			name = Debug;
 		};
@@ -286,6 +286,8 @@
 				DEVELOPMENT_TEAM = DJDVY4P58A;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Snapsnob необходимо разрешение для сохранения отредактированных фотографий в медиатеку.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Для отображения и анализа ваших фотографий приложению Snapsnob требуется доступ к медиатеке.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -301,8 +303,6 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Для отображения и анализа ваших фотографий приложению Snapsnob требуется доступ к медиатеке.";
-				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Snapsnob необходимо разрешение для сохранения отредактированных фотографий в медиатеку.";
 			};
 			name = Release;
 		};

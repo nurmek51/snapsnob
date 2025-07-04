@@ -153,6 +153,9 @@ struct CategoriesView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 32)
             }
+            // Keep the familiar iPhone width on larger screens.
+            .constrainedToDevice()
+            .navigationViewStyle(.stack)
             .navigationTitle("Категории")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -198,6 +201,7 @@ struct CategoriesView: View {
             .background(AppColors.background(for: themeManager.isDarkMode))
         }
         .background(AppColors.background(for: themeManager.isDarkMode))
+        .navigationViewStyle(.stack)
     }
     
     private func refreshCategories() {
