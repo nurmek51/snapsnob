@@ -1,6 +1,8 @@
 import SwiftUI
 import Photos
 
+// MARK: - Home View
+/// The main feed view showing single photos and story series
 struct HomeView: View {
     @EnvironmentObject var photoManager: PhotoManager
     @EnvironmentObject var aiAnalysisManager: AIAnalysisManager
@@ -292,17 +294,17 @@ struct HomeView: View {
                 .padding(.trailing, UIDevice.current.userInterfaceIdiom == .pad ? 20 : 40)
             }
 
-            // Progress Counter (rated / total)
-            let rated = photoManager.ratedPhotosCount
+            // Progress Counter (processed / total)
+            let processed = photoManager.processedPhotosCount
             let total = photoManager.allPhotos.count
             VStack(spacing: 4) {
                 HStack {
-                    Text("\(rated)/\(total) фото оценено")
+                    Text("\(processed)/\(total) фото обработано")
                         .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption)
                         .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                     Spacer()
                 }
-                ProgressView(value: Double(rated), total: Double(max(total, 1)))
+                ProgressView(value: Double(processed), total: Double(max(total, 1)))
                     .accentColor(AppColors.accent(for: themeManager.isDarkMode))
                     .frame(height: UIDevice.current.userInterfaceIdiom == .pad ? 8 : 4)
             }
@@ -618,166 +620,13 @@ struct HomeView: View {
     }
 }
 
-// MARK: - Optimized Photo View
-
-struct OptimizedPhotoView: View {
-    @EnvironmentObject var themeManager: ThemeManager
-    let photo: Photo
-    let targetSize: CGSize
-    @State private var image: UIImage?
-    @State private var isLoading = true
-    
-    var body: some View {
-        ZStack {
-            if let image = image {
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
-            } else {
-                // Loading placeholder
-                Rectangle()
-                    .fill(AppColors.secondaryBackground(for: themeManager.isDarkMode))
-                    .overlay(
-                        ProgressView()
-                            .tint(AppColors.secondaryText(for: themeManager.isDarkMode))
-                    )
-            }
-        }
-        // Constrain to the requested size and crop excess content
-        .frame(width: targetSize.width, height: targetSize.height)
-        .clipped()
-        .onAppear {
-            loadImage()
-        }
-        .onChange(of: photo) { _, _ in
-            loadImage()
-        }
-    }
-    
-    private func loadImage() {
-        isLoading = true
-        
-        DispatchQueue.global(qos: .userInitiated).async {
-            // Use PhotoManager's optimized loading
-            let options = PHImageRequestOptions()
-            options.isNetworkAccessAllowed = true
-            options.deliveryMode = .highQualityFormat
-            options.resizeMode = .fast
-            
-            PHCachingImageManager.default().requestImage(
-                for: photo.asset,
-                targetSize: targetSize,
-                contentMode: .aspectFill,
-                options: options
-            ) { loadedImage, _ in
-                DispatchQueue.main.async {
-                    if let loadedImage = loadedImage {
-                        withAnimation(.easeOut(duration: 0.3)) {
-                            self.image = loadedImage
-                            self.isLoading = false
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
 // MARK: - Supporting Types
 
 enum SwipeDirection {
     case left, right, down
 }
 
-// MARK: - Story Circle (keeping existing implementation)
-
-struct StoryCircle: View {
-    @EnvironmentObject var themeManager: ThemeManager
-    let series: PhotoSeriesData
-    let photoManager: PhotoManager
-    let isViewed: Bool
-    let onTap: () -> Void
-    
-    // Whether series contains at least one favourite photo
-    private var hasFavourite: Bool {
-        series.photos.contains { $0.isFavorite }
-    }
-    
-    // Responsive sizing
-    private var circleSize: CGFloat {
-        UIDevice.current.userInterfaceIdiom == .pad ? 95 : 75
-    }
-    
-    private var frameWidth: CGFloat {
-        UIDevice.current.userInterfaceIdiom == .pad ? 100 : 78
-    }
-    
-    var body: some View {
-        VStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 8 : 4) {
-            Button(action: {
-                print("📱 Story circle tapped: \(series.title)")
-                onTap()
-            }) {
-                // Photo fills entire outer frame; stroke overlays directly so no inner white ring.
-                PhotoImageView(
-                    photo: series.thumbnailPhoto,
-                    targetSize: CGSize(width: circleSize, height: circleSize)
-                )
-                .clipShape(Circle())
-                .overlay(
-                    Circle()
-                        .stroke(
-                            isViewed ? AppColors.secondaryText(for: themeManager.isDarkMode).opacity(0.2) : AppColors.accent(for: themeManager.isDarkMode),
-                            lineWidth: UIDevice.current.userInterfaceIdiom == .pad ? 3 : 2
-                        )
-                )
-                .shadow(color: isViewed ? .clear : .purple.opacity(0.3), radius: UIDevice.current.userInterfaceIdiom == .pad ? 8 : 6, x: 0, y: 2)
-                .overlay(
-                    Group {
-                        if hasFavourite {
-                            Image(systemName: "heart.fill")
-                                .foregroundColor(.white)
-                                .font(.system(size: UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12))
-                                .background(Circle().fill(Color.white).frame(width: UIDevice.current.userInterfaceIdiom == .pad ? 24 : 18,
-                                                                           height: UIDevice.current.userInterfaceIdiom == .pad ? 24 : 18))
-                                .clipShape(Circle())
-                                .offset(x: UIDevice.current.userInterfaceIdiom == .pad ? 30 : 24, 
-                                       y: UIDevice.current.userInterfaceIdiom == .pad ? 30 : 24)
-                        }
-                    }
-                )
-            }
-            .buttonStyle(PlainButtonStyle())
-            .scaleEffect(isViewed ? 0.95 : 1.0)
-            
-            Text(series.title)
-                .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption)
-                .fontWeight(.medium)
-                .foregroundColor(isViewed ? AppColors.secondaryText(for: themeManager.isDarkMode) : AppColors.primaryText(for: themeManager.isDarkMode))
-                .lineLimit(1)
-                .frame(width: frameWidth)
-        }
-    }
-}
-
-struct TransparentCircleButtonStyle: ButtonStyle {
-    var size: CGFloat = 56
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .frame(width: size, height: size)
-            .background(
-                Circle()
-                    .fill(Color.black.opacity(0.3))
-                    .background(
-                        Circle()
-                            .fill(.ultraThinMaterial)
-                    )
-            )
-            .scaleEffect(configuration.isPressed ? 0.9 : 1.0)
-            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
-    }
-}
+// Components have been moved to CommonUIComponents.swift
 
 #Preview {
     HomeView()

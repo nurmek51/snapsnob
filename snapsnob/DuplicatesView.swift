@@ -1,6 +1,8 @@
 import SwiftUI
 import Photos
 
+// MARK: - Duplicates View
+/// View for managing and removing duplicate photos
 struct NewDuplicatesView: View {
     @EnvironmentObject var themeManager: ThemeManager
     let photoManager: PhotoManager
@@ -85,21 +87,21 @@ struct NewDuplicatesView: View {
                 
                 // Statistics
                 HStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 24 : 16) {
-                    DuplicateStatBadge(
+                    StatBadge(
                         title: "Групп дубликатов",
                         value: "\(duplicateGroups.count)",
                         icon: "doc.on.doc",
                         color: .blue
                     )
                     
-                    DuplicateStatBadge(
+                    StatBadge(
                         title: "Можно удалить",
                         value: "\(totalDuplicates)",
                         icon: "trash",
                         color: .red
                     )
                     
-                    DuplicateStatBadge(
+                    StatBadge(
                         title: "Освободится",
                         value: storageToFree,
                         icon: "internaldrive",
@@ -541,51 +543,30 @@ struct NewDuplicatePhotoCard: View {
     }
 }
 
-// MARK: - Duplicate Stat Badge
-struct DuplicateStatBadge: View {
-    let title: String
-    let value: String
-    let icon: String
-    let color: Color
-    
-    var body: some View {
-        VStack(spacing: 4) {
-            Image(systemName: icon)
-                .font(.caption)
-                .foregroundColor(color)
-            
-            Text(value)
-                .font(.caption)
-                .fontWeight(.bold)
-                .foregroundColor(.primary)
-            
-            Text(title)
-                .font(.caption2)
-                .foregroundColor(.secondary)
-                .lineLimit(1)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-        .padding(.horizontal, 4)
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color(.systemGray6))
-        )
-    }
-}
+// DuplicateStatBadge removed - use StatBadge from CommonUIComponents.swift instead
 
+// MARK: - DuplicatesView Wrapper
+/// Convenience wrapper for standalone use
 struct DuplicatesView: View {
     @StateObject private var photoManager = PhotoManager()
-    @StateObject private var aiAnalysisManager = AIAnalysisManager(photoManager: PhotoManager())
+    @StateObject private var aiAnalysisManager: AIAnalysisManager
+    
+    init() {
+        let pm = PhotoManager()
+        _photoManager = StateObject(wrappedValue: pm)
+        _aiAnalysisManager = StateObject(wrappedValue: AIAnalysisManager(photoManager: pm))
+    }
 
     var body: some View {
         NewDuplicatesView(
             photoManager: photoManager,
             aiManager: aiAnalysisManager,
-            onPhotoTap: { photo in }
+            onPhotoTap: { photo in
+                // Handle photo tap if needed
+            }
         )
         .onAppear {
-                                    aiAnalysisManager.analyzeAllPhotos()
+            aiAnalysisManager.analyzeAllPhotos()
         }
     }
 }

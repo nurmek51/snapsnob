@@ -109,11 +109,12 @@ struct PhotoCard: View {
                 onTap()
             }
             
-            // Rating Stars (using AI quality rating)
+            // Photo quality indicator (using AI quality score)
             HStack(spacing: 2) {
+                let qualityStars = Int(round(photo.qualityScore * 5))
                 ForEach(1...5, id: \.self) { star in
-                    Image(systemName: star <= photo.rating ? "star.fill" : "star")
-                        .foregroundColor(star <= photo.rating ? AppColors.accent(for: themeManager.isDarkMode) : AppColors.secondaryText(for: themeManager.isDarkMode).opacity(0.4))
+                    Image(systemName: star <= qualityStars ? "star.fill" : "star")
+                        .foregroundColor(star <= qualityStars ? AppColors.accent(for: themeManager.isDarkMode) : AppColors.secondaryText(for: themeManager.isDarkMode).opacity(0.4))
                         .font(.system(size: 10, weight: .medium))
                 }
             }

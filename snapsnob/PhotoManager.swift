@@ -7,16 +7,15 @@ import Foundation
 struct Photo: Identifiable, Hashable {
     let id = UUID()
     let asset: PHAsset
-    var rating: Int = 0 // deprecated but kept for backward compatibility
     var isTrashed: Bool = false
     var category: PhotoCategory?
     var qualityScore: Double = 0.0
     var dateAdded: Date
     var features: [Float]? // Feature embeddings for duplicate/series detection
     var categoryConfidence: Float = 0.0
-    var isFavorite: Bool = false // New: whether the user marked this photo as favourite
+    var isFavorite: Bool = false // Whether the user marked this photo as favourite
     var isReviewed: Bool = false // Photo has been kept (skipped) by user
-    var isSuperStar: Bool = false // New: whether the user marked this photo as super star (best of the best)
+    var isSuperStar: Bool = false // Whether the user marked this photo as super star (best of the best)
     
     var creationDate: Date {
         asset.creationDate ?? Date()
@@ -396,13 +395,11 @@ class PhotoManager: ObservableObject {
     }
     
     // MARK: - Photo Actions
-    func ratePhoto(_ photo: Photo, rating: Int) {
-        if let index = allPhotos.firstIndex(where: { $0.id == photo.id }) {
-            allPhotos[index].rating = rating
-            updateDisplayPhotos()
-        }
-    }
     
+
+    
+    /// Moves a photo to trash
+    /// - Parameter photo: The photo to move to trash
     func moveToTrash(_ photo: Photo) {
         if let index = allPhotos.firstIndex(where: { $0.id == photo.id }) {
             allPhotos[index].isTrashed = true
@@ -413,6 +410,8 @@ class PhotoManager: ObservableObject {
         }
     }
     
+    /// Restores a photo from trash
+    /// - Parameter photo: The photo to restore
     func restoreFromTrash(_ photo: Photo) {
         if let index = allPhotos.firstIndex(where: { $0.id == photo.id }) {
             allPhotos[index].isTrashed = false
@@ -422,6 +421,8 @@ class PhotoManager: ObservableObject {
         }
     }
     
+    /// Permanently deletes a photo from the device's photo library
+    /// - Parameter photo: The photo to delete permanently
     func permanentlyDeletePhoto(_ photo: Photo) {
         // Delete the asset from the Photos library and update local caches
         PHPhotoLibrary.shared().performChanges({
@@ -688,7 +689,7 @@ class PhotoManager: ObservableObject {
     }
 
     /// Total number of photos the user has interacted with (trashed or reviewed)
-    var ratedPhotosCount: Int {
+    var processedPhotosCount: Int {
         allPhotos.filter { $0.isTrashed || $0.isReviewed }.count
     }
 

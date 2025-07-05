@@ -2,6 +2,7 @@ import SwiftUI
 import Foundation
 
 // MARK: - Theme Manager
+/// Manages the app's theme state and provides theme switching functionality
 class ThemeManager: ObservableObject {
     @Published var currentTheme: AppTheme = .system
     @Published var isDarkMode: Bool = false
@@ -13,7 +14,7 @@ class ThemeManager: ObservableObject {
         loadTheme()
         updateThemeBasedOnSystem()
         
-        // Наблюдаем за изменениями системной темы
+        // Observe system theme changes
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(systemThemeChanged),
@@ -26,6 +27,7 @@ class ThemeManager: ObservableObject {
         NotificationCenter.default.removeObserver(self)
     }
     
+    /// Loads the saved theme preference from UserDefaults
     private func loadTheme() {
         if let themeRawValue = userDefaults.object(forKey: themeKey) as? String,
            let theme = AppTheme(rawValue: themeRawValue) {
@@ -35,10 +37,12 @@ class ThemeManager: ObservableObject {
         }
     }
     
+    /// Persists the current theme preference
     private func saveTheme() {
         userDefaults.set(currentTheme.rawValue, forKey: themeKey)
     }
     
+    /// Sets the app theme and updates UI accordingly
     func setTheme(_ theme: AppTheme) {
         currentTheme = theme
         saveTheme()
@@ -49,6 +53,7 @@ class ThemeManager: ObservableObject {
         updateThemeBasedOnSystem()
     }
     
+    /// Updates isDarkMode based on current theme setting
     private func updateThemeBasedOnSystem() {
         switch currentTheme {
         case .system:
@@ -62,6 +67,7 @@ class ThemeManager: ObservableObject {
 }
 
 // MARK: - App Theme Enum
+/// Available theme options for the app
 enum AppTheme: String, CaseIterable {
     case system = "system"
     case light = "light"
@@ -91,71 +97,45 @@ enum AppTheme: String, CaseIterable {
 }
 
 // MARK: - Theme Colors
+/// Centralized color definitions for the app's themes
 struct AppColors {
+    /// Background color based on theme
     static func background(for isDark: Bool) -> Color {
         isDark ? Color.black : Color.white
     }
     
+    /// Secondary background color for cards and containers
     static func secondaryBackground(for isDark: Bool) -> Color {
         isDark ? Color(.systemGray6).opacity(0.3) : Color(.systemGray6)
     }
     
+    /// Card background color
     static func cardBackground(for isDark: Bool) -> Color {
         isDark ? Color(.systemGray5).opacity(0.3) : Color(.systemGray6)
     }
     
+    /// Primary text color
     static func primaryText(for isDark: Bool) -> Color {
         isDark ? Color.white : Color.black
     }
     
+    /// Secondary text color for subtitles and captions
     static func secondaryText(for isDark: Bool) -> Color {
         isDark ? Color(.systemGray) : Color(.systemGray)
     }
     
+    /// Accent color for interactive elements
     static func accent(for isDark: Bool) -> Color {
         isDark ? Color.white : Color.black
     }
     
+    /// Border color for cards and containers
     static func border(for isDark: Bool) -> Color {
         isDark ? Color(.systemGray4) : Color(.systemGray4)
     }
     
+    /// Shadow color for elevated elements
     static func shadow(for isDark: Bool) -> Color {
         isDark ? Color.white.opacity(0.1) : Color.black.opacity(0.1)
-    }
-}
-
-// MARK: - Convenience Methods for AppColors
-extension AppColors {
-    static func background() -> Color {
-        return background(for: UITraitCollection.current.userInterfaceStyle == .dark)
-    }
-    
-    static func secondaryBackground() -> Color {
-        return secondaryBackground(for: UITraitCollection.current.userInterfaceStyle == .dark)
-    }
-    
-    static func cardBackground() -> Color {
-        return cardBackground(for: UITraitCollection.current.userInterfaceStyle == .dark)
-    }
-    
-    static func primaryText() -> Color {
-        return primaryText(for: UITraitCollection.current.userInterfaceStyle == .dark)
-    }
-    
-    static func secondaryText() -> Color {
-        return secondaryText(for: UITraitCollection.current.userInterfaceStyle == .dark)
-    }
-    
-    static func accent() -> Color {
-        return accent(for: UITraitCollection.current.userInterfaceStyle == .dark)
-    }
-    
-    static func border() -> Color {
-        return border(for: UITraitCollection.current.userInterfaceStyle == .dark)
-    }
-    
-    static func shadow() -> Color {
-        return shadow(for: UITraitCollection.current.userInterfaceStyle == .dark)
     }
 } 

@@ -92,7 +92,7 @@ struct FavoritesView: View {
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
-                        refreshRatings()
+                        refreshData()
                     }) {
                         Image(systemName: "arrow.clockwise")
                             .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
@@ -295,7 +295,7 @@ struct FavoritesView: View {
                                 )
                                 .clipShape(RoundedRectangle(cornerRadius: UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12))
                                 .onTapGesture {
-                                    print("🖼️ RatingsView: Top rated photo tapped for fullscreen: \(photo.asset.localIdentifier)")
+                                    print("🖼️ FavoritesView: Top favorite photo tapped for fullscreen: \(photo.asset.localIdentifier)")
                                     withAnimation(AppAnimations.modal) {
                                         selectedPhoto = photo
                                         showingFullScreen = true
@@ -371,7 +371,7 @@ struct FavoritesView: View {
         }
     }
     
-    private func refreshRatings() {
+    private func refreshData() {
         isRefreshing = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             isRefreshing = false
@@ -389,7 +389,7 @@ struct MonthlyPhotoSection: View {
     let onToggle: () -> Void
     let onPhotoTap: (Photo) -> Void
     
-    // Photos are already sorted by rating from the parent
+    // Photos are already sorted by date from the parent
     private var sortedPhotos: [Photo] {
         photos
     }
