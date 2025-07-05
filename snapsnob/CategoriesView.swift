@@ -33,7 +33,16 @@ struct CategoriesView: View {
     
     // Albums from gallery before analysis
     private var albums: [PhotoAlbum] {
-        photoManager.albums
+        photoManager.albums.filter { !$0.photos.isEmpty }
+    }
+    
+    // Check if analysis has been completed in this session
+    private var hasCompletedAnalysis: Bool {
+        aiAnalysisManager.analysisPerformedThisSession
+    }
+    
+    private var shouldShowAlbums: Bool {
+        !hasCompletedAnalysis && aiAnalysisManager.getPhotosByCategory().isEmpty
     }
     
     private var totalPhotosCount: Int {
@@ -67,69 +76,131 @@ struct CategoriesView: View {
                         
                         StatCard(title: "Средняя уверенность Vision", value: averageConfidence, color: AppColors.accent(for: themeManager.isDarkMode))
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
                     
-                    // AI Analysis Button
-                    VStack(spacing: 16) {
-                        Button(action: {
-                            print("👁️ Apple Vision Analysis button tapped")
-                            showingAIAnalysis = true
-                        }) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "brain.head.profile")
+                    // AI Analysis Button - Only show if analysis hasn't been completed
+                    if aiAnalysisManager.canStartAnalysis {
+                        VStack(spacing: 16) {
+                            Button(action: {
+                                print("👁️ Apple Vision Analysis button tapped")
+                                showingAIAnalysis = true
+                            }) {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "brain.head.profile")
+                                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .title : .title2)
+                                        .foregroundColor(.white)
+                                    
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("Анализировать фотографии с Apple Vision")
+                                            .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .headline)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(.white)
+                                            .multilineTextAlignment(.leading)
+                                        
+                                        Text("Максимальная точность и качество")
+                                            .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption)
+                                            .foregroundColor(.white.opacity(0.8))
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "chevron.right")
+                                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .title2 : .title3)
+                                        .foregroundColor(.white.opacity(0.8))
+                                }
+                                .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 30 : 20)
+                                .padding(.vertical, UIDevice.current.userInterfaceIdiom == .pad ? 24 : 16)
+                                .background(
+                                    LinearGradient(
+                                        colors: [.black, .gray],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: UIDevice.current.userInterfaceIdiom == .pad ? 20 : 16))
+                                .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
+                        .padding(.vertical, 16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
+                                .stroke(Color.green.opacity(0.3), lineWidth: 1)
+                        )
+                        .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
+                    }
+                    
+                    // Show completed analysis info if analysis is done
+                    if hasCompletedAnalysis && !aiAnalysisManager.isAnalyzing {
+                        VStack(spacing: 8) {
+                            HStack {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
                                     .font(.title2)
-                                    .foregroundColor(.white)
                                 
                                 VStack(alignment: .leading, spacing: 2) {
-                                                        Text("Анализировать фотографии с Apple Vision")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                        .multilineTextAlignment(.leading)
-                    
-                    Text("Максимальная точность и качество")
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.8))
+                                    Text("Анализ завершен")
+                                        .font(.headline)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
+                                    
+                                    Text("Фотографии категоризированы с помощью Apple Vision")
+                                        .font(.caption)
+                                        .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                                 }
                                 
                                 Spacer()
                                 
-                                Image(systemName: "chevron.right")
-                                    .font(.title3)
-                                    .foregroundColor(.white.opacity(0.8))
                             }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 16)
-                            .background(
-                                LinearGradient(
-                                    colors: [.black, .gray],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
-                            .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
                         }
-                        .buttonStyle(PlainButtonStyle())
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
+                                .stroke(Color.green.opacity(0.3), lineWidth: 1)
+                        )
+                        .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
                     }
-                    .padding(.horizontal, 20)
                     
                     // Categories Section
                     VStack(alignment: .leading, spacing: 16) {
                         HStack {
-                            Text(aiAnalysisManager.getPhotosByCategory().isEmpty ? "Альбомы" : "Категории")
-                                .font(.title2)
+                            Text(shouldShowAlbums ? "Альбомы" : "Категории")
+                                .font(UIDevice.current.userInterfaceIdiom == .pad ? .title : .title2)
                                 .fontWeight(.bold)
                                 .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                             Spacer()
+                            
+                            // Show count of items
+                            if shouldShowAlbums {
+                                Text("\(albums.count)")
+                                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption)
+                                    .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                                    .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 12 : 8)
+                                    .padding(.vertical, UIDevice.current.userInterfaceIdiom == .pad ? 6 : 4)
+                                    .background(AppColors.secondaryBackground(for: themeManager.isDarkMode))
+                                    .clipShape(Capsule())
+                            } else {
+                                Text("\(categories.count)")
+                                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption)
+                                    .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                                    .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 12 : 8)
+                                    .padding(.vertical, UIDevice.current.userInterfaceIdiom == .pad ? 6 : 4)
+                                    .background(AppColors.secondaryBackground(for: themeManager.isDarkMode))
+                                    .clipShape(Capsule())
+                            }
                         }
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
                         
+                        // Grid with improved layout
                         LazyVGrid(columns: [
-                            GridItem(.flexible(), spacing: 12),
-                            GridItem(.flexible(), spacing: 12)
-                        ], spacing: 12) {
-                            if aiAnalysisManager.getPhotosByCategory().isEmpty {
+                            GridItem(.flexible(), spacing: UIDevice.current.userInterfaceIdiom == .pad ? 24 : 16),
+                            GridItem(.flexible(), spacing: UIDevice.current.userInterfaceIdiom == .pad ? 24 : 16)
+                        ], spacing: UIDevice.current.userInterfaceIdiom == .pad ? 24 : 16) {
+                            if shouldShowAlbums {
                                 ForEach(albums) { album in
                                     AlbumCard(album: album) {
                                         withAnimation(AppAnimations.modal) {
@@ -147,7 +218,47 @@ struct CategoriesView: View {
                                 }
                             }
                         }
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
+                        
+                        // Empty state for albums
+                        if shouldShowAlbums && albums.isEmpty {
+                            VStack(spacing: 16) {
+                                Image(systemName: "photo.on.rectangle.angled")
+                                    .font(.system(size: UIDevice.current.userInterfaceIdiom == .pad ? 50 : 40))
+                                    .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                                
+                                Text("Альбомы не найдены")
+                                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .title2 : .headline)
+                                    .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
+                                
+                                Text("Начните анализ для автоматической категоризации фотографий")
+                                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .body)
+                                    .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(.vertical, UIDevice.current.userInterfaceIdiom == .pad ? 60 : 40)
+                            .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
+                        }
+                        
+                        // Empty state for categories
+                        if !shouldShowAlbums && categories.isEmpty && hasCompletedAnalysis {
+                            VStack(spacing: 16) {
+                                Image(systemName: "brain.head.profile")
+                                    .font(.system(size: UIDevice.current.userInterfaceIdiom == .pad ? 50 : 40))
+                                    .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                                
+                                Text("Категории не найдены")
+                                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .title2 : .headline)
+                                    .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
+                                
+                                Text("Попробуйте повторить анализ или проверьте настройки")
+                                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .body)
+                                    .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(.vertical, UIDevice.current.userInterfaceIdiom == .pad ? 60 : 40)
+                            .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
+                        }
                     }
                 }
                 .padding(.top, 8)
@@ -198,9 +309,9 @@ struct CategoriesView: View {
             .onReceive(photoManager.$categorizedPhotos) { _ in
                 dataVersion += 1
             }
-            .background(AppColors.background(for: themeManager.isDarkMode))
+            .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
         }
-        .background(AppColors.background(for: themeManager.isDarkMode))
+        .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
         .navigationViewStyle(.stack)
     }
     
@@ -232,21 +343,21 @@ struct StatCard: View {
     let color: Color
     
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 12 : 8) {
             Text(value)
-                .font(.title2)
+                .font(UIDevice.current.userInterfaceIdiom == .pad ? .largeTitle : .title2)
                 .fontWeight(.bold)
                 .foregroundColor(color)
             
             Text(title)
-                .font(.caption)
+                .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption)
                 .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
-        .padding(.horizontal, 12)
+        .padding(.vertical, UIDevice.current.userInterfaceIdiom == .pad ? 24 : 16)
+        .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12)
         .background(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: UIDevice.current.userInterfaceIdiom == .pad ? 20 : 16)
                 .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
                 .shadow(color: AppColors.shadow(for: themeManager.isDarkMode), radius: 8, x: 0, y: 2)
         )
@@ -268,7 +379,8 @@ struct RoundedCategoryCard: View {
                     if let thumbnailPhoto = category.thumbnailPhoto {
                         PhotoImageView(
                             photo: thumbnailPhoto,
-                            targetSize: CGSize(width: 180, height: 100)
+                            targetSize: CGSize(width: UIDevice.current.userInterfaceIdiom == .pad ? 300 : 180, 
+                                             height: UIDevice.current.userInterfaceIdiom == .pad ? 170 : 100)
                         )
                         .aspectRatio(1.8, contentMode: .fill)
                     } else {
@@ -282,7 +394,7 @@ struct RoundedCategoryCard: View {
                             )
                             .overlay(
                                 Image(systemName: category.icon)
-                                    .font(.system(size: 28))
+                                    .font(.system(size: UIDevice.current.userInterfaceIdiom == .pad ? 40 : 28))
                                     .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                              )
                             .aspectRatio(1.8, contentMode: .fill)
@@ -290,37 +402,38 @@ struct RoundedCategoryCard: View {
                 }
                 .clipShape(
                     .rect(
-                        topLeadingRadius: 16,
+                        topLeadingRadius: UIDevice.current.userInterfaceIdiom == .pad ? 20 : 16,
                         bottomLeadingRadius: 0,
                         bottomTrailingRadius: 0,
-                        topTrailingRadius: 16
+                        topTrailingRadius: UIDevice.current.userInterfaceIdiom == .pad ? 20 : 16
                     )
                 )
                 
                 // Content Section with rounded bottom corners
-                VStack(spacing: 4) {
-                    HStack(spacing: 12) {
+                VStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 6 : 4) {
+                    HStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12) {
                         // Icon
                         ZStack {
                             Circle()
                                 .fill(AppColors.secondaryBackground(for: themeManager.isDarkMode))
-                                .frame(width: 28, height: 28)
+                                .frame(width: UIDevice.current.userInterfaceIdiom == .pad ? 40 : 28, 
+                                     height: UIDevice.current.userInterfaceIdiom == .pad ? 40 : 28)
                             
                             Image(systemName: category.icon)
                                 .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                                .font(.system(size: 12, weight: .semibold))
+                                .font(.system(size: UIDevice.current.userInterfaceIdiom == .pad ? 18 : 12, weight: .semibold))
                         }
                         
                         // Title and Count
                         VStack(alignment: .leading, spacing: 2) {
                             Text(category.name)
-                                .font(.caption)
+                                .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption)
                                 .fontWeight(.semibold)
                                 .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                                 .lineLimit(1)
                             
                             Text("\(category.count) фото")
-                                .font(.caption2)
+                                .font(UIDevice.current.userInterfaceIdiom == .pad ? .callout : .caption2)
                                 .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                         }
                         
@@ -329,18 +442,18 @@ struct RoundedCategoryCard: View {
                         // Arrow Indicator
                         Image(systemName: "chevron.right")
                             .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                            .font(.system(size: 10, weight: .medium))
+                            .font(.system(size: UIDevice.current.userInterfaceIdiom == .pad ? 14 : 10, weight: .medium))
                     }
                 }
-                .padding(10)
+                .padding(UIDevice.current.userInterfaceIdiom == .pad ? 14 : 10)
                 .background(
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: UIDevice.current.userInterfaceIdiom == .pad ? 20 : 16)
                         .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
                         .clipShape(
                             .rect(
                                 topLeadingRadius: 0,
-                                bottomLeadingRadius: 16,
-                                bottomTrailingRadius: 16,
+                                bottomLeadingRadius: UIDevice.current.userInterfaceIdiom == .pad ? 20 : 16,
+                                bottomTrailingRadius: UIDevice.current.userInterfaceIdiom == .pad ? 20 : 16,
                                 topTrailingRadius: 0
                             )
                         )
@@ -349,7 +462,7 @@ struct RoundedCategoryCard: View {
         }
         .buttonStyle(PlainButtonStyle())
         .background(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: UIDevice.current.userInterfaceIdiom == .pad ? 20 : 16)
                 .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
                 .shadow(
                     color: AppColors.shadow(for: themeManager.isDarkMode),

@@ -56,7 +56,8 @@ struct NewDuplicatesView: View {
                 duplicatesContentSection
             }
         }
-        .background(AppColors.background(for: themeManager.isDarkMode))
+        .constrainedToDevice(usePadding: false)
+        .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
         .alert("Удалить дубликаты?", isPresented: $showingDeleteAlert) {
             Button("Отмена", role: .cancel) { }
             Button("Удалить", role: .destructive) {
@@ -78,12 +79,12 @@ struct NewDuplicatesView: View {
             // Title and Stats
             VStack(spacing: 12) {
                 Text("Duplicate Photos")
-                    .font(.title2)
+                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .largeTitle : .title2)
                     .fontWeight(.bold)
                     .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                 
                 // Statistics
-                HStack(spacing: 16) {
+                HStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 24 : 16) {
                     DuplicateStatBadge(
                         title: "Групп дубликатов",
                         value: "\(duplicateGroups.count)",
@@ -106,45 +107,45 @@ struct NewDuplicatesView: View {
                     )
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
+            .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
+            .padding(.top, UIDevice.current.userInterfaceIdiom == .pad ? 24 : 16)
             
             // Bulk Delete Button
             if !duplicateGroups.isEmpty {
                 bulkDeleteButton
             }
         }
-        .padding(.bottom, 16)
+        .padding(.bottom, UIDevice.current.userInterfaceIdiom == .pad ? 24 : 16)
     }
     
     private var bulkDeleteButton: some View {
         Button(action: {
             showingDeleteAlert = true
         }) {
-            HStack(spacing: 12) {
+            HStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12) {
                 Image(systemName: "trash.fill")
-                    .font(.headline)
+                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .title2 : .headline)
                     .foregroundColor(.white)
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Удалить все дубликаты")
-                        .font(.headline)
+                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .headline)
                         .fontWeight(.semibold)
                         .foregroundColor(.white)
                     
                     Text("Освободить \(storageToFree) места")
-                        .font(.caption)
+                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption)
                         .foregroundColor(.white.opacity(0.9))
                 }
                 
                 Spacer()
                 
                 Image(systemName: "chevron.right")
-                    .font(.title2)
+                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .title : .title2)
                     .foregroundColor(.white.opacity(0.8))
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 16)
+            .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 30 : 24)
+            .padding(.vertical, UIDevice.current.userInterfaceIdiom == .pad ? 20 : 16)
             .background(
                 LinearGradient(
                     colors: [.red, .orange],
@@ -152,11 +153,11 @@ struct NewDuplicatesView: View {
                     endPoint: .trailing
                 )
             )
-            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .clipShape(RoundedRectangle(cornerRadius: UIDevice.current.userInterfaceIdiom == .pad ? 20 : 16))
             .shadow(color: .red.opacity(0.3), radius: 8, x: 0, y: 4)
         }
         .buttonStyle(PlainButtonStyle())
-        .padding(.horizontal, 20)
+        .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
     }
     
     private var emptyStateSection: some View {
@@ -164,29 +165,29 @@ struct NewDuplicatesView: View {
             Spacer()
             
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 80))
+                .font(.system(size: UIDevice.current.userInterfaceIdiom == .pad ? 100 : 80))
                 .foregroundColor(.green)
             
             VStack(spacing: 12) {
                 Text("Дубликатов не найдено")
-                    .font(.title2)
+                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .largeTitle : .title2)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
                 
                 Text("Отличная работа! В вашей библиотеке нет дубликатов фотографий.")
-                    .font(.body)
+                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .body)
                     .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                     .multilineTextAlignment(.center)
             }
             
             Spacer()
         }
-        .padding(.horizontal, 40)
+        .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 60 : 40)
     }
     
     private var duplicatesContentSection: some View {
         ScrollView {
-            VStack(spacing: 24) {
+            VStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 32 : 24) {
                 ForEach(Array(duplicateGroups.enumerated()), id: \.offset) { groupIndex, group in
                     NewDuplicateGroupCard(
                         group: group,
@@ -197,9 +198,9 @@ struct NewDuplicatesView: View {
                     )
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-            .padding(.bottom, 32)
+            .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
+            .padding(.top, UIDevice.current.userInterfaceIdiom == .pad ? 24 : 16)
+            .padding(.bottom, UIDevice.current.userInterfaceIdiom == .pad ? 40 : 32)
         }
     }
     

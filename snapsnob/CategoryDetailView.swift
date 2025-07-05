@@ -24,7 +24,8 @@ struct CategoryDetailView: View {
         ) { tappedPhoto in
             fullScreenPhotoManager.selectedPhoto = tappedPhoto
         }
-        .background(AppColors.background(for: themeManager.isDarkMode))
+        .constrainedToDevice(usePadding: false)
+        .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
         .navigationTitle(category.rawValue)
         .navigationBarTitleDisplayMode(.large)
         // Full-screen handled globally by ContentView

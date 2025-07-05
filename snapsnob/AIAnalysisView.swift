@@ -83,22 +83,23 @@ struct AIAnalysisView: View {
                         Button("Закрыть") {
                             onDismiss()
                         }
+                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .body)
                         .foregroundColor(.blue)
                         
                         Spacer()
                         
                         Text("Анализ Apple Vision")
-                            .font(.headline)
+                            .font(UIDevice.current.userInterfaceIdiom == .pad ? .title2 : .headline)
                             .fontWeight(.semibold)
                         
                         Spacer()
                         
                         // Empty space to maintain layout balance
                         Text("")
-                            .frame(width: 70) // Approximate width of removed button
+                            .frame(width: UIDevice.current.userInterfaceIdiom == .pad ? 100 : 70) // Approximate width of removed button
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
+                    .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 30 : 20)
+                    .padding(.top, UIDevice.current.userInterfaceIdiom == .pad ? 16 : 8)
                     
                     // Analysis Progress
                     if aiAnalysisManager.isAnalyzing {
@@ -119,6 +120,9 @@ struct AIAnalysisView: View {
                             }
                         }
                         .padding(.horizontal, 20)
+                        
+                        // Enhanced analysis status with performance metrics
+                        enhancedAnalysisStatusView
                     }
                     
                     // Cache Information (when not analyzing)
@@ -244,7 +248,8 @@ struct AIAnalysisView: View {
                     .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
                 }
             }
-            .background(AppColors.background(for: themeManager.isDarkMode))
+            .constrainedToDevice(usePadding: false)
+            .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
             .navigationBarHidden(true)
             .onAppear {
                 print("[AIAnalysisView] appeared – categorized count: \(photoManager.categorizedPhotos.count), inProgress: \(aiAnalysisManager.isAnalyzing)")
@@ -316,6 +321,106 @@ struct AIAnalysisView: View {
         }
         
         print("🗑️ Moved \(aiAnalysisManager.duplicateGroups.reduce(0) { $0 + ($1.count - 1) }) duplicate photos to trash")
+    }
+    
+    // MARK: - Enhanced Analysis Status Display
+    private var enhancedAnalysisStatusView: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("AI Analysis Status")
+                    .font(.headline)
+                    .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
+                
+                Spacer()
+                
+                Button(action: {
+                    #if targetEnvironment(simulator)
+                    aiAnalysisManager.enableSimulatorSafeMode()
+                    #else
+                    aiAnalysisManager.enableHighPerformanceMode()
+                    #endif
+                }) {
+                    Image(systemName: "bolt.fill")
+                        .foregroundColor(.orange)
+                        .font(.caption)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            
+            let status = aiAnalysisManager.getDetailedAnalysisStatus()
+            
+            VStack(alignment: .leading, spacing: 8) {
+                // Progress bar with detailed info
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("Progress: \(Int(status.progress * 100))%")
+                            .font(.caption)
+                            .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                        
+                        Spacer()
+                        
+                        if status.isRunning {
+                            Text("ETA: \(status.estimatedTimeRemaining)")
+                                .font(.caption)
+                                .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                        }
+                    }
+                    
+                    ProgressView(value: status.progress)
+                        .progressViewStyle(LinearProgressViewStyle())
+                        .scaleEffect(x: 1, y: 0.8)
+                }
+                
+                // Performance metrics
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Processed")
+                            .font(.caption2)
+                            .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                        Text("\(status.photosProcessed)")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                    }
+                    
+                    Spacer()
+                    
+                    VStack(alignment: .center, spacing: 2) {
+                        Text("Classified")
+                            .font(.caption2)
+                            .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                        Text("\(status.classificationsFound)")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                    }
+                    
+                    Spacer()
+                    
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("Speed")
+                            .font(.caption2)
+                            .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                        Text(status.throughput)
+                            .font(.caption)
+                            .fontWeight(.medium)
+                    }
+                }
+                
+                // Processing mode indicator
+                HStack {
+                    Circle()
+                        .fill(status.isRunning ? Color.green : Color.gray)
+                        .frame(width: 6, height: 6)
+                    
+                    Text("Mode: \(status.currentMode)")
+                        .font(.caption2)
+                        .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                }
+            }
+        }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
+        .padding(.horizontal)
     }
 }
 

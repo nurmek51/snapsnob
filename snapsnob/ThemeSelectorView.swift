@@ -9,18 +9,18 @@ struct ThemeSelectorView: View {
             VStack(spacing: 24) {
                 VStack(spacing: 16) {
                     Text("Выберите тему")
-                        .font(.title2)
+                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .largeTitle : .title2)
                         .fontWeight(.semibold)
                         .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                     
                     Text("Тема будет применена ко всему приложению")
-                        .font(.body)
+                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .body)
                         .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                         .multilineTextAlignment(.center)
                 }
-                .padding(.top, 20)
+                .padding(.top, UIDevice.current.userInterfaceIdiom == .pad ? 40 : 20)
                 
-                VStack(spacing: 12) {
+                VStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 20 : 12) {
                     ForEach(AppTheme.allCases, id: \.self) { theme in
                         ThemeOptionCard(
                             theme: theme,
@@ -32,11 +32,12 @@ struct ThemeSelectorView: View {
                         }
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
                 
                 Spacer()
             }
-            .background(AppColors.background(for: themeManager.isDarkMode))
+            .constrainedToDevice()
+            .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
             .navigationTitle("Настройки темы")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -44,6 +45,7 @@ struct ThemeSelectorView: View {
                     Button("Готово") {
                         dismiss()
                     }
+                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .body)
                     .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
                 }
             }
@@ -59,21 +61,21 @@ struct ThemeOptionCard: View {
     
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 16) {
+            HStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 24 : 16) {
                 // Theme icon
                 Image(systemName: theme.icon)
-                    .font(.title2)
+                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .largeTitle : .title2)
                     .foregroundColor(isSelected ? AppColors.accent(for: themeManager.isDarkMode) : AppColors.secondaryText(for: themeManager.isDarkMode))
-                    .frame(width: 30)
+                    .frame(width: UIDevice.current.userInterfaceIdiom == .pad ? 50 : 30)
                 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: UIDevice.current.userInterfaceIdiom == .pad ? 6 : 4) {
                     Text(theme.displayName)
-                        .font(.headline)
+                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .headline)
                         .fontWeight(.medium)
                         .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                     
                     Text(themeDescription(for: theme))
-                        .font(.caption)
+                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption)
                         .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                 }
                 
@@ -82,22 +84,22 @@ struct ThemeOptionCard: View {
                 // Selection indicator
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.title2)
+                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .largeTitle : .title2)
                         .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
                 } else {
                     Image(systemName: "circle")
-                        .font(.title2)
+                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .largeTitle : .title2)
                         .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
+            .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 30 : 20)
+            .padding(.vertical, UIDevice.current.userInterfaceIdiom == .pad ? 24 : 16)
             .background(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12)
                     .fill(isSelected ? AppColors.cardBackground(for: themeManager.isDarkMode) : AppColors.secondaryBackground(for: themeManager.isDarkMode))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(isSelected ? AppColors.accent(for: themeManager.isDarkMode) : Color.clear, lineWidth: 2)
+                        RoundedRectangle(cornerRadius: UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12)
+                            .stroke(isSelected ? AppColors.accent(for: themeManager.isDarkMode) : Color.clear, lineWidth: UIDevice.current.userInterfaceIdiom == .pad ? 3 : 2)
                     )
             )
         }

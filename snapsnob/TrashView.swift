@@ -9,7 +9,7 @@ struct TrashView: View {
     @State private var selectedPhoto: Photo?
     @State private var showingFullScreen = false
     
-    private let columns = Array(repeating: GridItem(.flexible()), count: 3)
+    private let columns = Array(repeating: GridItem(.flexible()), count: UIDevice.current.userInterfaceIdiom == .pad ? 4 : 3)
     
     var body: some View {
         NavigationView {
@@ -18,16 +18,16 @@ struct TrashView: View {
                     // Empty state
                     VStack(spacing: 20) {
                         Image(systemName: "trash")
-                            .font(.system(size: 60))
+                            .font(.system(size: UIDevice.current.userInterfaceIdiom == .pad ? 80 : 60))
                             .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                         
                         Text("Корзина пуста")
-                            .font(.title2)
+                            .font(UIDevice.current.userInterfaceIdiom == .pad ? .title : .title2)
                             .fontWeight(.semibold)
                             .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                         
                         Text("Удаленные фото будут появляться здесь")
-                            .font(.body)
+                            .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .body)
                             .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                             .multilineTextAlignment(.center)
                     }
@@ -35,7 +35,7 @@ struct TrashView: View {
                 } else {
                     // Photo grid
                     ScrollView {
-                        LazyVGrid(columns: columns, spacing: 12) {
+                        LazyVGrid(columns: columns, spacing: UIDevice.current.userInterfaceIdiom == .pad ? 20 : 12) {
                             ForEach(photoManager.trashedPhotos) { photo in
                                 TrashPhotoCard(
                                     photo: photo,
@@ -47,6 +47,7 @@ struct TrashView: View {
                         }
                         .padding()
                     }
+                    .constrainedToDevice(usePadding: false)
                 }
             }
             .navigationTitle("Корзина (\(photoManager.trashedPhotos.count))")
@@ -74,7 +75,7 @@ struct TrashView: View {
             } message: {
                 Text("Вы уверены, что хотите удалить все фото из корзины? Это действие нельзя отменить.")
             }
-            .background(AppColors.background(for: themeManager.isDarkMode))
+            .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
         }
         .overlay {
             if showingFullScreen, let photo = selectedPhoto {
@@ -88,7 +89,7 @@ struct TrashView: View {
                 .zIndex(100)
             }
         }
-        .background(AppColors.background(for: themeManager.isDarkMode))
+        .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
     }
     
     // MARK: - Actions
@@ -126,9 +127,10 @@ struct TrashPhotoCard: View {
             ZStack {
                 PhotoImageView(
                     photo: photo,
-                    targetSize: CGSize(width: 100, height: 100)
+                    targetSize: CGSize(width: UIDevice.current.userInterfaceIdiom == .pad ? 150 : 100, 
+                                     height: UIDevice.current.userInterfaceIdiom == .pad ? 150 : 100)
                 )
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .clipShape(RoundedRectangle(cornerRadius: UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12))
                 .onTapGesture {
                     onTap()
                 }
@@ -139,18 +141,18 @@ struct TrashPhotoCard: View {
                         Spacer()
                         Button(action: onRestore) {
                             Image(systemName: "arrow.uturn.backward.circle.fill")
-                                .font(.title2)
+                                .font(UIDevice.current.userInterfaceIdiom == .pad ? .title : .title2)
                                 .foregroundColor(.white)
                                 .background(Circle().fill(Color.black.opacity(0.8)))
                         }
                     }
                     Spacer()
                 }
-                .padding(8)
+                .padding(UIDevice.current.userInterfaceIdiom == .pad ? 12 : 8)
             }
             
             Text(dateFormatter.string(from: photo.dateAdded))
-                .font(.caption2)
+                .font(UIDevice.current.userInterfaceIdiom == .pad ? .caption : .caption2)
                 .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
         }
         .scaleEffect(isPressed ? 0.95 : 1.0)

@@ -33,9 +33,11 @@ struct AlbumDetailView: View {
                 ) { tapped in
                     fullScreenPhotoManager.selectedPhoto = tapped
                 }
+                .constrainedToDevice(usePadding: false)
             }
         }
-        .background(AppColors.background(for: themeManager.isDarkMode))
+        .constrainedToDevice(usePadding: false)
+        .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
         .navigationTitle(album.title)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {

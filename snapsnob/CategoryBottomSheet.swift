@@ -69,7 +69,7 @@ struct CategoryBottomSheet: View {
                 .padding(.bottom, 32)
             }
         }
-        .background(AppColors.background(for: themeManager.isDarkMode))
+        .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
         // Full-screen handled globally by ContentView
         .fullScreenCover(
             item: Binding<Photo?>(

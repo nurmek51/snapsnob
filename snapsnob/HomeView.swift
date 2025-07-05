@@ -77,8 +77,10 @@ struct HomeView: View {
                     mainContentView
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(AppColors.background(for: themeManager.isDarkMode))
+        .ignoresSafeArea()
         .navigationBarHidden(true)
         // Force single-column behaviour on iPad to match the iPhone UX.
         .navigationViewStyle(.stack)
@@ -224,7 +226,7 @@ struct HomeView: View {
                     .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                 Spacer()
             }
-            .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 40 : 20)
+            .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 20 : 40)
             .padding(.bottom, 12)
             
             HStack(alignment: .top, spacing: 0) {
@@ -244,7 +246,7 @@ struct HomeView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 40 : 20)
+                    .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 20 : 40)
                 }
                 
                 // Spacer to push trash icon to the right
@@ -287,7 +289,7 @@ struct HomeView: View {
                         .lineLimit(1)
                         .frame(width: UIDevice.current.userInterfaceIdiom == .pad ? 90 : 74)
                 }
-                .padding(.trailing, UIDevice.current.userInterfaceIdiom == .pad ? 40 : 20)
+                .padding(.trailing, UIDevice.current.userInterfaceIdiom == .pad ? 20 : 40)
             }
 
             // Progress Counter (rated / total)
@@ -304,7 +306,7 @@ struct HomeView: View {
                     .accentColor(AppColors.accent(for: themeManager.isDarkMode))
                     .frame(height: UIDevice.current.userInterfaceIdiom == .pad ? 8 : 4)
             }
-            .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 40 : 20)
+            .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 20 : 40)
             .padding(.top, 8)
         }
         .padding(.bottom, 10)

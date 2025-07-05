@@ -58,6 +58,7 @@ import Vision
 import VisionKit
 import CoreImage
 import ImageIO
+import Darwin.Mach
 
 // MARK: - Cached Analysis Data Structures
 struct CachedAnalysisData: Codable {
@@ -136,6 +137,8 @@ class AIAnalysisManager: ObservableObject {
     @Published var analyzedPhotos: Set<UUID> = []
     @Published var duplicateGroups: [[Photo]] = []
     @Published var cacheStatus: String = ""
+    /// Tracks whether analysis has been performed during the current app session
+    @Published var analysisPerformedThisSession: Bool = false
 
     private let photoManager: PhotoManager
     
@@ -168,16 +171,26 @@ class AIAnalysisManager: ObservableObject {
     private let concurrentPhotoTasks: Int
 
     // MARK: – Performance and stability constants
-    // Tune these constants to balance speed vs. memory when processing large libraries (e.g. 1K-5K photos)
-    private let batchSize = 50 // Larger batch size for speed (1000 photos in 15 seconds target)
-    private let thumbnailSize = CGSize(width: 224, height: 224) // Smaller size for faster processing
-    private let enableDebugLogs = false // Disabled for production
+    // Optimized for 1000 photos in 15 seconds requirement
+    private let batchSize = 80 // Increased batch size for maximum speed
+    private let thumbnailSize = CGSize(width: 192, height: 192) // Optimal size for classification speed
+    private let enableDebugLogs = true // Enable detailed logging for performance monitoring
+    private let classificationConfidenceThreshold: Float = 0.1 // Filter classifications by confidence > 0.1
+
+    // MARK: – Enhanced Performance Monitoring
+    private var batchStartTime: Date?
+    private var totalPhotosProcessed = 0
+    private var classificationResultsCount = 0
+    private var overallAnalysisStartTime: Date?
     
     // MARK: – Adaptive Error Detection & Recovery
     private let maxConsecutiveFailures = 3 // Quick detection of problems
     private var consecutiveFailures = 0
     private var batchErrorCount = 0
-    private var currentProcessingMode: VisionProcessingMode = .fast
+    // Start in balanced (CPU-only) mode for maximum stability and promote to fast only after several
+    // batches complete without errors.  This eliminates the initial GPU/ANE path that has been
+    // responsible for CI::RenderTask crashes on some devices.
+    private var currentProcessingMode: VisionProcessingMode = .balanced
     
     // MARK: – Vision Processing Modes
     enum VisionProcessingMode {
@@ -218,6 +231,11 @@ class AIAnalysisManager: ObservableObject {
                 self.log("Analysis already in progress, ignoring request")
                 return
             }
+            // Prevent multiple analyses in the same app session
+            guard !self.analysisPerformedThisSession else {
+                self.log("Analysis already performed in this app session, ignoring request")
+                return
+            }
 
             // Wait until the PhotoManager has finished loading and contains at least one photo
             while self.photoManager.isLoading || self.photoManager.allPhotos.isEmpty {
@@ -227,6 +245,7 @@ class AIAnalysisManager: ObservableObject {
 
             self.isAnalyzing = true
             self.analysisProgress = 0
+            self.analysisPerformedThisSession = true
             
             // Check if we have valid cached data
             let allPhotos = self.photoManager.allPhotos
@@ -378,15 +397,25 @@ class AIAnalysisManager: ObservableObject {
     private func performConcurrentVisionAnalysis(photos: [Photo]) async {
         let totalPhotos = photos.count
         let batches = photos.chunked(into: batchSize)
+        
+        log("🚀 Starting high-performance classification: \(totalPhotos) photos in \(batches.count) batches")
+        log("📊 Target: 1000 photos in 15 seconds (current: \(totalPhotos) photos)")
+        
+        // Reset performance tracking
+        totalPhotosProcessed = 0
+        classificationResultsCount = 0
+        overallAnalysisStartTime = Date()
+        let overallStartTime = Date()
 
         // Actor to safely track overall progress across concurrent tasks.
         let counter = ProgressCounter()
 
         for (batchIndex, batch) in batches.enumerated() {
-            // Reset batch error tracking
+            // Reset batch error tracking and start timing
             resetBatchErrorTracking()
+            batchStartTime = Date()
             
-            log("🚀 Processing batch \(batchIndex + 1)/\(batches.count) in \(currentProcessingMode) mode")
+            log("🔄 Processing batch \(batchIndex + 1)/\(batches.count) (\(batch.count) photos) in \(currentProcessingMode) mode")
 
             // Adaptive concurrency based on current mode
             let effectiveConcurrency = getEffectiveConcurrency()
@@ -414,11 +443,34 @@ class AIAnalysisManager: ObservableObject {
                 }
             }
 
+            // Log batch completion performance
+            await logBatchCompletion(batchIndex: batchIndex, batchSize: batch.count)
+            
             // Check batch error rate and adapt if needed
             await evaluateBatchPerformance(batchIndex: batchIndex, batchSize: batch.count)
             
             // Yield to let higher-priority tasks breathe
             await Task.yield()
+        }
+        
+        // Log overall performance
+        let overallDuration = Date().timeIntervalSince(overallStartTime)
+        log("✅ Classification complete: \(totalPhotos) photos in \(String(format: "%.1f", overallDuration))s")
+        log("📈 Performance: \(String(format: "%.1f", Double(totalPhotos) / overallDuration)) photos/second")
+        log("🎯 Classification results: \(classificationResultsCount) successful classifications")
+    }
+    
+    /// Logs batch completion with performance metrics
+    private func logBatchCompletion(batchIndex: Int, batchSize: Int) async {
+        guard let startTime = batchStartTime else { return }
+        let batchDuration = Date().timeIntervalSince(startTime)
+        let photosPerSecond = Double(batchSize) / batchDuration
+        
+        await MainActor.run {
+            totalPhotosProcessed += batchSize
+            log("✅ Batch \(batchIndex + 1) complete: \(batchSize) photos in \(String(format: "%.1f", batchDuration))s")
+            log("📊 Batch performance: \(String(format: "%.1f", photosPerSecond)) photos/second")
+            log("🎯 Total processed: \(totalPhotosProcessed) photos")
         }
     }
     
@@ -494,18 +546,47 @@ class AIAnalysisManager: ObservableObject {
 
     // MARK: – Safe Single Photo Analysis
     private func analyzePhotoSafely(photo: Photo) async -> Bool {
+        // Log memory usage if running low
+        var memoryInfo = mach_task_basic_info()
+        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size)/4
+        let kernelReturn = withUnsafeMutablePointer(to: &memoryInfo) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: 1) { infoPtr in
+                withUnsafeMutablePointer(to: &count) {
+                    $0.withMemoryRebound(to: mach_msg_type_number_t.self, capacity: 1) { countPtr in
+                        task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), infoPtr, countPtr)
+                    }
+                }
+            }
+        }
+        
+        if kernelReturn == KERN_SUCCESS {
+            let memoryUsedMB = Double(memoryInfo.resident_size) / 1024 / 1024
+            if memoryUsedMB > 500 { // Log if using more than 500MB
+                log("⚠️ High memory usage: \(String(format: "%.1f", memoryUsedMB))MB - Photo: \(photo.asset.localIdentifier)")
+            }
+        }
+        
         guard let thumbnail = await loadThumbnailSafely(for: photo.asset) else {
-            log("Failed to load thumbnail for photo: \(photo.asset.localIdentifier)")
+            log("❌ Failed to load thumbnail for photo: \(photo.asset.localIdentifier)")
             return false
         }
 
         guard let cgImage = thumbnail.cgImage else {
-            log("Failed to get CGImage for photo: \(photo.asset.localIdentifier)")
+            log("❌ Failed to get CGImage for photo: \(photo.asset.localIdentifier) - nil CIImage fallback triggered")
             return false
         }
+        
+        // Pre-validate image characteristics
+        let colorSpaceName = cgImage.colorSpace?.name as String? ?? "unknown colorspace"
+        let imageInfo = "(\(cgImage.width)x\(cgImage.height), \(cgImage.bitsPerComponent)bpc, \(colorSpaceName))"
+        log("🖼️ Processing image \(photo.asset.localIdentifier): \(imageInfo)")
 
         // Perform Vision analysis with error tracking
         let visionSuccess = await performVisionAnalysisWithErrorHandling(photo: photo, cgImage: cgImage)
+        
+        if !visionSuccess {
+            log("❌ Vision analysis failed for photo \(photo.asset.localIdentifier) - fallback to CPU-only triggered")
+        }
         
         // Perform simple quality analysis (always succeeds)
         await performSimpleQualityAnalysis(photo: photo, cgImage: cgImage)
@@ -564,6 +645,15 @@ class AIAnalysisManager: ObservableObject {
     
     /// Performs adaptive Vision analysis based on current mode and error history
     private func performAdaptiveVisionAnalysis(photo: Photo, cgImage: CGImage) -> Bool {
+        // Skip fast GPU/ANE path for images that are known to be problematic (e.g. HEIF/HEVC, very large).
+        // This prevents rare Vision crashes originating from the GPU pipeline while still letting unaffected
+        // images run at full speed.
+        if currentProcessingMode == .fast && shouldUseCPUOnlyMode(for: photo) {
+            log("🚧 Photo \(photo.asset.localIdentifier) flagged for CPU-only processing – using balanced mode instead of fast")
+            let orientation = getValidOrientation(from: cgImage)
+            return performBalancedVisionAnalysis(photo: photo, cgImage: cgImage, orientation: orientation)
+        }
+
         let orientation = getValidOrientation(from: cgImage)
         
         switch currentProcessingMode {
@@ -619,7 +709,11 @@ class AIAnalysisManager: ObservableObject {
     /// Safe mode: CPU-only, individual requests, enhanced safety
     private func performSafeVisionAnalysis(photo: Photo, cgImage: CGImage, orientation: CGImagePropertyOrientation) -> Bool {
         let requests = createSafeVisionRequests(for: photo)
-        let handler = VNImageRequestHandler(cgImage: cgImage, orientation: orientation, options: [:])
+        // Force a software CIContext so that any internal cropping / scaling also stays on the CPU.
+        var handlerOptions: [VNImageOption: Any] = [:]
+        handlerOptions[.ciContext] = CIContext(options: [.useSoftwareRenderer: true])
+
+        let handler = VNImageRequestHandler(cgImage: cgImage, orientation: orientation, options: handlerOptions)
         
         var successCount = 0
         
@@ -647,7 +741,9 @@ class AIAnalysisManager: ObservableObject {
         for request in requests {
             autoreleasepool {
                 do {
-                    let handler = VNImageRequestHandler(cgImage: cgImage, orientation: orientation, options: [:])
+                    var handlerOptions: [VNImageOption: Any] = [:]
+                    handlerOptions[.ciContext] = CIContext(options: [.useSoftwareRenderer: true])
+                    let handler = VNImageRequestHandler(cgImage: cgImage, orientation: orientation, options: handlerOptions)
                     try handler.perform([request])
                     successCount += 1
                 } catch {
@@ -657,6 +753,30 @@ class AIAnalysisManager: ObservableObject {
         }
         
         return successCount > 0
+    }
+    
+    /// Creates emergency Vision requests (minimal, CPU-only)
+    private func createEmergencyVisionRequests(for photo: Photo) -> [VNRequest] {
+        var requests: [VNRequest] = []
+        
+        // Only feature print in emergency mode
+        let featurePrintRequest = VNGenerateImageFeaturePrintRequest { [weak self] request, error in
+            guard let self = self, error == nil else { return }
+            if let observation = request.results?.first as? VNFeaturePrintObservation {
+                Task { @MainActor in
+                    self.featurePrints[photo.id] = observation
+                }
+            }
+        }
+        
+        if #available(iOS 17.0, *) {
+            featurePrintRequest.imageCropAndScaleOption = .scaleFit
+        } else {
+            featurePrintRequest.usesCPUOnly = true
+        }
+        
+        requests.append(featurePrintRequest)
+        return requests
     }
     
     /// Handles Vision errors and adapts processing mode
@@ -731,13 +851,38 @@ class AIAnalysisManager: ObservableObject {
         }
         
         let sceneRequest = VNClassifyImageRequest { [weak self] request, error in
-            guard let self = self, error == nil else { return }
+            guard let self = self else { return }
+            
+            if let error = error {
+                self.log("❌ VNClassifyImageRequest failed for photo \(photo.asset.localIdentifier): \(error.localizedDescription)")
+                return
+            }
+            
             if let observations = request.results as? [VNClassificationObservation] {
-                Task { @MainActor in
-                    self.sceneClassifications[photo.id] = observations
+                // Filter by confidence threshold and log results
+                let filteredObservations = observations.filter { $0.confidence > self.classificationConfidenceThreshold }
+                
+                if !filteredObservations.isEmpty {
+                    self.log("🎯 Classification success for photo \(photo.asset.localIdentifier): \(filteredObservations.count) results above \(self.classificationConfidenceThreshold) confidence")
+                    self.log("📋 Top classifications: \(filteredObservations.prefix(3).map { "\($0.identifier)(\(String(format: "%.2f", $0.confidence)))" }.joined(separator: ", "))")
+                    
+                    Task { @MainActor in
+                        self.sceneClassifications[photo.id] = filteredObservations
+                        self.classificationResultsCount += 1
+                    }
+                } else {
+                    self.log("⚠️ No classifications above confidence threshold for photo \(photo.asset.localIdentifier)")
+                    Task { @MainActor in
+                        self.sceneClassifications[photo.id] = []
+                    }
                 }
+            } else {
+                self.log("⚠️ No classification results for photo \(photo.asset.localIdentifier)")
             }
         }
+        
+        // Optimize for speed: prioritize classification over other requests
+        sceneRequest.revision = VNClassifyImageRequestRevision1
         
         let faceRequest = VNDetectFaceRectanglesRequest { [weak self] request, error in
             guard let self = self, error == nil else { return }
@@ -758,12 +903,71 @@ class AIAnalysisManager: ObservableObject {
     
     /// Creates balanced Vision requests (CPU-only)
     private func createBalancedVisionRequests(for photo: Photo) -> [VNRequest] {
-        let requests = createFastVisionRequests(for: photo)
+        var requests: [VNRequest] = []
         
-        // Force CPU-only for stability
-        for request in requests {
-            request.usesCPUOnly = true
+        let featurePrintRequest = VNGenerateImageFeaturePrintRequest { [weak self] request, error in
+            guard let self = self, error == nil else { return }
+            if let observation = request.results?.first as? VNFeaturePrintObservation {
+                Task { @MainActor in
+                    self.featurePrints[photo.id] = observation
+                }
+            }
         }
+        
+        if #available(iOS 17.0, *) {
+            featurePrintRequest.imageCropAndScaleOption = .scaleFit
+        }
+        
+        let sceneRequest = VNClassifyImageRequest { [weak self] request, error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                self.log("❌ VNClassifyImageRequest (balanced) failed for photo \(photo.asset.localIdentifier): \(error.localizedDescription)")
+                return
+            }
+            
+            if let observations = request.results as? [VNClassificationObservation] {
+                let filteredObservations = observations.filter { $0.confidence > self.classificationConfidenceThreshold }
+                
+                if !filteredObservations.isEmpty {
+                    self.log("🎯 Classification success (balanced) for photo \(photo.asset.localIdentifier): \(filteredObservations.count) results")
+                    Task { @MainActor in
+                        self.sceneClassifications[photo.id] = filteredObservations
+                        self.classificationResultsCount += 1
+                    }
+                } else {
+                    Task { @MainActor in
+                        self.sceneClassifications[photo.id] = []
+                    }
+                }
+            }
+        }
+        
+        // VNClassifyImageRequest doesn't support imageCropAndScaleOption
+        sceneRequest.revision = VNClassifyImageRequestRevision1
+        
+        let faceRequest = VNDetectFaceRectanglesRequest { [weak self] request, error in
+            guard let self = self, error == nil else { return }
+            if let observations = request.results as? [VNFaceObservation] {
+                Task { @MainActor in
+                    self.faceObservations[photo.id] = observations
+                }
+            }
+        }
+        
+        // Force CPU-only for stability but maintain speed optimizations
+        if #available(iOS 17.0, *) {
+            // For iOS 17+, CPU-only is enforced through handler options
+            // VNClassifyImageRequest doesn't support computeDevice property
+        } else {
+            // For earlier iOS versions, use the older API
+            featurePrintRequest.usesCPUOnly = true
+            faceRequest.usesCPUOnly = true
+        }
+        
+        requests.append(featurePrintRequest)
+        requests.append(sceneRequest)
+        requests.append(faceRequest)
         
         return requests
     }
@@ -788,42 +992,45 @@ class AIAnalysisManager: ObservableObject {
         }
         
         let sceneRequest = VNClassifyImageRequest { [weak self] request, error in
-            guard let self = self, error == nil else { return }
+            guard let self = self else { return }
+            
+            if let error = error {
+                self.log("❌ VNClassifyImageRequest (safe) failed for photo \(photo.asset.localIdentifier): \(error.localizedDescription)")
+                return
+            }
+            
             if let observations = request.results as? [VNClassificationObservation] {
-                Task { @MainActor in
-                    self.sceneClassifications[photo.id] = observations
+                let filteredObservations = observations.filter { $0.confidence > self.classificationConfidenceThreshold }
+                
+                if !filteredObservations.isEmpty {
+                    self.log("🎯 Classification success (safe) for photo \(photo.asset.localIdentifier): \(filteredObservations.count) results")
+                    Task { @MainActor in
+                        self.sceneClassifications[photo.id] = filteredObservations
+                        self.classificationResultsCount += 1
+                    }
+                } else {
+                    Task { @MainActor in
+                        self.sceneClassifications[photo.id] = []
+                    }
                 }
             }
         }
-        sceneRequest.usesCPUOnly = true
+        
+        // VNClassifyImageRequest doesn't support imageCropAndScaleOption
+        sceneRequest.revision = VNClassifyImageRequestRevision1
+        
+        if #available(iOS 17.0, *) {
+            // For iOS 17+, CPU-only is enforced through handler options
+            // VNClassifyImageRequest doesn't support computeDevice property
+        } else {
+            // For earlier iOS versions, use the older API
+            featurePrintRequest.usesCPUOnly = true
+        }
         
         requests.append(featurePrintRequest)
         requests.append(sceneRequest)
         // Skip face detection in safe mode for simplicity
         
-        return requests
-    }
-    
-    /// Creates emergency Vision requests (minimal, CPU-only)
-    private func createEmergencyVisionRequests(for photo: Photo) -> [VNRequest] {
-        var requests: [VNRequest] = []
-        
-        // Only feature print in emergency mode
-        let featurePrintRequest = VNGenerateImageFeaturePrintRequest { [weak self] request, error in
-            guard let self = self, error == nil else { return }
-            if let observation = request.results?.first as? VNFeaturePrintObservation {
-                Task { @MainActor in
-                    self.featurePrints[photo.id] = observation
-                }
-            }
-        }
-        
-        featurePrintRequest.usesCPUOnly = true
-        if #available(iOS 17.0, *) {
-            featurePrintRequest.imageCropAndScaleOption = .scaleFit
-        }
-        
-        requests.append(featurePrintRequest)
         return requests
     }
     
@@ -1310,6 +1517,63 @@ class AIAnalysisManager: ObservableObject {
         
         analysisCache.cachedData[assetId] = cachedData
     }
+
+    /// Get detailed analysis status for UI display with performance metrics
+    @MainActor
+    func getDetailedAnalysisStatus() -> (
+        isRunning: Bool,
+        progress: Float,
+        currentMode: String,
+        photosProcessed: Int,
+        classificationsFound: Int,
+        estimatedTimeRemaining: String,
+        throughput: String
+    ) {
+        let mode = switch currentProcessingMode {
+        case .fast: "Fast (GPU/ANE)"
+        case .balanced: "Balanced (CPU)"
+        case .safe: "Safe (CPU)"
+        case .emergency: "Emergency (CPU)"
+        }
+        
+        let photosRemaining = photoManager.allPhotos.count - totalPhotosProcessed
+        let elapsedTime = overallAnalysisStartTime != nil ? Date().timeIntervalSince(overallAnalysisStartTime!) : 0.0
+        let averageTimePerPhoto = totalPhotosProcessed > 0 && elapsedTime > 0 ? Double(totalPhotosProcessed) / elapsedTime : 0.0
+        let estimatedRemaining = photosRemaining > 0 && averageTimePerPhoto > 0 ? 
+            String(format: "%.1fs", Double(photosRemaining) * (elapsedTime / Double(totalPhotosProcessed))) : "Unknown"
+        
+        let throughput = totalPhotosProcessed > 0 && elapsedTime > 0 ? 
+            String(format: "%.1f photos/sec", Double(totalPhotosProcessed) / elapsedTime) : "Calculating..."
+        
+        return (
+            isRunning: isAnalyzing,
+            progress: analysisProgress,
+            currentMode: mode,
+            photosProcessed: totalPhotosProcessed,
+            classificationsFound: classificationResultsCount,
+            estimatedTimeRemaining: estimatedRemaining,
+            throughput: throughput
+        )
+    }
+    
+    /// Force enable high-performance mode for maximum speed (use with caution)
+    @MainActor
+    func enableHighPerformanceMode() {
+        currentProcessingMode = .fast
+        log("🚀 High-performance mode enabled - GPU/ANE processing activated")
+    }
+    
+    /// Enable simulator-safe mode for testing
+    @MainActor
+    func enableSimulatorSafeMode() {
+        currentProcessingMode = .safe
+        log("🛡️ Simulator-safe mode enabled - CPU-only processing activated")
+    }
+
+    /// Indicates if user is allowed to trigger analysis again in this session
+    var canStartAnalysis: Bool {
+        return !analysisPerformedThisSession && !isAnalyzing
+    }
 }
 
 // MARK: - Helper Extensions
@@ -1325,3 +1589,4 @@ extension Array {
 // MARK: – Concurrency compatibility helpers
 // Instances are referenced only weakly inside @Sendable Concurrent closures, therefore this shortcut is safe.
 extension AIAnalysisManager: @unchecked Sendable {}
+
