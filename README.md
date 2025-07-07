@@ -41,12 +41,17 @@ SnapSnob is an intelligent iOS photo management app that helps users organize, c
 - **Smart Feed**: Shows only single photos (excludes photos that are part of series)
 - **Progress Tracking**: Visual indicator of processed vs total photos
 - **Story Circles**: Quick access to photo series with viewing states
+- **Adaptive Card Sizing**: Photo cards automatically resize based on device (320x400pt to 380x480pt)
+- **Full-Width Stories**: Instagram-style story carousel that extends to screen edges
+- **Contextual Trash Icon**: Floating trash button with transparent background for better visual integration
 
 ### 2. **Categories - AI Organization**
 - **Automatic Categorization**: 16 predefined categories (Nature, People, Food, etc.)
 - **Visual Quality Indicators**: Star ratings based on AI quality analysis
-- **Grid Layouts**: Responsive design for iPhone and iPad
+- **Adaptive Grid Layouts**: 2-6 columns based on device size for optimal browsing
 - **Category Cards**: Thumbnails with photo counts and descriptions
+- **Responsive Statistics**: Dashboard cards that scale with device dimensions
+- **Dynamic Spacing**: Grid spacing adjusts from 8pt to 24pt based on screen size
 
 ### 3. **Favorites - Curated Collections**
 - **Two-Tier System**:
@@ -55,6 +60,9 @@ SnapSnob is an intelligent iOS photo management app that helps users organize, c
 - **Monthly Organization**: Automatic grouping by creation date
 - **Swipe Mode**: Alternative interaction for quick management
 - **Statistics Dashboard**: Visual metrics of photo collection
+- **Adaptive Photo Grids**: Photo thumbnails scale from 100x100pt to 150x150pt
+- **Responsive Dashboard**: Statistics cards adapt to device width
+- **Device-Optimized Typography**: Font sizes scale for optimal readability
 
 ### 4. **Duplicates - Smart Cleanup**
 - **AI-Powered Detection**: Uses visual feature comparison
@@ -145,10 +153,17 @@ struct Photo {
 
 ## UI/UX Design Philosophy
 
-### 1. **Adaptive Layout System**
-- **iPhone**: Optimized for one-handed use with bottom navigation
-- **iPad**: Takes advantage of larger screen with expanded layouts
-- **Responsive Components**: Automatic sizing based on device type
+### 1. **Comprehensive Adaptive Layout System**
+- **Multi-Device Support**: Seamless experience across all iPhone and iPad sizes
+- **Device-Specific Optimizations**: 
+  - **iPhone SE/mini (≤375pt)**: Compact layouts with 2-column grids
+  - **iPhone 14/15 (≤390pt)**: Standard layouts with 3-column grids
+  - **iPhone 14/15/16 Plus (≤414pt)**: Enhanced layouts with 4-column grids
+  - **iPhone Pro Max (≤430pt)**: Premium layouts with optimized spacing
+  - **iPad (≥768pt)**: Expansive layouts with 5-6 column grids
+- **Dynamic Sizing**: Components automatically adjust based on screen width
+- **Responsive Typography**: Font sizes scale proportionally to screen size
+- **Adaptive Spacing**: Padding and margins optimize for device dimensions
 
 ### 2. **Animation Strategy**
 - **Spring Physics**: Natural, responsive feel for all interactions
@@ -164,6 +179,58 @@ struct Photo {
 - **Optimistic Updates**: UI responds immediately to user actions
 - **Background Processing**: Heavy operations don't block interaction
 - **Progressive Enhancement**: Core features work without AI analysis
+
+## Adaptive Layout System Implementation
+
+### 1. **Device Detection & Classification**
+The app uses a sophisticated device detection system that goes beyond simple iPhone/iPad differentiation:
+
+```swift
+class DeviceInfo {
+    enum ScreenSize {
+        case compact    // iPhone SE/mini (≤375pt)
+        case standard   // iPhone 14/15 (≤390pt)
+        case plus       // iPhone 14/15/16 Plus (≤414pt)
+        case max        // iPhone Pro Max (≤430pt)
+        case iPad       // iPad (≥768pt)
+        case iPadPro    // iPad Pro (≥1000pt)
+    }
+}
+```
+
+### 2. **Adaptive Layout Modifiers**
+Custom SwiftUI modifiers provide consistent responsive behavior across all views:
+
+- **`.adaptivePadding()`**: Device-appropriate padding (12-24pt range)
+- **`.adaptiveFont()`**: Responsive typography (caption, body, title scales)
+- **`.adaptiveCornerRadius()`**: Proportional corner rounding
+- **`.adaptiveLayout()`**: Comprehensive layout adaptation
+
+### 3. **Grid System**
+Dynamic grid layouts automatically adjust column counts based on device:
+
+| Device Category | Columns | Spacing | Use Case |
+|-----------------|---------|---------|----------|
+| Compact (SE/mini) | 2 | 8pt | Focused browsing |
+| Standard (14/15) | 3 | 12pt | Balanced layout |
+| Plus (14/15/16+) | 4 | 16pt | Enhanced browsing |
+| Max (Pro Max) | 4 | 20pt | Premium experience |
+| iPad | 5-6 | 24pt | Desktop-like |
+
+### 4. **Component Adaptations**
+All UI components automatically scale:
+
+- **Photo Cards**: Size from 120x120pt to 200x200pt
+- **Story Circles**: 56pt to 80pt diameter
+- **Button Targets**: Minimum 44pt (Apple HIG compliance)
+- **Text Sizes**: 12pt to 28pt range with device-specific scaling
+
+### 5. **Future-Proof Architecture**
+The system is designed to automatically support new iPhone sizes:
+
+- **Width-Based Detection**: Uses actual screen width measurements
+- **Proportional Scaling**: All sizes calculated relative to screen dimensions
+- **Fallback Mechanisms**: Graceful degradation for unknown devices
 
 ## Security & Privacy
 

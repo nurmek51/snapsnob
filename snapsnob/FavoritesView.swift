@@ -145,7 +145,7 @@ struct FavoritesView: View {
             
             swipeModeToggle
         }
-        .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
+        .adaptivePadding()
     }
     
     // MARK: - Swipe Mode Toggle
@@ -157,11 +157,11 @@ struct FavoritesView: View {
         }) {
             HStack(spacing: 12) {
                 Image(systemName: isSwipeMode ? "hand.draw.fill" : "hand.draw")
-                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .title2 : .title3)
+                    .adaptiveFont(.title)
                     .foregroundColor(isSwipeMode ? .white : AppColors.accent(for: themeManager.isDarkMode))
                 
                 Text(isSwipeMode ? "Обычный режим" : "Режим свайпа")
-                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .headline)
+                    .adaptiveFont(.body)
                     .fontWeight(.medium)
                     .foregroundColor(isSwipeMode ? .white : AppColors.primaryText(for: themeManager.isDarkMode))
                 
@@ -171,28 +171,28 @@ struct FavoritesView: View {
                     VStack(alignment: .trailing, spacing: 2) {
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.left")
-                                .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption2)
+                                .adaptiveFont(.caption)
                                 .foregroundColor(.white.opacity(0.8))
                             Text("Убрать")
-                                .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption2)
+                                .adaptiveFont(.caption)
                                 .foregroundColor(.white.opacity(0.8))
                         }
                         
                         HStack(spacing: 4) {
                             Text("Лучшие")
-                                .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption2)
+                                .adaptiveFont(.caption)
                                 .foregroundColor(.white.opacity(0.8))
                             Image(systemName: "arrow.right")
-                                .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption2)
+                                .adaptiveFont(.caption)
                                 .foregroundColor(.white.opacity(0.8))
                         }
                     }
                 }
             }
-            .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 30 : 20)
-            .padding(.vertical, UIDevice.current.userInterfaceIdiom == .pad ? 20 : 16)
+            .adaptivePadding()
+            .padding(.vertical, DeviceInfo.shared.screenSize.horizontalPadding * 0.8)
             .background(
-                RoundedRectangle(cornerRadius: UIDevice.current.userInterfaceIdiom == .pad ? 20 : 16)
+                RoundedRectangle(cornerRadius: Constants.Layout.standardCornerRadius)
                     .fill(isSwipeMode ? 
                         AnyShapeStyle(LinearGradient(colors: [AppColors.accent(for: themeManager.isDarkMode), AppColors.accent(for: themeManager.isDarkMode).opacity(0.8)], startPoint: .leading, endPoint: .trailing)) :
                         AnyShapeStyle(AppColors.cardBackground(for: themeManager.isDarkMode))
@@ -210,10 +210,10 @@ struct FavoritesView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "star.fill")
                         .foregroundColor(.yellow)
-                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .title2 : .title3)
+                        .adaptiveFont(.title)
                     
                     Text("Лучшие из лучших")
-                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .headline)
+                        .adaptiveFont(.body)
                         .fontWeight(.semibold)
                         .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                 }
@@ -221,16 +221,16 @@ struct FavoritesView: View {
                 Spacer()
                 
                 Text("\(superStarPhotos.count)")
-                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption)
+                    .adaptiveFont(.caption)
                     .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                    .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 12 : 8)
-                    .padding(.vertical, UIDevice.current.userInterfaceIdiom == .pad ? 6 : 4)
+                    .padding(.horizontal, DeviceInfo.shared.spacing(0.6))
+                    .padding(.vertical, DeviceInfo.shared.spacing(0.3))
                     .background(
                         Capsule()
                             .fill(AppColors.secondaryBackground(for: themeManager.isDarkMode))
                     )
             }
-            .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
+            .adaptivePadding()
             
             if isSwipeMode {
                 SwipeablePhotoGrid(
@@ -242,13 +242,9 @@ struct FavoritesView: View {
                         showingFullScreen = true
                     }
                 }
-                .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
+                .adaptivePadding()
             } else {
-                LazyVGrid(columns: [
-                    GridItem(.flexible()),
-                    GridItem(.flexible()),
-                    GridItem(.flexible())
-                ], spacing: UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: DeviceInfo.shared.screenSize.gridSpacing), count: DeviceInfo.shared.screenSize.gridColumns), spacing: DeviceInfo.shared.screenSize.gridSpacing) {
                     ForEach(superStarPhotos) { photo in
                         SuperStarPhotoCard(photo: photo, onTap: {
                             withAnimation(AppAnimations.modal) {
@@ -258,7 +254,7 @@ struct FavoritesView: View {
                         })
                     }
                 }
-                .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
+                .adaptivePadding()
             }
         }
     }
@@ -268,32 +264,31 @@ struct FavoritesView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Недавние избранные")
-                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .headline)
+                    .adaptiveFont(.body)
                     .fontWeight(.semibold)
                     .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                 Spacer()
             }
-            .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
+            .adaptivePadding()
             
             if topFavouritePhotos.isEmpty {
                 VStack(spacing: 16) {
                     Text("Пока нет избранных фото")
-                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .body)
+                        .adaptiveFont(.body)
                         .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, UIDevice.current.userInterfaceIdiom == .pad ? 30 : 20)
+                .padding(.vertical, DeviceInfo.shared.screenSize.horizontalPadding * 1.5)
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12) {
+                    HStack(spacing: DeviceInfo.shared.screenSize.gridSpacing) {
                         ForEach(topFavouritePhotos) { photo in
-                            VStack(spacing: 8) {
+                            VStack(spacing: DeviceInfo.shared.spacing(0.5)) {
                                 PhotoImageView(
                                     photo: photo,
-                                    targetSize: CGSize(width: UIDevice.current.userInterfaceIdiom == .pad ? 120 : 80, 
-                                                     height: UIDevice.current.userInterfaceIdiom == .pad ? 120 : 80)
+                                    targetSize: Constants.PhotoProcessing.smallThumbnailSize
                                 )
-                                .clipShape(RoundedRectangle(cornerRadius: UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12))
+                                .adaptiveCornerRadius()
                                 .onTapGesture {
                                     print("🖼️ FavoritesView: Top favorite photo tapped for fullscreen: \(photo.asset.localIdentifier)")
                                     withAnimation(AppAnimations.modal) {
@@ -307,13 +302,13 @@ struct FavoritesView: View {
                                 }) {
                                     Image(systemName: "heart.fill")
                                         .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
-                                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption2)
+                                        .adaptiveFont(.caption)
                                 }
                                 .buttonStyle(PlainButtonStyle())
                             }
                         }
                     }
-                    .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
+                    .adaptivePadding()
                 }
             }
         }
@@ -323,25 +318,25 @@ struct FavoritesView: View {
     private var monthlyPhotosSection: some View {
         Group {
             if favouritesByMonth.isEmpty {
-                VStack(spacing: 16) {
+                VStack(spacing: DeviceInfo.shared.spacing()) {
                     Image(systemName: "heart.slash")
-                        .font(.system(size: UIDevice.current.userInterfaceIdiom == .pad ? 60 : 50))
+                        .font(.system(size: DeviceInfo.shared.screenSize.fontSize.title * 2))
                         .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                     
                     Text("Нет избранных фотографий")
-                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .title : .title2)
+                        .adaptiveFont(.title)
                         .fontWeight(.semibold)
                         .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                     
                     Text("Удаленные фото будут появляться здесь")
-                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .body)
+                        .adaptiveFont(.body)
                         .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                         .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, UIDevice.current.userInterfaceIdiom == .pad ? 60 : 40)
+                .padding(.vertical, DeviceInfo.shared.screenSize.horizontalPadding * 2)
             } else {
-                VStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 24 : 16) {
+                VStack(spacing: DeviceInfo.shared.spacing()) {
                     ForEach(favouritesByMonth, id: \.month) { monthSection in
                         MonthlyPhotoSection(
                             month: monthSection.month,
@@ -366,7 +361,7 @@ struct FavoritesView: View {
                         )
                     }
                 }
-                .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
+                .adaptivePadding()
             }
         }
     }
@@ -401,12 +396,12 @@ struct MonthlyPhotoSection: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(month)
-                            .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .headline)
+                            .adaptiveFont(.title)
                             .fontWeight(.semibold)
                             .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                         
                         Text("\(photos.count) фото")
-                            .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption)
+                            .adaptiveFont(.body)
                             .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                     }
                     
@@ -414,12 +409,12 @@ struct MonthlyPhotoSection: View {
                     
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                        .font(.system(size: UIDevice.current.userInterfaceIdiom == .pad ? 18 : 14, weight: .medium))
+                        .adaptiveFont(.body)
                 }
-                .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 20 : 16)
-                .padding(.vertical, UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12)
+                .adaptivePadding()
+                .padding(.vertical, DeviceInfo.shared.screenSize.horizontalPadding * 0.6)
                 .background(
-                    RoundedRectangle(cornerRadius: UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12)
+                    RoundedRectangle(cornerRadius: DeviceInfo.shared.screenSize.cornerRadius)
                         .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
                 )
             }
@@ -434,13 +429,9 @@ struct MonthlyPhotoSection: View {
                     ) { photo in
                         onPhotoTap(photo)
                     }
-                    .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12) // Adjust padding for grid
+                    .adaptivePadding(0.6) // Adjust padding for grid
                 } else {
-                    LazyVGrid(columns: [
-                        GridItem(.flexible()),
-                        GridItem(.flexible()),
-                        GridItem(.flexible())
-                    ], spacing: UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12) {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: DeviceInfo.shared.screenSize.gridSpacing), count: DeviceInfo.shared.screenSize.gridColumns), spacing: DeviceInfo.shared.screenSize.gridSpacing) {
                         ForEach(sortedPhotos) { photo in
                             FavouritePhotoCard(photo: photo, onTap: {
                                 onPhotoTap(photo)
@@ -465,10 +456,10 @@ struct FavouritePhotoCard: View {
             // Photo
             PhotoImageView(
                 photo: photo,
-                targetSize: CGSize(width: UIDevice.current.userInterfaceIdiom == .pad ? 150 : 100, 
-                                 height: UIDevice.current.userInterfaceIdiom == .pad ? 150 : 100)
+                targetSize: CGSize(width: DeviceInfo.shared.screenSize.horizontalPadding * 5, 
+                                 height: DeviceInfo.shared.screenSize.horizontalPadding * 5)
             )
-            .clipShape(RoundedRectangle(cornerRadius: UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12))
+            .adaptiveCornerRadius()
             .onTapGesture {
                 onTap()
             }
@@ -479,7 +470,7 @@ struct FavouritePhotoCard: View {
             }) {
                 Image(systemName: "heart.fill")
                     .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
-                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption2)
+                    .adaptiveFont(.caption)
             }
             .buttonStyle(PlainButtonStyle())
         }
@@ -498,10 +489,10 @@ struct SuperStarPhotoCard: View {
             ZStack(alignment: .topTrailing) {
                 PhotoImageView(
                     photo: photo,
-                    targetSize: CGSize(width: UIDevice.current.userInterfaceIdiom == .pad ? 150 : 100, 
-                                     height: UIDevice.current.userInterfaceIdiom == .pad ? 150 : 100)
+                    targetSize: CGSize(width: DeviceInfo.shared.screenSize.horizontalPadding * 5, 
+                                     height: DeviceInfo.shared.screenSize.horizontalPadding * 5)
                 )
-                .clipShape(RoundedRectangle(cornerRadius: UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12))
+                .adaptiveCornerRadius()
                 .onTapGesture {
                     onTap()
                 }

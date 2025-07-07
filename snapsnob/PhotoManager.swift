@@ -388,10 +388,10 @@ class PhotoManager: ObservableObject {
         if !calendar.isDateInToday(firstPhoto.creationDate) {
             let dayFormatter = DateFormatter()
             dayFormatter.dateFormat = "dd.MM"
-            return "Серия \(dayFormatter.string(from: firstPhoto.creationDate)) \(timeString)"
+            return "\(dayFormatter.string(from: firstPhoto.creationDate)) \(timeString)"
         }
         
-        return "Серия \(timeString)"
+        return "\(timeString)"
     }
     
     // MARK: - Photo Actions

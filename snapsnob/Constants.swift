@@ -72,28 +72,36 @@ struct Constants {
     
     // MARK: - Layout Constants
     struct Layout {
-        // Card Sizes
-        static let cardCornerRadius: CGFloat = 24
-        static let standardCornerRadius: CGFloat = 16
-        static let smallCornerRadius: CGFloat = 12
+        // Adaptive layout helper
+        private static var deviceInfo: DeviceInfo { DeviceInfo.shared }
         
-        // Padding
-        static let standardPadding: CGFloat = 20
-        static let compactPadding: CGFloat = 16
-        static let smallPadding: CGFloat = 8
+        // Dynamic padding based on device size
+        static var standardPadding: CGFloat { deviceInfo.screenSize.horizontalPadding }
+        static var compactPadding: CGFloat { deviceInfo.screenSize.horizontalPadding * 0.8 }
+        static var smallPadding: CGFloat { deviceInfo.screenSize.horizontalPadding * 0.4 }
         
-        // iPad specific
+        // Dynamic corner radius based on device size
+        static var cardCornerRadius: CGFloat { deviceInfo.screenSize.cornerRadius * 1.5 }
+        static var standardCornerRadius: CGFloat { deviceInfo.screenSize.cornerRadius }
+        static var smallCornerRadius: CGFloat { deviceInfo.screenSize.cornerRadius * 0.75 }
+        
+        // Dynamic grid settings
+        static var gridSpacing: CGFloat { deviceInfo.screenSize.gridSpacing }
+        static var photoGridColumns: Int { deviceInfo.screenSize.gridColumns }
+        
+        // Legacy constants for backwards compatibility
         static let iPadPadding: CGFloat = 40
         static let iPadCompactPadding: CGFloat = 30
-        
-        // Photo Grid
-        static let gridSpacing: CGFloat = 8
-        static let photoGridColumns = 3
         
         // Animation Durations
         static let standardAnimationDuration: Double = 0.3
         static let quickAnimationDuration: Double = 0.2
         static let slowAnimationDuration: Double = 0.6
+        
+        // Adaptive font sizes
+        static var titleFontSize: CGFloat { deviceInfo.screenSize.fontSize.title }
+        static var bodyFontSize: CGFloat { deviceInfo.screenSize.fontSize.body }
+        static var captionFontSize: CGFloat { deviceInfo.screenSize.fontSize.caption }
     }
     
     // MARK: - Photo Processing
@@ -104,10 +112,54 @@ struct Constants {
         static let minSeriesSize = 3
         static let maxSeriesToShow = 15
         
-        // Thumbnail Sizes
-        static let defaultThumbnailSize = CGSize(width: 400, height: 400)
-        static let smallThumbnailSize = CGSize(width: 100, height: 100)
-        static let largeThumbnailSize = CGSize(width: 800, height: 800)
+        // Adaptive thumbnail sizes based on device
+        static var defaultThumbnailSize: CGSize {
+            let deviceInfo = DeviceInfo.shared
+            switch deviceInfo.screenSize {
+            case .compact:
+                return CGSize(width: 300, height: 300)
+            case .standard:
+                return CGSize(width: 400, height: 400)
+            case .plus, .max:
+                return CGSize(width: 500, height: 500)
+            case .iPad:
+                return CGSize(width: 600, height: 600)
+            case .iPadPro:
+                return CGSize(width: 800, height: 800)
+            }
+        }
+        
+        static var smallThumbnailSize: CGSize {
+            let deviceInfo = DeviceInfo.shared
+            switch deviceInfo.screenSize {
+            case .compact:
+                return CGSize(width: 80, height: 80)
+            case .standard:
+                return CGSize(width: 100, height: 100)
+            case .plus, .max:
+                return CGSize(width: 120, height: 120)
+            case .iPad:
+                return CGSize(width: 150, height: 150)
+            case .iPadPro:
+                return CGSize(width: 200, height: 200)
+            }
+        }
+        
+        static var largeThumbnailSize: CGSize {
+            let deviceInfo = DeviceInfo.shared
+            switch deviceInfo.screenSize {
+            case .compact:
+                return CGSize(width: 600, height: 600)
+            case .standard:
+                return CGSize(width: 800, height: 800)
+            case .plus, .max:
+                return CGSize(width: 1000, height: 1000)
+            case .iPad:
+                return CGSize(width: 1200, height: 1200)
+            case .iPadPro:
+                return CGSize(width: 1500, height: 1500)
+            }
+        }
         
         // Batch Processing
         static let visionBatchSize = 80
@@ -123,11 +175,23 @@ struct Constants {
     // MARK: - Device Helpers
     struct Device {
         static var isIPad: Bool {
-            UIDevice.current.userInterfaceIdiom == .pad
+            DeviceInfo.shared.isIPad
+        }
+        
+        static var isIPhone: Bool {
+            DeviceInfo.shared.isIPhone
         }
         
         static var screenScale: CGFloat {
             UIScreen.main.scale
+        }
+        
+        static var screenSize: DeviceInfo.ScreenSize {
+            DeviceInfo.shared.screenSize
+        }
+        
+        static var cardSize: CGSize {
+            DeviceInfo.shared.cardSize()
         }
     }
     

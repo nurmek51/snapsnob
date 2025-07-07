@@ -83,23 +83,23 @@ struct AIAnalysisView: View {
                         Button("Закрыть") {
                             onDismiss()
                         }
-                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .body)
+                        .adaptiveFont(.body)
                         .foregroundColor(.blue)
                         
                         Spacer()
                         
                         Text("Анализ Apple Vision")
-                            .font(UIDevice.current.userInterfaceIdiom == .pad ? .title2 : .headline)
+                            .adaptiveFont(.title)
                             .fontWeight(.semibold)
                         
                         Spacer()
                         
                         // Empty space to maintain layout balance
                         Text("")
-                            .frame(width: UIDevice.current.userInterfaceIdiom == .pad ? 100 : 70) // Approximate width of removed button
+                            .frame(width: DeviceInfo.shared.screenSize.horizontalPadding * 3.5) // Approximate width of removed button
                     }
-                    .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 30 : 20)
-                    .padding(.top, UIDevice.current.userInterfaceIdiom == .pad ? 16 : 8)
+                    .adaptivePadding(1.5)
+                    .padding(.top, DeviceInfo.shared.screenSize.horizontalPadding * 0.4)
                     
                     // Analysis Progress
                     if aiAnalysisManager.isAnalyzing {

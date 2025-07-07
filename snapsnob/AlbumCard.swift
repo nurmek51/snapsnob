@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct AlbumCard: View {
     @EnvironmentObject var themeManager: ThemeManager
@@ -11,67 +12,76 @@ struct AlbumCard: View {
             VStack(spacing: 0) {
                 // Cover image
                 Group {
-                    if let thumbnail = album.thumbnailPhoto {
-                        PhotoImageView(photo: thumbnail, targetSize: CGSize(width: 180, height: 100))
-                            .aspectRatio(1.8, contentMode: .fill)
-                    } else {
-                        Rectangle()
-                            .fill(AppColors.secondaryBackground(for: themeManager.isDarkMode))
-                            .overlay(
-                                Image(systemName: "folder.fill")
-                                    .font(.system(size: 28))
-                                    .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                    GeometryReader { geo in
+                        if let thumbnail = album.thumbnailPhoto {
+                            PhotoImageView(
+                                photo: thumbnail,
+                                // Request thumbnail at roughly on-screen pixel size
+                                targetSize: CGSize(width: geo.size.width * UIScreen.main.scale,
+                                                   height: geo.size.height * UIScreen.main.scale)
                             )
-                            .aspectRatio(1.8, contentMode: .fill)
+                            .frame(width: geo.size.width, height: geo.size.height)
+                            .clipped()
+                        } else {
+                            Rectangle()
+                                .fill(AppColors.secondaryBackground(for: themeManager.isDarkMode))
+                                .overlay(
+                                    Image(systemName: "folder.fill")
+                                        .font(.system(size: DeviceInfo.shared.screenSize.fontSize.title))
+                                        .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                                )
+                                .frame(width: geo.size.width, height: geo.size.height)
+                        }
                     }
+                    .aspectRatio(1.6, contentMode: .fit)
                 }
                 .clipShape(
                     .rect(
-                        topLeadingRadius: 16,
+                        topLeadingRadius: DeviceInfo.shared.screenSize.cornerRadius,
                         bottomLeadingRadius: 0,
                         bottomTrailingRadius: 0,
-                        topTrailingRadius: 16
+                        topTrailingRadius: DeviceInfo.shared.screenSize.cornerRadius
                     )
                 )
 
-                VStack(spacing: 4) {
-                    HStack(spacing: 12) {
+                VStack(spacing: DeviceInfo.shared.spacing(0.3)) {
+                    HStack(spacing: DeviceInfo.shared.spacing(0.6)) {
                         ZStack {
                             Circle()
                                 .fill(AppColors.secondaryBackground(for: themeManager.isDarkMode))
-                                .frame(width: 28, height: 28)
+                                .frame(width: DeviceInfo.shared.spacing(1.8), height: DeviceInfo.shared.spacing(1.8))
                             Image(systemName: "folder.fill")
                                 .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                                .font(.system(size: 12, weight: .semibold))
+                                .font(.system(size: DeviceInfo.shared.screenSize.fontSize.caption * 1.2, weight: .semibold))
                         }
 
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: DeviceInfo.shared.spacing(0.1)) {
                             Text(album.title)
-                                .font(.caption)
+                                .adaptiveFont(.caption)
                                 .fontWeight(.semibold)
                                 .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                                 .lineLimit(1)
                             // Show count excluding trashed photos for accuracy
                             Text("\(album.photos.filter { !$0.isTrashed }.count) фото")
-                                .font(.caption2)
+                                .font(.system(size: DeviceInfo.shared.screenSize.fontSize.caption * 0.9))
                                 .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                         }
 
                         Spacer()
                         Image(systemName: "chevron.right")
                             .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                            .font(.system(size: 10, weight: .medium))
+                            .font(.system(size: DeviceInfo.shared.screenSize.fontSize.caption * 0.9, weight: .medium))
                     }
                 }
-                .padding(10)
+                .padding(DeviceInfo.shared.spacing(0.8))
                 .background(
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: DeviceInfo.shared.screenSize.cornerRadius)
                         .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
                         .clipShape(
                             .rect(
                                 topLeadingRadius: 0,
-                                bottomLeadingRadius: 16,
-                                bottomTrailingRadius: 16,
+                                bottomLeadingRadius: DeviceInfo.shared.screenSize.cornerRadius,
+                                bottomTrailingRadius: DeviceInfo.shared.screenSize.cornerRadius,
                                 topTrailingRadius: 0
                             )
                         )
@@ -80,7 +90,7 @@ struct AlbumCard: View {
         }
         .buttonStyle(PlainButtonStyle())
         .background(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: DeviceInfo.shared.screenSize.cornerRadius)
                 .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
                 .shadow(color: AppColors.shadow(for: themeManager.isDarkMode), radius: isPressed ? 4 : 8, x: 0, y: isPressed ? 2 : 4)
         )

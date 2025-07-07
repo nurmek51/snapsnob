@@ -6,21 +6,21 @@ struct ThemeSelectorView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 24) {
-                VStack(spacing: 16) {
+            VStack(spacing: DeviceInfo.shared.spacing(1.5)) {
+                VStack(spacing: DeviceInfo.shared.spacing()) {
                     Text("Выберите тему")
-                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .largeTitle : .title2)
+                        .adaptiveFont(.title)
                         .fontWeight(.semibold)
                         .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                     
                     Text("Тема будет применена ко всему приложению")
-                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .body)
+                        .adaptiveFont(.body)
                         .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                         .multilineTextAlignment(.center)
                 }
-                .padding(.top, UIDevice.current.userInterfaceIdiom == .pad ? 40 : 20)
+                .padding(.top, DeviceInfo.shared.screenSize.horizontalPadding * 2)
                 
-                VStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 20 : 12) {
+                VStack(spacing: DeviceInfo.shared.spacing()) {
                     ForEach(AppTheme.allCases, id: \.self) { theme in
                         ThemeOptionCard(
                             theme: theme,
@@ -32,7 +32,7 @@ struct ThemeSelectorView: View {
                         }
                     }
                 }
-                .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
+                .adaptivePadding()
                 
                 Spacer()
             }
@@ -45,7 +45,7 @@ struct ThemeSelectorView: View {
                     Button("Готово") {
                         dismiss()
                     }
-                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .body)
+                    .adaptiveFont(.body)
                     .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
                 }
             }
@@ -61,21 +61,21 @@ struct ThemeOptionCard: View {
     
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 24 : 16) {
+            HStack(spacing: DeviceInfo.shared.spacing()) {
                 // Theme icon
                 Image(systemName: theme.icon)
-                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .largeTitle : .title2)
+                    .adaptiveFont(.title)
                     .foregroundColor(isSelected ? AppColors.accent(for: themeManager.isDarkMode) : AppColors.secondaryText(for: themeManager.isDarkMode))
-                    .frame(width: UIDevice.current.userInterfaceIdiom == .pad ? 50 : 30)
+                    .frame(width: DeviceInfo.shared.screenSize.horizontalPadding * 2)
                 
-                VStack(alignment: .leading, spacing: UIDevice.current.userInterfaceIdiom == .pad ? 6 : 4) {
+                VStack(alignment: .leading, spacing: DeviceInfo.shared.spacing(0.3)) {
                     Text(theme.displayName)
-                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .headline)
+                        .adaptiveFont(.body)
                         .fontWeight(.medium)
                         .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                     
                     Text(themeDescription(for: theme))
-                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption)
+                        .adaptiveFont(.caption)
                         .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                 }
                 
@@ -84,22 +84,22 @@ struct ThemeOptionCard: View {
                 // Selection indicator
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .largeTitle : .title2)
+                        .adaptiveFont(.title)
                         .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
                 } else {
                     Image(systemName: "circle")
-                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .largeTitle : .title2)
+                        .adaptiveFont(.title)
                         .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                 }
             }
-            .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 30 : 20)
-            .padding(.vertical, UIDevice.current.userInterfaceIdiom == .pad ? 24 : 16)
+            .adaptivePadding()
+            .padding(.vertical, DeviceInfo.shared.screenSize.horizontalPadding * 0.8)
             .background(
-                RoundedRectangle(cornerRadius: UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12)
+                RoundedRectangle(cornerRadius: Constants.Layout.standardCornerRadius)
                     .fill(isSelected ? AppColors.cardBackground(for: themeManager.isDarkMode) : AppColors.secondaryBackground(for: themeManager.isDarkMode))
                     .overlay(
-                        RoundedRectangle(cornerRadius: UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12)
-                            .stroke(isSelected ? AppColors.accent(for: themeManager.isDarkMode) : Color.clear, lineWidth: UIDevice.current.userInterfaceIdiom == .pad ? 3 : 2)
+                        RoundedRectangle(cornerRadius: Constants.Layout.standardCornerRadius)
+                            .stroke(isSelected ? AppColors.accent(for: themeManager.isDarkMode) : Color.clear, lineWidth: DeviceInfo.shared.screenSize == .compact ? 2 : 3)
                     )
             )
         }

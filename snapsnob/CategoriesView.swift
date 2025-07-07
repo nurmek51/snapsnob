@@ -66,110 +66,110 @@ struct CategoriesView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 24) {
+                VStack(spacing: DeviceInfo.shared.spacing(1.2)) {
                     // Statistics Section
-                    VStack(spacing: 16) {
-                        HStack {
+                    VStack(spacing: DeviceInfo.shared.spacing(0.6)) {
+                        HStack(spacing: DeviceInfo.shared.spacing(0.6)) {
                             StatCard(title: "Всего фото", value: "\(totalPhotosCount)", color: AppColors.accent(for: themeManager.isDarkMode))
                             StatCard(title: "Категоризировано", value: "\(categorizedPhotosCount)", color: AppColors.secondaryText(for: themeManager.isDarkMode))
                         }
                         
                         StatCard(title: "Средняя уверенность Vision", value: averageConfidence, color: AppColors.accent(for: themeManager.isDarkMode))
                     }
-                    .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
+                    .adaptivePadding(1.2)
                     
                     // AI Analysis Button - Only show if analysis hasn't been completed
                     if aiAnalysisManager.canStartAnalysis {
-                        VStack(spacing: 16) {
-                            Button(action: {
-                                print("👁️ Apple Vision Analysis button tapped")
-                                showingAIAnalysis = true
-                            }) {
-                                HStack(spacing: 12) {
-                                    Image(systemName: "brain.head.profile")
-                                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .title : .title2)
+                        Button(action: {
+                            print("👁️ Apple Vision Analysis button tapped")
+                            showingAIAnalysis = true
+                        }) {
+                            HStack(spacing: DeviceInfo.shared.spacing(0.8)) {
+                                // Leading icon
+                                Image(systemName: "brain.head.profile")
+                                    .adaptiveFont(.title)
+                                    .foregroundColor(.white)
+
+                                // Title & subtitle – exactly one row each
+                                VStack(alignment: .leading, spacing: DeviceInfo.shared.spacing(0.2)) {
+                                    Text("Анализировать фотографии с Apple Vision")
+                                        .adaptiveFont(.body)
+                                        .fontWeight(.semibold)
                                         .foregroundColor(.white)
-                                    
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text("Анализировать фотографии с Apple Vision")
-                                            .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .headline)
-                                            .fontWeight(.semibold)
-                                            .foregroundColor(.white)
-                                            .multilineTextAlignment(.leading)
-                                        
-                                        Text("Максимальная точность и качество")
-                                            .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption)
-                                            .foregroundColor(.white.opacity(0.8))
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    Image(systemName: "chevron.right")
-                                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .title2 : .title3)
-                                        .foregroundColor(.white.opacity(0.8))
+                                        .lineLimit(2)
+                                        .multilineTextAlignment(.leading)
+                                        .fixedSize(horizontal: false, vertical: true)
+
+                                    Text("Максимальная точность и качество")
+                                        .adaptiveFont(.caption)
+                                        .foregroundColor(.white.opacity(0.85))
+                                        .lineLimit(2)
+                                        .multilineTextAlignment(.leading)
+                                        .fixedSize(horizontal: false, vertical: true)
+
                                 }
-                                .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 30 : 20)
-                                .padding(.vertical, UIDevice.current.userInterfaceIdiom == .pad ? 24 : 16)
-                                .background(
-                                    LinearGradient(
-                                        colors: [.black, .gray],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: UIDevice.current.userInterfaceIdiom == .pad ? 20 : 16))
-                                .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+                                .layoutPriority(1)
+
+                                Spacer()
+
+                                // Chevron
+                                Image(systemName: "chevron.right")
+                                    .adaptiveFont(.body)
+                                    .foregroundColor(.white.opacity(0.8))
                             }
-                            .buttonStyle(PlainButtonStyle())
+                            .adaptivePadding(1.0)
+                            .padding(.vertical, DeviceInfo.shared.spacing(0.4))
+                            .background(
+                                LinearGradient(
+                                    colors: [.black, .gray],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .adaptiveCornerRadius()
+                            .shadow(color: .black.opacity(0.15), radius: 6, x: 0, y: 3)
                         }
-                        .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
-                        .padding(.vertical, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
-                                .stroke(Color.green.opacity(0.3), lineWidth: 1)
-                        )
-                        .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
+                        .buttonStyle(PlainButtonStyle())
+                        .adaptivePadding(1.2)
                     }
                     
                     // Show completed analysis info if analysis is done
                     if hasCompletedAnalysis && !aiAnalysisManager.isAnalyzing {
-                        VStack(spacing: 8) {
-                            HStack {
+                        VStack(spacing: DeviceInfo.shared.spacing(0.4)) {
+                            HStack(spacing: DeviceInfo.shared.spacing(0.6)) {
                                 Image(systemName: "checkmark.circle.fill")
                                     .foregroundColor(.green)
-                                    .font(.title2)
+                                    .adaptiveFont(.title)
                                 
-                                VStack(alignment: .leading, spacing: 2) {
+                                VStack(alignment: .leading, spacing: DeviceInfo.shared.spacing(0.2)) {
                                     Text("Анализ завершен")
-                                        .font(.headline)
+                                        .adaptiveFont(.body)
                                         .fontWeight(.semibold)
                                         .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                                     
                                     Text("Фотографии категоризированы с помощью Apple Vision")
-                                        .font(.caption)
+                                        .adaptiveFont(.caption)
                                         .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                                 }
                                 
                                 Spacer()
-                                
                             }
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 16)
+                        .adaptivePadding(1.0)
+                        .padding(.vertical, DeviceInfo.shared.spacing(0.6))
                         .background(
-                            RoundedRectangle(cornerRadius: 16)
+                            RoundedRectangle(cornerRadius: DeviceInfo.shared.screenSize.cornerRadius)
                                 .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
                                 .stroke(Color.green.opacity(0.3), lineWidth: 1)
                         )
-                        .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
+                        .adaptivePadding(1.2)
                     }
                     
                     // Categories Section
-                    VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: DeviceInfo.shared.spacing(0.8)) {
                         HStack {
                             Text(shouldShowAlbums ? "Альбомы" : "Категории")
-                                .font(UIDevice.current.userInterfaceIdiom == .pad ? .title : .title2)
+                                .adaptiveFont(.title)
                                 .fontWeight(.bold)
                                 .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                             Spacer()
@@ -177,29 +177,53 @@ struct CategoriesView: View {
                             // Show count of items
                             if shouldShowAlbums {
                                 Text("\(albums.count)")
-                                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption)
+                                    .adaptiveFont(.caption)
                                     .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                                    .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 12 : 8)
-                                    .padding(.vertical, UIDevice.current.userInterfaceIdiom == .pad ? 6 : 4)
+                                    .padding(.horizontal, DeviceInfo.shared.spacing(0.6))
+                                    .padding(.vertical, DeviceInfo.shared.spacing(0.3))
                                     .background(AppColors.secondaryBackground(for: themeManager.isDarkMode))
                                     .clipShape(Capsule())
                             } else {
                                 Text("\(categories.count)")
-                                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption)
+                                    .adaptiveFont(.caption)
                                     .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                                    .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 12 : 8)
-                                    .padding(.vertical, UIDevice.current.userInterfaceIdiom == .pad ? 6 : 4)
+                                    .padding(.horizontal, DeviceInfo.shared.spacing(0.6))
+                                    .padding(.vertical, DeviceInfo.shared.spacing(0.3))
                                     .background(AppColors.secondaryBackground(for: themeManager.isDarkMode))
                                     .clipShape(Capsule())
                             }
                         }
-                        .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
+                        .adaptivePadding(1.2)
                         
-                        // Grid with improved layout
-                        LazyVGrid(columns: [
-                            GridItem(.flexible(), spacing: UIDevice.current.userInterfaceIdiom == .pad ? 24 : 16),
-                            GridItem(.flexible(), spacing: UIDevice.current.userInterfaceIdiom == .pad ? 24 : 16)
-                        ], spacing: UIDevice.current.userInterfaceIdiom == .pad ? 24 : 16) {
+                        // Unified grid configuration. When displaying **albums** we cap the
+                        // number of columns to the *album count* (so one album → one column,
+                        // two albums → two columns, etc.) while preserving the standard card
+                        // width used for categories. This prevents a single-album grid from
+                        // stretching to full-screen width on iPhones.
+                        let gridColumns: [GridItem] = {
+                            // Determine the desired column count.
+                            let deviceColumnCount = DeviceInfo.shared.screenSize.gridColumns
+                            if shouldShowAlbums {
+                                let columns = max(1, min(albums.count, deviceColumnCount))
+                                return Array(
+                                    repeating: GridItem(
+                                        .flexible(),
+                                        spacing: DeviceInfo.shared.screenSize.gridSpacing
+                                    ),
+                                    count: columns
+                                )
+                            } else {
+                                return Array(
+                                    repeating: GridItem(
+                                        .flexible(),
+                                        spacing: DeviceInfo.shared.screenSize.gridSpacing
+                                    ),
+                                    count: deviceColumnCount
+                                )
+                            }
+                        }()
+
+                        LazyVGrid(columns: gridColumns, spacing: DeviceInfo.shared.screenSize.gridSpacing) {
                             if shouldShowAlbums {
                                 ForEach(albums) { album in
                                     AlbumCard(album: album) {
@@ -218,51 +242,51 @@ struct CategoriesView: View {
                                 }
                             }
                         }
-                        .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
+                        .adaptivePadding(1.2)
                         
                         // Empty state for albums
                         if shouldShowAlbums && albums.isEmpty {
-                            VStack(spacing: 16) {
+                            VStack(spacing: DeviceInfo.shared.spacing(1.0)) {
                                 Image(systemName: "photo.on.rectangle.angled")
-                                    .font(.system(size: UIDevice.current.userInterfaceIdiom == .pad ? 50 : 40))
+                                    .font(.system(size: DeviceInfo.shared.screenSize.fontSize.title * 2.5))
                                     .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                                 
                                 Text("Альбомы не найдены")
-                                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .title2 : .headline)
+                                    .adaptiveFont(.title)
                                     .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                                 
                                 Text("Начните анализ для автоматической категоризации фотографий")
-                                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .body)
+                                    .adaptiveFont(.body)
                                     .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                                     .multilineTextAlignment(.center)
                             }
-                            .padding(.vertical, UIDevice.current.userInterfaceIdiom == .pad ? 60 : 40)
-                            .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
+                            .padding(.vertical, DeviceInfo.shared.spacing(2.0))
+                            .adaptivePadding(1.2)
                         }
                         
                         // Empty state for categories
                         if !shouldShowAlbums && categories.isEmpty && hasCompletedAnalysis {
-                            VStack(spacing: 16) {
+                            VStack(spacing: DeviceInfo.shared.spacing(1.0)) {
                                 Image(systemName: "brain.head.profile")
-                                    .font(.system(size: UIDevice.current.userInterfaceIdiom == .pad ? 50 : 40))
+                                    .font(.system(size: DeviceInfo.shared.screenSize.fontSize.title * 2.5))
                                     .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                                 
                                 Text("Категории не найдены")
-                                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .title2 : .headline)
+                                    .adaptiveFont(.title)
                                     .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                                 
                                 Text("Попробуйте повторить анализ или проверьте настройки")
-                                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .body)
+                                    .adaptiveFont(.body)
                                     .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                                     .multilineTextAlignment(.center)
                             }
-                            .padding(.vertical, UIDevice.current.userInterfaceIdiom == .pad ? 60 : 40)
-                            .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 0 : 20)
+                            .padding(.vertical, DeviceInfo.shared.spacing(2.0))
+                            .adaptivePadding(1.2)
                         }
                     }
                 }
-                .padding(.top, 8)
-                .padding(.bottom, 32)
+                .padding(.top, DeviceInfo.shared.spacing(0.4))
+                .padding(.bottom, DeviceInfo.shared.spacing(1.6))
             }
             // Keep the familiar iPhone width on larger screens.
             .constrainedToDevice(usePadding: false)
@@ -343,21 +367,22 @@ struct StatCard: View {
     let color: Color
     
     var body: some View {
-        VStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 12 : 8) {
+        VStack(spacing: DeviceInfo.shared.spacing(0.4)) {
             Text(value)
-                .font(UIDevice.current.userInterfaceIdiom == .pad ? .largeTitle : .title2)
+                .font(.system(size: DeviceInfo.shared.screenSize.fontSize.title * 1.4))
                 .fontWeight(.bold)
                 .foregroundColor(color)
             
             Text(title)
-                .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption)
+                .adaptiveFont(.caption)
                 .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, UIDevice.current.userInterfaceIdiom == .pad ? 24 : 16)
-        .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12)
+        .padding(.vertical, DeviceInfo.shared.spacing(0.8))
+        .padding(.horizontal, DeviceInfo.shared.spacing(0.6))
         .background(
-            RoundedRectangle(cornerRadius: UIDevice.current.userInterfaceIdiom == .pad ? 20 : 16)
+            RoundedRectangle(cornerRadius: DeviceInfo.shared.screenSize.cornerRadius)
                 .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
                 .shadow(color: AppColors.shadow(for: themeManager.isDarkMode), radius: 8, x: 0, y: 2)
         )
@@ -379,10 +404,9 @@ struct RoundedCategoryCard: View {
                     if let thumbnailPhoto = category.thumbnailPhoto {
                         PhotoImageView(
                             photo: thumbnailPhoto,
-                            targetSize: CGSize(width: UIDevice.current.userInterfaceIdiom == .pad ? 300 : 180, 
-                                             height: UIDevice.current.userInterfaceIdiom == .pad ? 170 : 100)
+                            targetSize: Constants.PhotoProcessing.smallThumbnailSize
                         )
-                        .aspectRatio(1.8, contentMode: .fill)
+                            .aspectRatio(1.6, contentMode: .fill)
                     } else {
                         Rectangle()
                             .fill(
@@ -394,46 +418,46 @@ struct RoundedCategoryCard: View {
                             )
                             .overlay(
                                 Image(systemName: category.icon)
-                                    .font(.system(size: UIDevice.current.userInterfaceIdiom == .pad ? 40 : 28))
+                                    .font(.system(size: DeviceInfo.shared.screenSize.fontSize.title * 1.8))
                                     .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                              )
-                            .aspectRatio(1.8, contentMode: .fill)
+                            .aspectRatio(1.6, contentMode: .fill)
                     }
                 }
                 .clipShape(
                     .rect(
-                        topLeadingRadius: UIDevice.current.userInterfaceIdiom == .pad ? 20 : 16,
+                        topLeadingRadius: DeviceInfo.shared.screenSize.cornerRadius,
                         bottomLeadingRadius: 0,
                         bottomTrailingRadius: 0,
-                        topTrailingRadius: UIDevice.current.userInterfaceIdiom == .pad ? 20 : 16
+                        topTrailingRadius: DeviceInfo.shared.screenSize.cornerRadius
                     )
                 )
                 
                 // Content Section with rounded bottom corners
-                VStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 6 : 4) {
-                    HStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12) {
+                VStack(spacing: DeviceInfo.shared.spacing(0.3)) {
+                    HStack(spacing: DeviceInfo.shared.spacing(0.6)) {
                         // Icon
                         ZStack {
                             Circle()
                                 .fill(AppColors.secondaryBackground(for: themeManager.isDarkMode))
-                                .frame(width: UIDevice.current.userInterfaceIdiom == .pad ? 40 : 28, 
-                                     height: UIDevice.current.userInterfaceIdiom == .pad ? 40 : 28)
+                                .frame(width: DeviceInfo.shared.spacing(1.8), 
+                                     height: DeviceInfo.shared.spacing(1.8))
                             
                             Image(systemName: category.icon)
                                 .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                                .font(.system(size: UIDevice.current.userInterfaceIdiom == .pad ? 18 : 12, weight: .semibold))
+                                .font(.system(size: DeviceInfo.shared.screenSize.fontSize.caption * 1.4, weight: .semibold))
                         }
                         
                         // Title and Count
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: DeviceInfo.shared.spacing(0.1)) {
                             Text(category.name)
-                                .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption)
+                                .adaptiveFont(.caption)
                                 .fontWeight(.semibold)
                                 .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                                 .lineLimit(1)
                             
                             Text("\(category.count) фото")
-                                .font(UIDevice.current.userInterfaceIdiom == .pad ? .callout : .caption2)
+                                .font(.system(size: DeviceInfo.shared.screenSize.fontSize.caption * 0.9))
                                 .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                         }
                         
@@ -442,18 +466,18 @@ struct RoundedCategoryCard: View {
                         // Arrow Indicator
                         Image(systemName: "chevron.right")
                             .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                            .font(.system(size: UIDevice.current.userInterfaceIdiom == .pad ? 14 : 10, weight: .medium))
+                            .font(.system(size: DeviceInfo.shared.screenSize.fontSize.caption * 0.9, weight: .medium))
                     }
                 }
-                .padding(UIDevice.current.userInterfaceIdiom == .pad ? 14 : 10)
+                .padding(DeviceInfo.shared.spacing(0.8))
                 .background(
-                    RoundedRectangle(cornerRadius: UIDevice.current.userInterfaceIdiom == .pad ? 20 : 16)
+                    RoundedRectangle(cornerRadius: DeviceInfo.shared.screenSize.cornerRadius)
                         .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
                         .clipShape(
                             .rect(
                                 topLeadingRadius: 0,
-                                bottomLeadingRadius: UIDevice.current.userInterfaceIdiom == .pad ? 20 : 16,
-                                bottomTrailingRadius: UIDevice.current.userInterfaceIdiom == .pad ? 20 : 16,
+                                bottomLeadingRadius: DeviceInfo.shared.screenSize.cornerRadius,
+                                bottomTrailingRadius: DeviceInfo.shared.screenSize.cornerRadius,
                                 topTrailingRadius: 0
                             )
                         )
@@ -462,7 +486,7 @@ struct RoundedCategoryCard: View {
         }
         .buttonStyle(PlainButtonStyle())
         .background(
-            RoundedRectangle(cornerRadius: UIDevice.current.userInterfaceIdiom == .pad ? 20 : 16)
+            RoundedRectangle(cornerRadius: DeviceInfo.shared.screenSize.cornerRadius)
                 .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
                 .shadow(
                     color: AppColors.shadow(for: themeManager.isDarkMode),

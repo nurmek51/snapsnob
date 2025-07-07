@@ -40,26 +40,14 @@ struct HomeView: View {
     // Header height measurement no longer needed with VStack layout
     
     // MARK: - Card Size Helper
+    /// Slightly larger than the default adaptive size, but still clamped to the screen width so it remains responsive.
     private var cardSize: CGSize {
-        let screenWidth = UIScreen.main.bounds.width
-        let screenHeight = UIScreen.main.bounds.height
-
-        // On iPad we allow the card to expand more to take advantage of the larger screen
-        let maxCardWidth: CGFloat
-        let maxCardHeight: CGFloat
-        
-        if UIDevice.current.userInterfaceIdiom == .pad {
-            // For iPad, use more of the screen real estate
-            maxCardWidth = min(screenWidth * 0.85, 700)
-            maxCardHeight = min(screenHeight * 0.65, 900)
-        } else {
-            maxCardWidth = screenWidth
-            maxCardHeight = screenHeight * 0.7
-        }
-
-        let cardWidth = maxCardWidth - 40 // 20-pt horizontal margin inside the content
-        let cardHeight = min(cardWidth * 1.3, maxCardHeight) // Keep aspect ratio but respect max height
-        return CGSize(width: cardWidth, height: cardHeight)
+        let base = DeviceInfo.shared.cardSize()
+        let availableWidth = UIScreen.main.bounds.width - DeviceInfo.shared.screenSize.horizontalPadding * 2
+        let widenedWidth = min(base.width * 1.05, availableWidth)
+        // Make the card noticeably taller for a more immersive photo view
+        let heightenedHeight = base.height * 1.25
+        return CGSize(width: widenedWidth, height: heightenedHeight)
     }
     
     var body: some View {
@@ -203,7 +191,8 @@ struct HomeView: View {
         VStack(spacing: 0) {
             // Header is pinned at the top
             headerSection
-                .padding(.top, topSafePadding)
+                // Reduced top padding to bring the header closer to the safe-area like Instagram
+                .padding(.top, DeviceInfo.shared.spacing(0.5))
                 .background(AppColors.background(for: themeManager.isDarkMode))
                 .zIndex(10)
             
@@ -212,8 +201,8 @@ struct HomeView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(.top, 4) // minimal gap after header
         }
-        // Leave space for tab-bar / bottom safe area
-        .padding(.bottom, UIDevice.current.userInterfaceIdiom == .pad ? 100 : 120)
+        // Fixed bottom padding equal to Plus horizontal padding so spacing matches across iPhones
+        .padding(.bottom, DeviceInfo.ScreenSize.plus.horizontalPadding)
         .constrainedToDevice(usePadding: false)
     }
     
@@ -223,18 +212,20 @@ struct HomeView: View {
             // Title
             HStack {
                 Text("Серии фото")
-                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .largeTitle : .title)
+                    .adaptiveFont(.title)
                     .fontWeight(.bold)
                     .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                 Spacer()
             }
-            .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 20 : 40)
-            .padding(.bottom, 12)
+            // Align title flush to the safe horizontal edge instead of the large adaptive padding
+            .padding(.horizontal, DeviceInfo.shared.screenSize.horizontalPadding)
+            // Larger vertical gap so the story circles are fully visible and not cropped
+            .padding(.bottom, DeviceInfo.shared.spacing(2.0))
             
             HStack(alignment: .top, spacing: 0) {
-                // Stories Row - Conveyor style
+                // Stories Row - Conveyor style (full width like Instagram)
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 24 : 16) {
+                    HStack(spacing: DeviceInfo.shared.screenSize.gridSpacing) {
                         ForEach(Array(photoManager.photoSeries.enumerated()), id: \.offset) { index, series in
                             StoryCircle(
                                 series: series,
@@ -248,50 +239,55 @@ struct HomeView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 20 : 40)
+                    .padding(.leading, DeviceInfo.shared.screenSize.horizontalPadding)
+                    .padding(.trailing, DeviceInfo.shared.screenSize.horizontalPadding * 5) // Extra trailing padding to account for trash icon
                 }
+                .padding(.trailing, 0) // Remove any trailing padding from ScrollView
                 
-                // Spacer to push trash icon to the right
-                Spacer()
-                
-                // Trash icon with badge
+                // Trash icon with badge - positioned absolutely
                 VStack(spacing: 6) {
                     Button(action: {
                         print("🗑️ Trash button pressed")
                         showingTrash = true
                     }) {
                         ZStack {
+                            // Transparent background like story circles
                             Circle()
-                                .fill(AppColors.secondaryBackground(for: themeManager.isDarkMode))
-                                .frame(width: UIDevice.current.userInterfaceIdiom == .pad ? 90 : 74, 
-                                       height: UIDevice.current.userInterfaceIdiom == .pad ? 90 : 74)
+                                .fill(Color.clear)
+                                .frame(width: DeviceInfo.shared.screenSize.horizontalPadding * 3.5, 
+                                       height: DeviceInfo.shared.screenSize.horizontalPadding * 3.5)
+                                .overlay(
+                                    Circle()
+                                        .stroke(AppColors.border(for: themeManager.isDarkMode), lineWidth: 2)
+                                )
                             
                             Image(systemName: "trash")
-                                .font(UIDevice.current.userInterfaceIdiom == .pad ? .title : .title2)
+                                .adaptiveFont(.title)
                                 .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                                 .scaleEffect(trashIconScale)
                                 .rotationEffect(.degrees(trashIconRotation))
                             
                             if !photoManager.trashedPhotos.isEmpty {
                                 Text("\(photoManager.trashedPhotos.count)")
-                                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .caption : .caption2)
+                                    .adaptiveFont(.caption)
                                     .fontWeight(.bold)
                                     .foregroundColor(.white)
-                                    .padding(UIDevice.current.userInterfaceIdiom == .pad ? 6 : 4)
+                                    .padding(DeviceInfo.shared.spacing(0.4))
                                     .background(Color.red)
                                     .clipShape(Circle())
-                                    .offset(x: UIDevice.current.userInterfaceIdiom == .pad ? 25 : 20, 
-                                           y: UIDevice.current.userInterfaceIdiom == .pad ? -25 : -20)
+                                    .offset(x: DeviceInfo.shared.screenSize.horizontalPadding * 1.2, 
+                                           y: -DeviceInfo.shared.screenSize.horizontalPadding * 1.2)
                             }
                         }
                     }
                     Text("Корзина")
-                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption)
+                        .adaptiveFont(.caption)
                         .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                         .lineLimit(1)
-                        .frame(width: UIDevice.current.userInterfaceIdiom == .pad ? 90 : 74)
+                        .frame(width: DeviceInfo.shared.screenSize.horizontalPadding * 3.5)
                 }
-                .padding(.trailing, UIDevice.current.userInterfaceIdiom == .pad ? 20 : 40)
+                .padding(.trailing, DeviceInfo.shared.screenSize.horizontalPadding)
+                .zIndex(1) // Ensure trash icon is above stories
             }
 
             // Progress Counter (processed / total)
@@ -300,16 +296,16 @@ struct HomeView: View {
             VStack(spacing: 4) {
                 HStack {
                     Text("\(processed)/\(total) фото обработано")
-                        .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption)
+                        .adaptiveFont(.caption)
                         .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                     Spacer()
                 }
                 ProgressView(value: Double(processed), total: Double(max(total, 1)))
                     .accentColor(AppColors.accent(for: themeManager.isDarkMode))
-                    .frame(height: UIDevice.current.userInterfaceIdiom == .pad ? 8 : 4)
+                    .frame(height: DeviceInfo.shared.spacing(0.4))
             }
-            .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 20 : 40)
-            .padding(.top, 8)
+            .adaptivePadding(2.0)
+            .padding(.top, DeviceInfo.shared.spacing(0.5))
         }
         .padding(.bottom, 10)
     }
@@ -373,38 +369,38 @@ struct HomeView: View {
                 // Action buttons overlay
                 VStack {
                     Spacer()
-                    HStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 40 : 24) {
+                    HStack(spacing: DeviceInfo.shared.screenSize.horizontalPadding * 1.5) {
                         // Trash
                         Button(action: { handleAction(.trash) }) {
                             Image(systemName: "xmark")
                                 .foregroundColor(.white)
-                                .font(UIDevice.current.userInterfaceIdiom == .pad ? .title : .title2)
+                                .adaptiveFont(.title)
                                 .fontWeight(.semibold)
                         }
-                        .buttonStyle(TransparentCircleButtonStyle(size: UIDevice.current.userInterfaceIdiom == .pad ? 70 : 56))
+                        .buttonStyle(TransparentCircleButtonStyle(size: DeviceInfo.shared.screenSize.horizontalPadding * 3))
                         .disabled(isProcessingAction)
                         
                         // Favourite
                         Button(action: { handleAction(.favorite) }) {
                             Image(systemName: photo.isFavorite ? "heart.fill" : "heart")
                                 .foregroundColor(.white)
-                                .font(UIDevice.current.userInterfaceIdiom == .pad ? .title : .title2)
+                                .adaptiveFont(.title)
                                 .fontWeight(.semibold)
                         }
-                        .buttonStyle(TransparentCircleButtonStyle(size: UIDevice.current.userInterfaceIdiom == .pad ? 70 : 56))
+                        .buttonStyle(TransparentCircleButtonStyle(size: DeviceInfo.shared.screenSize.horizontalPadding * 3))
                         .disabled(isProcessingAction)
                         
                         // Keep
                         Button(action: { handleAction(.keep) }) {
                             Image(systemName: "checkmark")
                                 .foregroundColor(.white)
-                                .font(UIDevice.current.userInterfaceIdiom == .pad ? .title : .title2)
+                                .adaptiveFont(.title)
                                 .fontWeight(.semibold)
                         }
-                        .buttonStyle(TransparentCircleButtonStyle(size: UIDevice.current.userInterfaceIdiom == .pad ? 70 : 56))
+                        .buttonStyle(TransparentCircleButtonStyle(size: DeviceInfo.shared.screenSize.horizontalPadding * 3))
                         .disabled(isProcessingAction)
                     }
-                    .padding(.bottom, UIDevice.current.userInterfaceIdiom == .pad ? 50 : 30)
+                    .padding(.bottom, DeviceInfo.shared.screenSize.horizontalPadding * 2)
                     .opacity(photoOpacity)
                 }
             }
