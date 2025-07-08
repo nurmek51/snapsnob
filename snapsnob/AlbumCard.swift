@@ -33,7 +33,8 @@ struct AlbumCard: View {
                                 .frame(width: geo.size.width, height: geo.size.height)
                         }
                     }
-                    .aspectRatio(1.6, contentMode: .fit)
+                    // 16:9 aspect ratio (wider than tall) for a sleeker card look
+                    .aspectRatio(16.0/9.0, contentMode: .fit)
                 }
                 .clipShape(
                     .rect(
@@ -60,7 +61,9 @@ struct AlbumCard: View {
                                 .adaptiveFont(.caption)
                                 .fontWeight(.semibold)
                                 .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
-                                .lineLimit(1)
+                                .lineLimit(2)
+                                .multilineTextAlignment(.leading)
+                                .fixedSize(horizontal: false, vertical: true)
                             // Show count excluding trashed photos for accuracy
                             Text("\(album.photos.filter { !$0.isTrashed }.count) фото")
                                 .font(.system(size: DeviceInfo.shared.screenSize.fontSize.caption * 0.9))
@@ -87,6 +90,8 @@ struct AlbumCard: View {
                         )
                 )
             }
+            // Limit the hit-testing region to the actual card bounds so it doesn’t overlap other UI.
+            .contentShape(RoundedRectangle(cornerRadius: DeviceInfo.shared.screenSize.cornerRadius))
         }
         .buttonStyle(PlainButtonStyle())
         .background(

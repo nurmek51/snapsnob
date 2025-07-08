@@ -26,6 +26,21 @@ struct HomeView: View {
     // Animation states
     @State private var photoOpacity: Double = 0
     @State private var photoScale: CGFloat = 0.8
+    // Idle bounce hint state
+    @State private var idleOffset: CGFloat = 0
+    @State private var idleBounceWorkItem: DispatchWorkItem?
+    // Swipe counter for periodic cache flush
+    @State private var swipeCount: Int = 0
+    
+    // MARK: - New Feedback States
+    @State private var showActionLabel: Bool = false
+    @State private var actionLabelText: String = ""
+    @State private var actionLabelIcon: String = ""
+    
+    // Heart pop-up animation for double-tap favourite
+    @State private var showHeartOverlay: Bool = false
+    @State private var heartOverlayScale: CGFloat = 0.8
+    @State private var heartOverlayOpacity: Double = 0.0
     
     // Safe-area top padding helper
     private var topSafePadding: CGFloat {
@@ -45,8 +60,15 @@ struct HomeView: View {
         let base = DeviceInfo.shared.cardSize()
         let availableWidth = UIScreen.main.bounds.width - DeviceInfo.shared.screenSize.horizontalPadding * 2
         let widenedWidth = min(base.width * 1.05, availableWidth)
-        // Make the card noticeably taller for a more immersive photo view
-        let heightenedHeight = base.height * 1.25
+        // On larger phones (Plus/Max) the card was sitting too low; tighten height on those devices.
+        let heightenedHeight: CGFloat
+        switch DeviceInfo.shared.screenSize {
+        case .iPad, .iPadPro:
+            heightenedHeight = base.height * 1.15
+        default:
+            // Use the same multiplier for all iPhone sizes to maintain consistent visual proportions
+            heightenedHeight = base.height * 1.25
+        }
         return CGSize(width: widenedWidth, height: heightenedHeight)
     }
     
@@ -79,22 +101,25 @@ struct HomeView: View {
             loadInitialPhotos()
         }
         .onChange(of: photoManager.nonSeriesPhotos) { _, _ in
-            // Keep current card if it is still valid, otherwise reload feed.
-            // We intentionally avoid resetting the whole feed on **every** update because
-            // that may interrupt the swipe animation pipeline (e.g. after a photo was
-            // moved to trash). Instead we only reload when the current index became
-            // invalid or when there is no currently displayed photo.
-            print("📱 Non-series photos changed → \(photoManager.nonSeriesPhotos.count) items")
+            // Avoid triggering a second card refresh while we are already
+            // handling a swipe transition. This previously caused two images
+            // to load per swipe (one from advanceToNextPhoto and one here).
+            guard !isProcessingAction && !isTransitioning else { return }
+            // If the current photo is still part of the feed there's nothing to do – prevents double loads per swipe.
+            guard let current = currentPhoto else { loadCurrentPhoto(); prefetchNextPhoto(); return }
 
-            // If there are no photos left – simply clear current/next so the placeholder is shown.
-            guard !photoManager.nonSeriesPhotos.isEmpty else {
+            let stillValid = photoManager.nonSeriesPhotos.contains { $0.id == current.id }
+            guard !stillValid else { return }
+
+            // Either the current card was trashed / reviewed outside swipe pipeline or feed was programmatically reset.
+            // In that case load a fresh card.
+            if photoManager.nonSeriesPhotos.isEmpty {
                 currentPhoto = nil
                 nextPhoto = nil
-                return
+            } else {
+                loadCurrentPhoto()
+                prefetchNextPhoto()
             }
-
-            loadCurrentPhoto()
-            prefetchNextPhoto()
         }
         .sheet(isPresented: $showingTrash) {
             TrashView(photoManager: photoManager)
@@ -131,6 +156,7 @@ struct HomeView: View {
             .environmentObject(photoManager)
             .environmentObject(aiAnalysisManager)
         }
+        // (global banner overlay removed – banner now lives on the card)
     }
     
     // MARK: - View Components
@@ -191,8 +217,8 @@ struct HomeView: View {
         VStack(spacing: 0) {
             // Header is pinned at the top
             headerSection
-                // Reduced top padding to bring the header closer to the safe-area like Instagram
-                .padding(.top, DeviceInfo.shared.spacing(0.5))
+                // Position header just below the status bar / Dynamic Island for all devices
+                .padding(.top, topSafePadding * 0.6)
                 .background(AppColors.background(for: themeManager.isDarkMode))
                 .zIndex(10)
             
@@ -222,51 +248,47 @@ struct HomeView: View {
             // Larger vertical gap so the story circles are fully visible and not cropped
             .padding(.bottom, DeviceInfo.shared.spacing(2.0))
             
-            HStack(alignment: .top, spacing: 0) {
-                // Stories Row - Conveyor style (full width like Instagram)
+            // Stories row with a static trash icon at the trailing edge.
+            HStack(alignment: .top, spacing: DeviceInfo.shared.screenSize.horizontalPadding) {
+                // Horizontal stories conveyor – width automatically adjusts and stops before the trash icon.
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: DeviceInfo.shared.screenSize.gridSpacing) {
-                        ForEach(Array(photoManager.photoSeries.enumerated()), id: \.offset) { index, series in
+                        ForEach(Array(photoManager.photoSeries.enumerated()), id: \.offset) { _, series in
                             StoryCircle(
                                 series: series,
                                 photoManager: photoManager,
-                                isViewed: series.isViewed
-                            ) {
-                                print("📱 Story tapped: \(series.title)")
-                                withAnimation(AppAnimations.modal) {
-                                    selectedSeries = series
+                                isViewed: series.isViewed,
+                                onTap: {
+                                    print("📱 Story tapped: \(series.title)")
+                                    withAnimation(AppAnimations.modal) {
+                                        selectedSeries = series
+                                    }
                                 }
-                            }
+                            )
                         }
                     }
-                    .padding(.leading, DeviceInfo.shared.screenSize.horizontalPadding)
-                    .padding(.trailing, DeviceInfo.shared.screenSize.horizontalPadding * 5) // Extra trailing padding to account for trash icon
+                    .padding(.horizontal, DeviceInfo.shared.screenSize.horizontalPadding)
                 }
-                .padding(.trailing, 0) // Remove any trailing padding from ScrollView
-                
-                // Trash icon with badge - positioned absolutely
+                // Static trash icon area – sits on the same layer as stories conveyor, no overlapping.
                 VStack(spacing: 6) {
                     Button(action: {
                         print("🗑️ Trash button pressed")
                         showingTrash = true
                     }) {
                         ZStack {
-                            // Transparent background like story circles
                             Circle()
-                                .fill(Color.clear)
-                                .frame(width: DeviceInfo.shared.screenSize.horizontalPadding * 3.5, 
+                                .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
+                                .frame(width: DeviceInfo.shared.screenSize.horizontalPadding * 3.5,
                                        height: DeviceInfo.shared.screenSize.horizontalPadding * 3.5)
                                 .overlay(
                                     Circle()
                                         .stroke(AppColors.border(for: themeManager.isDarkMode), lineWidth: 2)
                                 )
-                            
                             Image(systemName: "trash")
                                 .adaptiveFont(.title)
                                 .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                                 .scaleEffect(trashIconScale)
                                 .rotationEffect(.degrees(trashIconRotation))
-                            
                             if !photoManager.trashedPhotos.isEmpty {
                                 Text("\(photoManager.trashedPhotos.count)")
                                     .adaptiveFont(.caption)
@@ -275,8 +297,8 @@ struct HomeView: View {
                                     .padding(DeviceInfo.shared.spacing(0.4))
                                     .background(Color.red)
                                     .clipShape(Circle())
-                                    .offset(x: DeviceInfo.shared.screenSize.horizontalPadding * 1.2, 
-                                           y: -DeviceInfo.shared.screenSize.horizontalPadding * 1.2)
+                                    .offset(x: DeviceInfo.shared.screenSize.horizontalPadding * 1.2,
+                                            y: -DeviceInfo.shared.screenSize.horizontalPadding * 1.2)
                             }
                         }
                     }
@@ -286,9 +308,9 @@ struct HomeView: View {
                         .lineLimit(1)
                         .frame(width: DeviceInfo.shared.screenSize.horizontalPadding * 3.5)
                 }
-                .padding(.trailing, DeviceInfo.shared.screenSize.horizontalPadding)
-                .zIndex(1) // Ensure trash icon is above stories
             }
+            // Ensure trash icon does not touch the screen edge
+            .padding(.trailing, DeviceInfo.shared.screenSize.horizontalPadding)
 
             // Progress Counter (processed / total)
             let processed = photoManager.processedPhotosCount
@@ -351,10 +373,19 @@ struct HomeView: View {
     private var photoCardView: some View {
         if let photo = currentPhoto {
             ZStack {
+                // Lightweight gradient backdrop (no blur) for depth
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.white.opacity(0.1), Color.black.opacity(0.4)],
+                            startPoint: .top, endPoint: .bottom
+                        )
+                    )
+                
                 // Background card with border and shadow
                 RoundedRectangle(cornerRadius: 24)
                     .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
-                    .shadow(color: AppColors.shadow(for: themeManager.isDarkMode), radius: 8, x: 0, y: 4)
+                    .shadow(color: AppColors.shadow(for: themeManager.isDarkMode), radius: 4, x: 0, y: 2)
                     .overlay(
                         RoundedRectangle(cornerRadius: 24)
                             .stroke(AppColors.border(for: themeManager.isDarkMode), lineWidth: 2)
@@ -404,17 +435,15 @@ struct HomeView: View {
                     .opacity(photoOpacity)
                 }
             }
-            .offset(dragOffset)
             .rotationEffect(.degrees(dragRotation))
-            .onTapGesture {
-                if !isProcessingAction {
-                    handleTap(photo: photo)
-                }
-            }
+            // Combine drag-driven offset with idle bounce offset so the whole card moves
+            .offset(x: dragOffset.width + idleOffset, y: dragOffset.height)
             .gesture(
                 DragGesture()
                     .onChanged { value in
                         if !isProcessingAction {
+                            // Cancel any pending idle bounce while user is interacting
+                            idleBounceWorkItem?.cancel()
                             dragOffset = value.translation
                             dragRotation = Double(value.translation.width / 20)
                         }
@@ -425,8 +454,62 @@ struct HomeView: View {
                         }
                     }
             )
+            // Double-tap to favourite – high priority so it wins over single-tap
+            .highPriorityGesture(
+                TapGesture(count: 2)
+                    .onEnded {
+                        handleDoubleTap()
+                    }
+            )
+            // Single tap opens full-screen
+            .onTapGesture {
+                if !isProcessingAction {
+                    handleTap(photo: photo)
+                }
+            }
             // Apply the fixed card size so the card does not dynamically resize
             .frame(width: cardSize.width, height: cardSize.height)
+            // Feedback overlays
+            .overlay(
+                Group {
+                    if showHeartOverlay {
+                        Image(systemName: "heart.fill")
+                            .foregroundColor(.white)
+                            .font(.system(size: 100))
+                            .scaleEffect(heartOverlayScale)
+                            .opacity(heartOverlayOpacity)
+                            .onAppear {
+                                // Animate heart pop
+                                withAnimation(.easeOut(duration: 0.4)) {
+                                    heartOverlayScale = 1.2
+                                    heartOverlayOpacity = 0.0
+                                }
+                                // Remove after animation completes
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                                    showHeartOverlay = false
+                                }
+                            }
+                    }
+                }
+            )
+            // Action banner overlay – attached to card so it travels with swipe
+            .overlay(alignment: .top) {
+                if showActionLabel {
+                    HStack(spacing: 10) {
+                        Image(systemName: actionLabelIcon)
+                            .foregroundColor(.white)
+                        Text(actionLabelText)
+                            .fontWeight(.heavy)
+                            .foregroundColor(.white)
+                    }
+                    .padding(.horizontal, 28)
+                    .padding(.vertical, 14)
+                    .background(Color.black.opacity(0.7))
+                    .clipShape(Capsule())
+                    .transition(.opacity)
+                    .padding(.top, 20)
+                }
+            }
         }
     }
     
@@ -502,6 +585,9 @@ struct HomeView: View {
             photoOpacity = 1.0
             photoScale = 1.0
         }
+
+        // Schedule idle bounce hint after initial appear
+        scheduleIdleBounce()
     }
     
     private func prefetchNextPhoto() {
@@ -525,6 +611,12 @@ struct HomeView: View {
 
         loadCurrentPhoto()
         prefetchNextPhoto()
+        swipeCount += 1
+        if swipeCount % 12 == 0 {
+            print("🧹 Clearing image caches after 20 swipes")
+            photoManager.clearImageCaches()
+        }
+        advanceToNextPhoto()
         isTransitioning = false
     }
     
@@ -537,25 +629,53 @@ struct HomeView: View {
     private func handleAction(_ action: PhotoAction) {
         guard let photo = currentPhoto, !isProcessingAction else { return }
         
+        // 🔊 Feedback
+        SoundManager.playClick()
+        
+        // Cancel any pending idle hint
+        idleBounceWorkItem?.cancel()
         isProcessingAction = true
         
         switch action {
         case .trash:
-            print("🗑️ Moving photo to trash: \(photo.asset.localIdentifier)")
+            showActionBanner(text: "Removed!", icon: "trash")
             photoManager.moveToTrash(photo)
             animateActionAndAdvance(direction: .left)
-            
         case .favorite:
-            print("💚 Toggling favorite for photo: \(photo.asset.localIdentifier)")
+            showActionBanner(text: "Favorited!", icon: "heart.fill")
             photoManager.setFavorite(photo, isFavorite: !photo.isFavorite)
-            // Consider the photo as "reviewed" so it won't appear again
             photoManager.markReviewed(photo)
             animateActionAndAdvance(direction: .down)
-            
         case .keep:
-            print("✅ Keeping photo: \(photo.asset.localIdentifier)")
+            showActionBanner(text: "Kept!", icon: "checkmark")
             photoManager.markReviewed(photo)
             animateActionAndAdvance(direction: .right)
+        }
+    }
+
+    // MARK: - Double-tap favourite helper
+    private func handleDoubleTap() {
+        animateHeartPop()
+        handleAction(.favorite)
+    }
+    
+    private func animateHeartPop() {
+        heartOverlayScale = 0.8
+        heartOverlayOpacity = 1.0
+        showHeartOverlay = true
+    }
+
+    // MARK: - Banner helper
+    private func showActionBanner(text: String, icon: String) {
+        actionLabelText = text
+        actionLabelIcon = icon
+        withAnimation(.easeOut(duration: 0.2)) {
+            showActionLabel = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
+            withAnimation(.easeOut(duration: 0.25)) {
+                showActionLabel = false
+            }
         }
     }
     
@@ -574,14 +694,14 @@ struct HomeView: View {
             handleAction(.trash)
         } else if translation.width > threshold {
             handleAction(.keep)
-        } else if translation.height > threshold {
-            handleAction(.favorite)
         } else {
-            // Reset position
+            // Reset position – favourites now handled by double-tap
             withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
                 dragOffset = .zero
                 dragRotation = 0
             }
+            // Restart idle bounce timer after user cancels swipe
+            scheduleIdleBounce()
         }
     }
     
@@ -600,10 +720,11 @@ struct HomeView: View {
             targetOffset = CGSize(width: 0, height: UIScreen.main.bounds.height)
         }
         
-        // Animate card exit (slide/rotate only, keep opacity to avoid blank frame)
-        withAnimation(.easeIn(duration: 0.25)) {
+        // Animate card exit with fade-out and spring bounce
+        withAnimation(AppAnimations.cardSwipe) {
             dragOffset = targetOffset
             dragRotation = targetRotation
+            photoOpacity = 0
         }
         
         // Advance to next photo right after exit animation finishes
@@ -611,9 +732,42 @@ struct HomeView: View {
             dragOffset = .zero
             dragRotation = 0
             isProcessingAction = false
+            swipeCount += 1
+            if swipeCount % 12 == 0 {
+                print("🧹 Clearing image caches after 20 swipes")
+                photoManager.clearImageCaches()
+            }
             advanceToNextPhoto()
         }
     }
+
+    // MARK: - Idle Bounce Hint Logic
+
+    /// Schedules a one-time bounce hint after 5 s of user inactivity.
+    private func scheduleIdleBounce() {
+        idleBounceWorkItem?.cancel()
+
+        let workItem = DispatchWorkItem {
+            performIdleBounceHint()
+        }
+        idleBounceWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5, execute: workItem)
+    }
+
+    /// Performs the subtle bounce animation to hint swipeability.
+    private func performIdleBounceHint() {
+        // Move slightly to the right then return.
+        withAnimation(.easeInOut(duration: 0.25)) {
+            idleOffset = 12
+        }
+
+        // Return to original position.
+        withAnimation(.easeInOut(duration: 0.25).delay(0.25)) {
+            idleOffset = 0
+        }
+    }
+
+    // (global banner overlay helper removed)
 }
 
 // MARK: - Supporting Types

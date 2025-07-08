@@ -21,7 +21,8 @@ struct DeviceInfo {
             case .standard:
                 return 20
             case .plus, .max:
-                return 24
+                // Align Plus/Max phones with Standard phones for consistent layout across iPhone models
+                return 20
             case .iPad:
                 return 30
             case .iPadPro:
@@ -35,8 +36,9 @@ struct DeviceInfo {
                 return 2
             case .standard:
                 return 3
+            // Use the same column count as Standard phones to avoid layout discrepancies
             case .plus, .max:
-                return 4
+                return 3
             case .iPad:
                 return 5
             case .iPadPro:
@@ -50,8 +52,9 @@ struct DeviceInfo {
                 return 8
             case .standard:
                 return 12
+            // Match Standard phone spacing for Plus/Max devices
             case .plus, .max:
-                return 16
+                return 12
             case .iPad:
                 return 20
             case .iPadPro:
@@ -65,8 +68,9 @@ struct DeviceInfo {
                 return 12
             case .standard:
                 return 16
+            // Keep the same corner radius as Standard phones
             case .plus, .max:
-                return 20
+                return 16
             case .iPad:
                 return 24
             case .iPadPro:
@@ -80,8 +84,9 @@ struct DeviceInfo {
                 return (20, 14, 12)
             case .standard:
                 return (22, 16, 14)
+            // Use Standard phone font sizes for Plus/Max
             case .plus, .max:
-                return (24, 18, 16)
+                return (22, 16, 14)
             case .iPad:
                 return (28, 20, 18)
             case .iPadPro:

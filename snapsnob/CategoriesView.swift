@@ -131,6 +131,8 @@ struct CategoriesView: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                         .adaptivePadding(1.2)
+                        // Ensure this button stays on top of any overlapping views
+                        .zIndex(1)
                     }
                     
                     // Show completed analysis info if analysis is done
@@ -201,10 +203,23 @@ struct CategoriesView: View {
                         // width used for categories. This prevents a single-album grid from
                         // stretching to full-screen width on iPhones.
                         let gridColumns: [GridItem] = {
-                            // Determine the desired column count.
-                            let deviceColumnCount = DeviceInfo.shared.screenSize.gridColumns
+                            // Determine the desired column count with separate logic for albums so they remain readable.
+                            let device = DeviceInfo.shared.screenSize
                             if shouldShowAlbums {
-                                let columns = max(1, min(albums.count, deviceColumnCount))
+                                // Wider album cards: fewer columns on phones, more on tablets.
+                                let albumColumnLimit: Int
+                                switch device {
+                                case .compact, .standard:
+                                    albumColumnLimit = 2
+                                // Keep Plus/Max phones at 2 columns to match Standard layout
+                                case .plus, .max:
+                                    albumColumnLimit = 2
+                                case .iPad:
+                                    albumColumnLimit = 4
+                                case .iPadPro:
+                                    albumColumnLimit = 5
+                                }
+                                let columns = max(1, min(albums.count, albumColumnLimit))
                                 return Array(
                                     repeating: GridItem(
                                         .flexible(),
@@ -213,12 +228,26 @@ struct CategoriesView: View {
                                     count: columns
                                 )
                             } else {
+                                // Tighter column limits so cards remain readable on wider phones/tablets
+                                let categoryColumnLimit: Int
+                                switch device {
+                                case .compact, .standard:
+                                    categoryColumnLimit = 2
+                                // Use two columns on Plus/Max for the same look as Standard
+                                case .plus, .max:
+                                    categoryColumnLimit = 2
+                                case .iPad:
+                                    categoryColumnLimit = 4
+                                case .iPadPro:
+                                    categoryColumnLimit = 5
+                                }
+                                let columns = max(1, min(categories.count, categoryColumnLimit))
                                 return Array(
                                     repeating: GridItem(
                                         .flexible(),
                                         spacing: DeviceInfo.shared.screenSize.gridSpacing
                                     ),
-                                    count: deviceColumnCount
+                                    count: columns
                                 )
                             }
                         }()
@@ -262,6 +291,7 @@ struct CategoriesView: View {
                             }
                             .padding(.vertical, DeviceInfo.shared.spacing(2.0))
                             .adaptivePadding(1.2)
+                            .frame(maxWidth: .infinity)
                         }
                         
                         // Empty state for categories
@@ -399,30 +429,37 @@ struct RoundedCategoryCard: View {
     var body: some View {
         Button(action: onTap) {
             VStack(spacing: 0) {
-                // Cover Image with rounded top corners
+                // Cover Image with rounded top corners (stretches full card width)
                 Group {
-                    if let thumbnailPhoto = category.thumbnailPhoto {
-                        PhotoImageView(
-                            photo: thumbnailPhoto,
-                            targetSize: Constants.PhotoProcessing.smallThumbnailSize
-                        )
-                            .aspectRatio(1.6, contentMode: .fill)
-                    } else {
-                        Rectangle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [AppColors.secondaryBackground(for: themeManager.isDarkMode), AppColors.secondaryBackground(for: themeManager.isDarkMode).opacity(0.5)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
+                    GeometryReader { geo in
+                        if let thumbnailPhoto = category.thumbnailPhoto {
+                            PhotoImageView(
+                                photo: thumbnailPhoto,
+                                // Request thumbnail at on-screen pixel size for quality
+                                targetSize: CGSize(width: geo.size.width * UIScreen.main.scale,
+                                                   height: geo.size.height * UIScreen.main.scale)
                             )
-                            .overlay(
-                                Image(systemName: category.icon)
-                                    .font(.system(size: DeviceInfo.shared.screenSize.fontSize.title * 1.8))
-                                    .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                             )
-                            .aspectRatio(1.6, contentMode: .fill)
+                            .frame(width: geo.size.width, height: geo.size.height)
+                            .clipped()
+                        } else {
+                            Rectangle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [AppColors.secondaryBackground(for: themeManager.isDarkMode), AppColors.secondaryBackground(for: themeManager.isDarkMode).opacity(0.5)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .overlay(
+                                    Image(systemName: category.icon)
+                                        .font(.system(size: DeviceInfo.shared.screenSize.fontSize.title * 1.8))
+                                        .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                                 )
+                                .frame(width: geo.size.width, height: geo.size.height)
+                        }
                     }
+                    // 16:9 aspect ratio aligns albums & categories visual language
+                    .aspectRatio(16.0/9.0, contentMode: .fit)
                 }
                 .clipShape(
                     .rect(
@@ -454,7 +491,7 @@ struct RoundedCategoryCard: View {
                                 .adaptiveFont(.caption)
                                 .fontWeight(.semibold)
                                 .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
-                                .lineLimit(1)
+                                .lineLimit(2)
                             
                             Text("\(category.count) фото")
                                 .font(.system(size: DeviceInfo.shared.screenSize.fontSize.caption * 0.9))

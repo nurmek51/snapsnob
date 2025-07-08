@@ -23,8 +23,12 @@ struct TransparentCircleButtonStyle: ButtonStyle {
                             .fill(.ultraThinMaterial)
                     )
             )
-            .scaleEffect(configuration.isPressed ? 0.9 : 1.0)
-            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+            // Smoother interactive spring & subtle scale
+            .scaleEffect(configuration.isPressed ? 1.1 : 1.0)
+            // Soft glow visible only on press
+            .shadow(color: Color.white.opacity(configuration.isPressed ? 0.4 : 0.0),
+                    radius: configuration.isPressed ? 6 : 0)
+            .animation(.interactiveSpring(response: 0.4, dampingFraction: 0.65, blendDuration: 0.25), value: configuration.isPressed)
     }
 }
 

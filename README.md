@@ -273,6 +273,37 @@ The system is designed to automatically support new iPhone sizes:
 3. **Search**: Natural language photo finding
 4. **Sharing**: Intelligent photo selection for sharing
 
+## New Interactive Animations (vNext)
+
+### 1. Swipe Animations
+* Swipe Right (✔️) – card slides off-screen to the right with a subtle clockwise rotation and fades out.
+* Swipe Left (✖️) – card slides off-screen to the left with a subtle counter-clockwise rotation and fades out.
+* Swipe Down (💚) – favourites action uses a vertical slide-down with fade-out.
+* All swipe actions now run on a unified `AppAnimations.cardSwipe` spring curve for a smooth natural feel.
+* A gentle bounce is applied at the end of the swipe to reinforce the gesture.
+
+### 2. Next-Card Entrance
+* The next photo fades in and scales from 0.8 → 1.0 using an `easeOut` curve for a pleasant reveal.
+
+### 3. Idle Swipe-Hint
+* If the user doesn’t interact with the Home Feed for **5 seconds**, the current photo card performs a subtle 12 pt right-ward nudge and returns – a one-off hint reminding the user that the card is swipeable.
+* The hint cancels immediately when the user starts dragging and is rescheduled after the next card appears.
+
+All animations respect the **Adaptive Layout System** – sizing, paddings, and corner radii automatically scale to each device category.
+
+## New Interactive Feedback & Gestures (vNext.1)
+
+SnapSnob now offers an even richer, more delightful experience:
+
+1. **Icon Tap Animations** – Action buttons (❤️ ✔️ ✖️) scale with a bouncy spring and emit a soft glow when pressed.
+2. **Sound & Haptics** – Every photo action produces a subtle "click" and light haptic, mirroring Apple’s HIG guidance (powered by `SoundManager`).
+3. **Depth-Enhancing Card Backdrop** – A blurred vertical gradient behind the photo card creates immersive depth across all devices.
+4. **Button Glow** – Active buttons gain an adaptive outer glow for instant visual confirmation.
+5. **Double-Tap to Favourite** – Quickly mark any photo as favourite with a double-tap. A large animated ❤️ pops from the centre of the image before the card slides away.
+6. **Animated Action Banners** – Clear textual feedback ("Removed!", "Kept!", "Favorited!") appears above the card for ~1 s after each gesture.
+
+These upgrades respect the **Adaptive Layout System** and work seamlessly on every supported iPhone & iPad size.
+
 ## Development Guidelines
 
 ### Code Organization
