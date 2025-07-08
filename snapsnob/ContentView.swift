@@ -33,9 +33,36 @@ struct ContentView: View {
             .accentColor(AppColors.accent(for: themeManager.isDarkMode))
             .preferredColorScheme(themeManager.isDarkMode ? .dark : .light)
         }
-        // Full-screen presentation is now handled inside individual detail views
-        // (AlbumDetailView, CategoryDetailView, etc.) so that any currently
-        // presented sheets remain visible behind the fullscreen photo.
+        // Present single photo in a fullscreen cover so that it sits above the TabView (hiding the tab bar)
+        .fullScreenCover(
+            item: Binding<Photo?>(
+                get: { fullScreenPhotoManager.selectedPhoto },
+                set: { fullScreenPhotoManager.selectedPhoto = $0 }
+            )
+        ) { photo in
+            FullScreenPhotoView(photo: photo, photoManager: photoManager) {
+                withAnimation(AppAnimations.modal) {
+                    fullScreenPhotoManager.selectedPhoto = nil
+                }
+            }
+            .presentationBackground(.clear)
+        }
+        // Present story-style series using a simple overlay so it stays above everything while
+        // still allowing a custom transition.
+        .overlay {
+            if let series = fullScreenPhotoManager.selectedSeries {
+                EnhancedStoryView(
+                    photoSeries: series,
+                    photoManager: photoManager
+                ) {
+                    withAnimation(AppAnimations.modal) {
+                        fullScreenPhotoManager.selectedSeries = nil
+                    }
+                }
+                .transition(.opacity)
+                .zIndex(1000)
+            }
+        }
     }
 }
 

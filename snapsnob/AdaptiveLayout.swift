@@ -109,13 +109,18 @@ struct DeviceInfo {
             }
         } else {
             // iPhone detection based on screen width
-            if screenWidth <= 375 { // iPhone SE, iPhone 12 mini
+            // Updated thresholds based on actual device widths (points)
+            // • ≤   360  → compact  (SE / mini)
+            // • ≤   393  → standard (iPhone 13/14/15)
+            // • ≤   428  → plus     (iPhone 14/15/16 Plus)
+            // •  >  428  → max      (Pro Max models)
+            if screenWidth <= 360 {
                 return .compact
-            } else if screenWidth <= 390 { // iPhone 14, iPhone 15
+            } else if screenWidth <= 393 {
                 return .standard
-            } else if screenWidth <= 414 { // iPhone 14 Plus, iPhone 15 Plus, iPhone 16 Plus
+            } else if screenWidth <= 428 {
                 return .plus
-            } else { // iPhone Pro Max models
+            } else {
                 return .max
             }
         }
@@ -259,22 +264,10 @@ extension DeviceInfo {
         let cardHeight: CGFloat
         
         switch screenSize {
-        case .compact:
-            // iPhone SE/mini - compact but usable
-            cardWidth = availableWidth * 0.95
-            cardHeight = cardWidth * 1.4 // 1.4:1 aspect ratio
-        case .standard:
-            // Use the same proportions as the Plus model for visual consistency
-            cardWidth = availableWidth * 0.9
-            cardHeight = cardWidth * 1.3 // 1.3:1 aspect ratio (matches .plus)
-        case .plus:
-            // iPhone Plus family – baseline for phone layout
-            cardWidth = availableWidth * 0.9
-            cardHeight = cardWidth * 1.3
-        case .max:
-            // Unify Pro Max with Plus proportions as well
-            cardWidth = availableWidth * 0.9
-            cardHeight = cardWidth * 1.3
+        case .compact, .standard, .plus, .max:
+            // Unify phone sizing: full safe width, 1.5 : 1 aspect ratio (matches Plus style)
+            cardWidth = availableWidth
+            cardHeight = cardWidth * 1.45
         case .iPad:
             // iPad - more compact relative to screen
             cardWidth = min(availableWidth * 0.7, 500)

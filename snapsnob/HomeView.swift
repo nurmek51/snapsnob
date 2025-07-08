@@ -6,10 +6,8 @@ import Photos
 struct HomeView: View {
     @EnvironmentObject var photoManager: PhotoManager
     @EnvironmentObject var aiAnalysisManager: AIAnalysisManager
+    @EnvironmentObject var fullScreenPhotoManager: FullScreenPhotoManager
     @EnvironmentObject var themeManager: ThemeManager
-    @State private var selectedPhoto: Photo?
-    @State private var showingFullScreen = false
-    @State private var selectedSeries: PhotoSeriesData?
     @State private var showingAIAnalysis = false
     @State private var showingTrash = false
     @State private var trashIconScale: CGFloat = 1.0
@@ -57,19 +55,8 @@ struct HomeView: View {
     // MARK: - Card Size Helper
     /// Slightly larger than the default adaptive size, but still clamped to the screen width so it remains responsive.
     private var cardSize: CGSize {
-        let base = DeviceInfo.shared.cardSize()
-        let availableWidth = UIScreen.main.bounds.width - DeviceInfo.shared.screenSize.horizontalPadding * 2
-        let widenedWidth = min(base.width * 1.05, availableWidth)
-        // On larger phones (Plus/Max) the card was sitting too low; tighten height on those devices.
-        let heightenedHeight: CGFloat
-        switch DeviceInfo.shared.screenSize {
-        case .iPad, .iPadPro:
-            heightenedHeight = base.height * 1.15
-        default:
-            // Use the same multiplier for all iPhone sizes to maintain consistent visual proportions
-            heightenedHeight = base.height * 1.25
-        }
-        return CGSize(width: widenedWidth, height: heightenedHeight)
+        // Use the adaptive base size directly for perfect consistency across devices.
+        DeviceInfo.shared.cardSize()
     }
     
     var body: some View {
@@ -124,31 +111,7 @@ struct HomeView: View {
         .sheet(isPresented: $showingTrash) {
             TrashView(photoManager: photoManager)
         }
-        .overlay {
-            if showingFullScreen {
-                fullScreenPhotoContent
-                    .transition(.opacity)
-                    .zIndex(100)
-            }
-        }
-        .overlay {
-            if let series = selectedSeries {
-                EnhancedStoryView(
-                    photoSeries: series,
-                    photoManager: photoManager
-                ) {
-                    print("📱 Story view dismissed")
-                    withAnimation(AppAnimations.modal) {
-                        self.selectedSeries = nil
-                    }
-                }
-                .transition(.opacity)
-                .zIndex(200)
-                .onAppear {
-                    print("📱 Opening story view for series: \(series.title) with \(series.photos.count) photos")
-                }
-            }
-        }
+        // Overlays for full-screen photo and story presentation are now handled globally by ContentView.
         .fullScreenCover(isPresented: $showingAIAnalysis) {
             AIAnalysisView {
                 showingAIAnalysis = false
@@ -227,8 +190,8 @@ struct HomeView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(.top, 4) // minimal gap after header
         }
-        // Fixed bottom padding equal to Plus horizontal padding so spacing matches across iPhones
-        .padding(.bottom, DeviceInfo.ScreenSize.plus.horizontalPadding)
+        // Bottom padding scaled per device to ensure card clears the tab bar
+        .padding(.bottom, DeviceInfo.shared.screenSize.horizontalPadding * 2)
         .constrainedToDevice(usePadding: false)
     }
     
@@ -261,7 +224,7 @@ struct HomeView: View {
                                 onTap: {
                                     print("📱 Story tapped: \(series.title)")
                                     withAnimation(AppAnimations.modal) {
-                                        selectedSeries = series
+                                        fullScreenPhotoManager.selectedSeries = series
                                     }
                                 }
                             )
@@ -513,38 +476,6 @@ struct HomeView: View {
         }
     }
     
-    @ViewBuilder
-    private var fullScreenPhotoContent: some View {
-        if let photo = selectedPhoto {
-            FullScreenPhotoView(photo: photo, photoManager: photoManager) {
-                print("🖼️ Dismissing fullscreen photo view")
-                withAnimation(AppAnimations.modal) {
-                    showingFullScreen = false
-                    selectedPhoto = nil
-                }
-            }
-            .onAppear {
-                print("🖼️ HomeView: FullScreenPhotoView onAppear for photo: \(photo.asset.localIdentifier)")
-            }
-        } else {
-            VStack {
-                Text("Error: No photo selected")
-                    .foregroundColor(.white)
-                Button("Close") {
-                    withAnimation(AppAnimations.modal) {
-                        showingFullScreen = false
-                    }
-                }
-                .foregroundColor(.blue)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.black)
-            .onAppear {
-                print("❌ HomeView: selectedPhoto is nil in fullScreenCover!")
-            }
-        }
-    }
-    
     // MARK: - Photo Loading Logic
     
     private func loadInitialPhotos() {
@@ -681,8 +612,7 @@ struct HomeView: View {
     
     private func handleTap(photo: Photo) {
         withAnimation(AppAnimations.modal) {
-            selectedPhoto = photo
-            showingFullScreen = true
+            fullScreenPhotoManager.selectedPhoto = photo
         }
     }
     

@@ -65,24 +65,7 @@ struct CategoryDetailView: View {
                 }
             }
         }
-        // Full-screen photo presentation over this sheet, keeping it visible behind.
-        .fullScreenCover(
-            item: Binding<Photo?>(
-                get: { fullScreenPhotoManager.selectedPhoto },
-                set: { fullScreenPhotoManager.selectedPhoto = $0 }
-            )
-        ) { photo in
-            FullScreenPhotoGalleryView(
-                photos: categoryPhotos,
-                initialPhoto: photo,
-                photoManager: photoManager
-            ) {
-                withAnimation(AppAnimations.modal) {
-                    fullScreenPhotoManager.selectedPhoto = nil
-                }
-            }
-            .presentationBackground(.clear)
-        }
+        // Full-screen photo presentation is now handled globally by ContentView.
     }
 }
 
