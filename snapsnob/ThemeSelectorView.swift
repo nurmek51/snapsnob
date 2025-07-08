@@ -38,16 +38,16 @@ struct ThemeSelectorView: View {
             }
             .constrainedToDevice()
             .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
-            .navigationTitle("Настройки темы")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Готово") {
-                        dismiss()
-                    }
-                    .adaptiveFont(.body)
-                    .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+        }
+        .navigationTitle("Настройки темы")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Готово") {
+                    dismiss()
                 }
+                .adaptiveFont(.body)
+                .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
             }
         }
     }

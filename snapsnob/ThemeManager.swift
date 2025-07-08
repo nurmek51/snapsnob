@@ -47,14 +47,20 @@ class ThemeManager: ObservableObject {
         currentTheme = theme
         saveTheme()
         updateThemeBasedOnSystem()
+        
+        // Force update window appearance
+        updateWindowAppearance()
     }
     
     @objc private func systemThemeChanged() {
         updateThemeBasedOnSystem()
+        updateWindowAppearance()
     }
     
     /// Updates isDarkMode based on current theme setting
     private func updateThemeBasedOnSystem() {
+        let oldValue = isDarkMode
+        
         switch currentTheme {
         case .system:
             isDarkMode = UITraitCollection.current.userInterfaceStyle == .dark
@@ -62,6 +68,35 @@ class ThemeManager: ObservableObject {
             isDarkMode = false
         case .dark:
             isDarkMode = true
+        }
+        
+        // Only update if value actually changed
+        if oldValue != isDarkMode {
+            objectWillChange.send()
+        }
+    }
+    
+    /// Force update all windows to use the correct appearance
+    private func updateWindowAppearance() {
+        DispatchQueue.main.async {
+            let scenes = UIApplication.shared.connectedScenes
+            let windowScenes = scenes.compactMap { $0 as? UIWindowScene }
+            
+            for windowScene in windowScenes {
+                for window in windowScene.windows {
+                    switch self.currentTheme {
+                    case .system:
+                        window.overrideUserInterfaceStyle = .unspecified
+                    case .light:
+                        window.overrideUserInterfaceStyle = .light
+                    case .dark:
+                        window.overrideUserInterfaceStyle = .dark
+                    }
+                    
+                    // Force the window to update its appearance
+                    window.setNeedsDisplay()
+                }
+            }
         }
     }
 }

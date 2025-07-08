@@ -606,20 +606,11 @@ struct HomeView: View {
                 photoManager.stopPrefetchingThumbnails(for: [current], targetSize: cardSize)
             }
             
-            // Instantly move to next photo (already preloaded)
+            // Important: Don't reset animation states here to prevent flash
+            // Instead, update the photo directly and let SwiftUI handle the transition
             currentPhoto = next
             
-            // Reset animation states for smooth appearance
-            photoOpacity = 0
-            photoScale = 0.8
-            
-            // Animate in the new photo with faster timing for smoother experience
-            withAnimation(.easeOut(duration: 0.3)) {
-                photoOpacity = 1.0
-                photoScale = 1.0
-            }
-            
-            // Preload the next photo in background
+            // Preload the next photo in background immediately
             prefetchNextPhoto()
             
             // Schedule idle bounce hint
@@ -787,6 +778,8 @@ struct HomeView: View {
             // Reset all gesture states cleanly
             dragOffset = .zero
             dragRotation = 0
+            photoOpacity = 1.0 // Reset opacity for next card
+            photoScale = 1.0   // Reset scale for next card
             isProcessingAction = false
             
             // Advance to the preloaded next photo

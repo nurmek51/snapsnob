@@ -8,7 +8,10 @@ struct AlbumCard: View {
     @State private var isPressed = false
 
     var body: some View {
-        Button(action: onTap) {
+        Button(action: {
+            print("📁 Album tapped: \(album.title)")
+            onTap()
+        }) {
             VStack(spacing: 0) {
                 // Cover image
                 Group {

@@ -1,6 +1,32 @@
 import SwiftUI
 import Photos
 
+struct AdaptivePhotoGrid: View {
+    let photos: [Photo]
+    let onPhotoTap: (Photo) -> Void
+    var body: some View {
+        let columns = Array(repeating: GridItem(.flexible(), spacing: DeviceInfo.shared.screenSize.gridSpacing), count: DeviceInfo.shared.screenSize.gridColumns)
+        let cellSize = DeviceInfo.shared.screenSize.horizontalPadding * 5
+        LazyVGrid(columns: columns, spacing: DeviceInfo.shared.screenSize.gridSpacing) {
+            ForEach(photos) { photo in
+                ZStack {
+                    PhotoImageView(
+                        photo: photo,
+                        targetSize: CGSize(width: cellSize * UIScreen.main.scale, height: cellSize * UIScreen.main.scale)
+                    )
+                    .aspectRatio(1, contentMode: .fill)
+                    .frame(width: cellSize, height: cellSize)
+                    .clipped()
+                    .adaptiveCornerRadius()
+                }
+                .onTapGesture {
+                    onPhotoTap(photo)
+                }
+            }
+        }
+    }
+}
+
 struct FavoritesView: View {
     @EnvironmentObject var photoManager: PhotoManager
     @EnvironmentObject var aiManager: AIAnalysisManager
@@ -105,26 +131,48 @@ struct FavoritesView: View {
                 ThemeSelectorView()
                     .environmentObject(themeManager)
             }
-            .overlay {
-                if showingFullScreen, let photo = selectedPhoto {
-                    FullScreenPhotoView(photo: photo, photoManager: photoManager) {
-                        print("🖼️ FavoritesView: Dismissing fullscreen photo view")
+            .fullScreenCover(item: Binding<Photo?>(
+                get: { showingFullScreen ? selectedPhoto : nil },
+                set: { newValue in
+                    if newValue == nil {
                         withAnimation(AppAnimations.modal) {
                             showingFullScreen = false
                             selectedPhoto = nil
                         }
                     }
-                    .transition(.opacity)
-                    .zIndex(100)
-                }
-            }
-            .onChange(of: showingFullScreen) { oldValue, newValue in
-                print("🔄 FavoritesView: showingFullScreen changed from \(oldValue) to \(newValue)")
-                if newValue {
-                    print("🔍 FavoritesView: selectedPhoto when showing fullscreen: \(selectedPhoto?.asset.localIdentifier ?? "nil")")
+                })
+            ) { photo in
+                FullScreenPhotoView(photo: photo, photoManager: photoManager) {
+                    withAnimation(AppAnimations.modal) {
+                        showingFullScreen = false
+                        selectedPhoto = nil
+                    }
                 }
             }
             .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
+        }
+        .navigationTitle("Избранное")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    showingThemeSelector = true
+                }) {
+                    Image(systemName: themeManager.currentTheme.icon)
+                        .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+                }
+            }
+            
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: {
+                    refreshData()
+                }) {
+                    Image(systemName: "arrow.clockwise")
+                        .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+                        .rotationEffect(.degrees(isRefreshing ? 360 : 0))
+                        .animation(.linear(duration: 1).repeatCount(isRefreshing ? 10 : 0), value: isRefreshing)
+                }
+            }
         }
         .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
         .navigationViewStyle(.stack)
@@ -389,6 +437,10 @@ struct MonthlyPhotoSection: View {
         photos
     }
     
+    // Dummy selection state for non-selectable grid
+    @State private var dummySelected: Set<Photo> = []
+    @State private var dummyIsSelecting: Bool = false
+    
     var body: some View {
         VStack(spacing: 12) {
             // Month Header
@@ -431,14 +483,14 @@ struct MonthlyPhotoSection: View {
                     }
                     .adaptivePadding(0.6) // Adjust padding for grid
                 } else {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: DeviceInfo.shared.screenSize.gridSpacing), count: DeviceInfo.shared.screenSize.gridColumns), spacing: DeviceInfo.shared.screenSize.gridSpacing) {
-                        ForEach(sortedPhotos) { photo in
-                            FavouritePhotoCard(photo: photo, onTap: {
-                                onPhotoTap(photo)
-                            })
-                        }
-                    }
-                    .animation(.easeInOut(duration: 0.3), value: isExpanded)
+                    SelectablePhotoGrid(
+                        photos: sortedPhotos,
+                        selected: $dummySelected,
+                        isSelecting: $dummyIsSelecting,
+                        onTapSingle: { photo in onPhotoTap(photo) }
+                    )
+                    .constrainedToDevice(usePadding: false)
+                    .frame(maxWidth: DeviceInfo.shared.isIPad ? 700 : .infinity)
                 }
             }
         }

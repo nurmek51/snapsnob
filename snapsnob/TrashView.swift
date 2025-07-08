@@ -51,18 +51,29 @@ struct TrashView: View {
                 }
             }
             .navigationTitle("Корзина (\(photoManager.trashedPhotos.count))")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Закрыть") { dismiss() }
-                        .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
-                }
-                
-                if !photoManager.trashedPhotos.isEmpty {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Очистить все") { showingClearAlert = true }
-                            .foregroundColor(.red.opacity(0.6))
+                    Button(action: { dismiss() }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                            Text("Отмена")
+                        }
+                        .adaptiveFont(.body)
                     }
+                    .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+                }
+
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: { showingClearAlert = true }) {
+                        HStack(spacing: 4) {
+                            Text("Очистить")
+                            Image(systemName: "trash")
+                        }
+                        .adaptiveFont(.body)
+                    }
+                    .foregroundColor(photoManager.trashedPhotos.isEmpty ? AppColors.secondaryText(for: themeManager.isDarkMode) : .red)
+                    .disabled(photoManager.trashedPhotos.isEmpty)
                 }
             }
             .alert("Очистить корзину", isPresented: $showingClearAlert) {
@@ -89,7 +100,6 @@ struct TrashView: View {
                 .zIndex(100)
             }
         }
-        .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
     }
     
     // MARK: - Actions

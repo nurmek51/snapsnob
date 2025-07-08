@@ -15,6 +15,13 @@ struct FullScreenPhotoView: View {
     @State private var hasError = false
     @State private var dismissOffset: CGSize = .zero
     @State private var isVerticalDragActive: Bool = false
+    @State private var isDragModeActive: Bool = false
+    @State private var dragDirection: DragDirection? = nil
+    
+    enum DragDirection {
+        case horizontal
+        case vertical
+    }
     
     /// In-memory cache for full-size images already fetched during current session.
     private static var imageCache = NSCache<NSString, UIImage>()
@@ -120,68 +127,82 @@ struct FullScreenPhotoView: View {
                             }
                     )
                     .simultaneousGesture(
-                        DragGesture()
+                        DragGesture(minimumDistance: 10) // Higher minimum distance for better recognition
                             .onChanged { value in
                                 if scale > 1.0 {
-                                    // Pan when zoomed
+                                    // Pan when zoomed - only allow movement
                                     let newOffset = CGSize(
                                         width: lastOffset.width + value.translation.width,
                                         height: lastOffset.height + value.translation.height
                                     )
                                     offset = newOffset
                                 } else {
-                                    // Determine if the drag is predominantly vertical. We look at the
-                                    // first significant movement to decide and then keep that decision
-                                    // for the remainder of the gesture.
-                                    if !isVerticalDragActive {
-                                        // Activate vertical drag only if the vertical component is clearly larger than the horizontal one.
-                                        if abs(value.translation.height) > abs(value.translation.width) {
-                                            isVerticalDragActive = true
+                                    // Determine drag direction only once at the beginning of the gesture
+                                    if !isDragModeActive {
+                                        let horizontalDistance = abs(value.translation.width)
+                                        let verticalDistance = abs(value.translation.height)
+                                        
+                                        // Need significant movement to determine direction
+                                        if horizontalDistance > 15 || verticalDistance > 15 {
+                                            isDragModeActive = true
+                                            
+                                            // Determine direction with hysteresis for better UX
+                                            if verticalDistance > horizontalDistance * 1.5 {
+                                                // Clearly vertical gesture
+                                                dragDirection = .vertical
+                                                isVerticalDragActive = true
+                                            } else if horizontalDistance > verticalDistance * 1.5 {
+                                                // Clearly horizontal gesture - let TabView handle it
+                                                dragDirection = .horizontal
+                                                isVerticalDragActive = false
+                                            }
+                                            // If ambiguous, wait for more movement
                                         }
                                     }
 
-                                    // Update offset only when the drag has been classified as vertical. This prevents
-                                    // horizontal swipes (used for paging in the surrounding TabView) from triggering a dismiss.
-                                    if isVerticalDragActive {
+                                    // Only update dismiss offset for confirmed vertical gestures
+                                    if dragDirection == .vertical && isVerticalDragActive {
                                         dismissOffset = CGSize(width: 0, height: value.translation.height)
                                     } else {
-                                        // Keep the view fixed while waiting for the user to commit to a vertical drag.
                                         dismissOffset = .zero
                                     }
                                 }
                             }
                             .onEnded { value in
                                 if scale > 1.0 {
+                                    // Save pan offset when zoomed
                                     lastOffset = offset
-                                    isVerticalDragActive = false
-                                } else {
-                                    // Act only if the gesture was identified as vertical.
-                                    if isVerticalDragActive {
-                                        // Check if should dismiss (using mainly vertical metrics)
-                                        let translation = value.translation
-                                        let velocity = value.velocity
-                                        let threshold: CGFloat = 120
-                                        let velocityThreshold: CGFloat = 800
-
-                                        if abs(translation.height) > threshold || abs(velocity.height) > velocityThreshold {
-                                            print("📱 Swipe to dismiss detected")
-                                            let finalOffset = translation.height > 0 ? 1000.0 : -1000.0
-                                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0)) {
-                                                dismissOffset = CGSize(width: 0, height: finalOffset)
-                                            }
-                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                                                onDismiss()
-                                            }
-                                        } else {
-                                            withAnimation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0)) {
-                                                dismissOffset = .zero
-                                            }
+                                } else if dragDirection == .vertical && isVerticalDragActive {
+                                    // Handle dismiss gesture only for confirmed vertical drags
+                                    let translation = value.translation
+                                    let velocity = value.velocity
+                                    let dismissThreshold: CGFloat = 150 // Increased threshold for stability
+                                    let velocityThreshold: CGFloat = 1000 // Higher velocity threshold
+                                    
+                                    let shouldDismiss = abs(translation.height) > dismissThreshold || 
+                                                      abs(velocity.height) > velocityThreshold
+                                    
+                                    if shouldDismiss {
+                                        print("📱 Vertical swipe to dismiss detected")
+                                        let finalOffset = translation.height > 0 ? 1000.0 : -1000.0
+                                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0)) {
+                                            dismissOffset = CGSize(width: 0, height: finalOffset)
+                                        }
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                            onDismiss()
+                                        }
+                                    } else {
+                                        // Cancel dismiss - return to original position
+                                        withAnimation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0)) {
+                                            dismissOffset = .zero
                                         }
                                     }
-
-                                    // Reset vertical-drag tracking for the next gesture
-                                    isVerticalDragActive = false
                                 }
+                                
+                                // Reset drag state for next gesture
+                                isDragModeActive = false
+                                dragDirection = nil
+                                isVerticalDragActive = false
                             }
                     )
                     .onTapGesture(count: 2) {

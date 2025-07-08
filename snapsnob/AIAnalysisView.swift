@@ -1,5 +1,35 @@
 import SwiftUI
 
+// MARK: - Shimmer Modifier
+private struct Shimmer: ViewModifier {
+    @State private var phase: CGFloat = -1
+    func body(content: Content) -> some View {
+        content
+            .overlay(
+                Rectangle()
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.white.opacity(0.15), Color.white.opacity(0.4), Color.white.opacity(0.15)]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .rotationEffect(.degrees(25))
+                    .offset(x: phase * 350)
+            )
+            .mask(content)
+            .onAppear {
+                withAnimation(.linear(duration: 1.2).repeatForever(autoreverses: false)) {
+                    phase = 1
+                }
+            }
+    }
+}
+
+private extension View {
+    func shimmering() -> some View { self.modifier(Shimmer()) }
+}
+
 struct AIAnalysisView: View {
     let onDismiss: () -> Void
     @EnvironmentObject var photoManager: PhotoManager
@@ -8,8 +38,8 @@ struct AIAnalysisView: View {
     @EnvironmentObject var themeManager: ThemeManager
     @State private var selectedTab = 0
     @State private var showingDeleteDuplicatesAlert = false
+    @State private var showingDuplicates = false
     @State private var selectedCategory: PhotoCategory?
-    @State private var showingCategoryPhotos = false
     
     // Computed properties for Vision analysis results
     private var visionCategories: [VisionCategory] {
@@ -21,8 +51,8 @@ struct AIAnalysisView: View {
         return categorizedPhotosFiltered.compactMap { category, photos -> VisionCategory? in
             guard !photos.isEmpty else { return nil }
 
-            // Build a preview array with only the first photo to use as a thumbnail
-            let preview = photos.prefix(1).map { photo -> VisionPhoto in
+            // Build a preview array with first few photos for better visualization
+            let preview = photos.prefix(4).map { photo -> VisionPhoto in
                 VisionPhoto(
                     photo: photo,
                     confidence: Int(photo.categoryConfidence * 100),
@@ -74,253 +104,267 @@ struct AIAnalysisView: View {
         }
     }
     
-    var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Header
-                VStack(spacing: 16) {
-                    HStack {
-                        Button("Закрыть") {
-                            onDismiss()
-                        }
-                        .adaptiveFont(.body)
-                        .foregroundColor(.blue)
-                        
-                        Spacer()
-                        
-                        Text("Анализ Apple Vision")
-                            .adaptiveFont(.title)
-                            .fontWeight(.semibold)
-                        
-                        Spacer()
-                        
-                        // Empty space to maintain layout balance
-                        Text("")
-                            .frame(width: DeviceInfo.shared.screenSize.horizontalPadding * 3.5) // Approximate width of removed button
-                    }
-                    .adaptivePadding(1.5)
-                    .padding(.top, DeviceInfo.shared.screenSize.horizontalPadding * 0.4)
-                    
-                    // Analysis Progress
-                    if aiAnalysisManager.isAnalyzing {
-                        VStack(spacing: 12) {
-                            ProgressView(value: aiAnalysisManager.analysisProgress, total: 1.0)
-                                .progressViewStyle(LinearProgressViewStyle(tint: .blue))
-                                .frame(height: 4)
-                            
-                            Text("Apple Vision анализирует фотографии... \(Int(aiAnalysisManager.analysisProgress * 100))%")
-                                .font(.caption)
-                                .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                            
-                            // Cache status during analysis
-                            if !aiAnalysisManager.cacheStatus.isEmpty {
-                                Text(aiAnalysisManager.cacheStatus)
-                                    .font(.caption2)
-                                    .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                        
-                        // Enhanced analysis status with performance metrics
-                        enhancedAnalysisStatusView
-                    }
-                    
-                    // Cache Information (when not analyzing)
-                    if !aiAnalysisManager.isAnalyzing && aiAnalysisManager.hasAnalysisResults {
-                        VStack(spacing: 8) {
-                            let cacheInfo = aiAnalysisManager.getCacheInfo()
-                            let stats = aiAnalysisManager.getAnalysisStats()
-                            
-                            HStack(spacing: 16) {
-                                // Analysis stats
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Проанализировано: \(stats.total)")
-                                        .font(.caption)
-                                        .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                                    
-                                    if cacheInfo.count > 0 {
-                                        Text("В кэше: \(cacheInfo.count)")
-                                            .font(.caption2)
-                                            .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
-                                    }
-                                }
-                                
-                                Spacer()
-                                
-                                // Cache actions
-                                HStack(spacing: 12) {
-                                    Button("Очистить кэш") {
-                                        aiAnalysisManager.clearCache()
-                                    }
-                                    .font(.caption2)
-                                    .foregroundColor(.red)
-                                    
-                                    Button("Пересканировать") {
-                                        aiAnalysisManager.forceReanalyze()
-                                    }
-                                    .font(.caption2)
-                                    .foregroundColor(.blue)
-                                }
-                            }
-                            
-                            // Cache status
-                            if !aiAnalysisManager.cacheStatus.isEmpty {
-                                Text(aiAnalysisManager.cacheStatus)
-                                    .font(.caption2)
-                                    .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 8)
-                        .background(AppColors.cardBackground(for: themeManager.isDarkMode))
-                        .cornerRadius(8)
-                        .padding(.horizontal, 20)
-                    }
-                    
-                    // Tab Selector
-                    if !aiAnalysisManager.isAnalyzing {
-                        Picker("Тип анализа", selection: $selectedTab) {
-                            Text("Категории Vision").tag(0)
-                            Text("Дубликаты").tag(1)
-                        }
-                        .pickerStyle(SegmentedPickerStyle())
-                        .padding(.horizontal, 20)
-                    }
-                }
-                .padding(.bottom, 16)
-                
-                Divider()
-                
-                // Content
-                if aiAnalysisManager.isAnalyzing {
-                    // Analysis in progress
-                    VStack(spacing: 20) {
-                        Spacer()
-                        
-                        Image(systemName: "eye.fill")
-                            .font(.system(size: 60))
-                            .foregroundColor(.blue)
-                            .scaleEffect(aiAnalysisManager.isAnalyzing ? 1.1 : 1.0)
-                            .animation(.easeInOut(duration: 1).repeatForever(autoreverses: true), value: aiAnalysisManager.isAnalyzing)
-                        
-                        Text("Apple Vision анализирует ваши фотографии")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .multilineTextAlignment(.center)
-                        
-                        Text("Максимальная точность и качество")
-                            .font(.body)
-                            .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                            .multilineTextAlignment(.center)
-                        
-                        Spacer()
-                    }
-                    .padding()
-                } else {
-                    // Analysis results
-                    TabView(selection: $selectedTab) {
-                        // Vision Categories Tab
-                        VisionCategoriesView(
-                            categories: visionCategories,
-                            onCategoryTap: { _ in }, // Disabled – no grid view
-                            onPhotoTap: { photo in
-                                withAnimation(AppAnimations.modal) {
-                                    fullScreenPhotoManager.selectedPhoto = photo
-                                }
-                            }
-                        )
-                        .tag(0)
-                        
-                        // Duplicates Tab
-                        VisionDuplicatesView(
-                            duplicateGroups: duplicateGroups,
-                            onDeleteDuplicates: {
-                                showingDeleteDuplicatesAlert = true
-                            },
-                            onPhotoTap: { photo in
-                                withAnimation(AppAnimations.modal) {
-                                    fullScreenPhotoManager.selectedPhoto = photo
-                                }
-                            }
-                        )
-                        .tag(1)
-                    }
-                    .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-                }
+    // MARK: - Section Builders to reduce body complexity
+    @ViewBuilder
+    private var analysisStatusSection: some View {
+        VStack(spacing: DeviceInfo.shared.spacing(0.8)) {
+            if aiAnalysisManager.isAnalyzing {
+                analyzingStatusView
+            } else {
+                readyToAnalyzeView
             }
-            .constrainedToDevice(usePadding: false)
-            .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
-            .navigationBarHidden(true)
-            .onAppear {
-                print("[AIAnalysisView] appeared – categorized count: \(photoManager.categorizedPhotos.count), inProgress: \(aiAnalysisManager.isAnalyzing)")
-                startAnalysisIfNeeded()
+        }
+        .adaptivePadding(1.2)
+    }
+
+    @ViewBuilder
+    private var categoriesSection: some View {
+        if !visionCategories.isEmpty {
+            VStack(alignment: .leading, spacing: DeviceInfo.shared.spacing(0.8)) {
+                categoryHeader
+                categoryGrid
             }
-            .alert("Удалить дубликаты", isPresented: $showingDeleteDuplicatesAlert) {
-                Button("Отмена", role: .cancel) { }
-                Button("Удалить", role: .destructive) {
-                    deleteDuplicates()
-                }
-            } message: {
-                Text("Вы уверены, что хотите удалить все найденные дубликаты? Это действие нельзя отменить.")
+        }
+    }
+
+    @ViewBuilder
+    private var duplicatesSection: some View {
+        // Section removed – duplicates now accessed from toolbar
+        EmptyView()
+    }
+
+    // MARK: - Smaller UI components
+    private var analyzingStatusView: some View {
+        VStack(spacing: DeviceInfo.shared.spacing(0.6)) {
+            analyzingHeader
+            analyzingProgress
+        }
+        .adaptivePadding(1.2)
+        .background(statusBackground)
+    }
+
+    private var readyToAnalyzeView: some View {
+        VStack(spacing: DeviceInfo.shared.spacing(0.8)) {
+            readyHeader
+            // Кнопка запуска анализа больше не нужна, анализ запускается автоматически
+            // startAnalyzeButton
+        }
+        .adaptivePadding(1.2)
+        .background(statusBackground)
+    }
+
+    private var analyzingHeader: some View {
+        HStack {
+            Image(systemName: "brain.head.profile")
+                .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+                .adaptiveFont(.title)
+            VStack(alignment: .leading, spacing: DeviceInfo.shared.spacing(0.2)) {
+                Text("Анализ фотографий")
+                    .adaptiveFont(.body)
+                    .fontWeight(.semibold)
+                    .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
+                Text("Используется Apple Vision для категоризации")
+                    .adaptiveFont(.caption)
+                    .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
             }
-            .sheet(isPresented: $showingCategoryPhotos) {
-                if let category = selectedCategory {
-                    VisionCategoryPhotosView(category: category, aiAnalysisManager: aiAnalysisManager) {
+            Spacer()
+        }
+    }
+
+    private var analyzingProgress: some View {
+        VStack(spacing: DeviceInfo.shared.spacing(0.3)) {
+            ProgressView(value: aiAnalysisManager.analysisProgress)
+                .progressViewStyle(LinearProgressViewStyle(tint: AppColors.accent(for: themeManager.isDarkMode)))
+                .scaleEffect(y: 2)
+            HStack {
+                Text("\(Int(aiAnalysisManager.analysisProgress * 100))% завершено")
+                    .adaptiveFont(.caption)
+                    .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                Spacer()
+                Text(aiAnalysisManager.cacheStatus)
+                    .adaptiveFont(.caption)
+                    .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+            }
+        }
+    }
+
+    private var readyHeader: some View {
+        HStack {
+            Image(systemName: "brain.head.profile")
+                .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+                .adaptiveFont(.title)
+            VStack(alignment: .leading, spacing: DeviceInfo.shared.spacing(0.2)) {
+                Text("Готов к анализу")
+                    .adaptiveFont(.body)
+                    .fontWeight(.semibold)
+                    .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
+                Text("\(photoManager.allPhotos.count) фотографий в галерее")
+                    .adaptiveFont(.caption)
+                    .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+            }
+            Spacer()
+        }
+    }
+
+    private var startAnalyzeButton: some View {
+        Button(action: { aiAnalysisManager.analyzeAllPhotos() }) {
+            HStack {
+                Image(systemName: "play.fill")
+                Text("Начать анализ")
+            }
+            .adaptiveFont(.body)
+            .fontWeight(.semibold)
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .adaptivePadding(0.8)
+            .background(AppColors.accent(for: themeManager.isDarkMode))
+            .clipShape(RoundedRectangle(cornerRadius: DeviceInfo.shared.screenSize.cornerRadius))
+        }
+    }
+
+    private var statusBackground: some View {
+        RoundedRectangle(cornerRadius: DeviceInfo.shared.screenSize.cornerRadius)
+            .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
+            .shadow(color: AppColors.shadow(for: themeManager.isDarkMode), radius: 8, x: 0, y: 2)
+    }
+
+    private var categoryHeader: some View {
+        HStack {
+            Text("Найденные категории")
+                .adaptiveFont(.title)
+                .fontWeight(.bold)
+                .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
+            Spacer()
+            Text("\(visionCategories.count)")
+                .adaptiveFont(.caption)
+                .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                .padding(.horizontal, DeviceInfo.shared.spacing(0.6))
+                .padding(.vertical, DeviceInfo.shared.spacing(0.3))
+                .background(AppColors.secondaryBackground(for: themeManager.isDarkMode))
+                .clipShape(Capsule())
+        }
+        .adaptivePadding(1.2)
+    }
+
+    // MARK: - Adaptive grid layout matching CategoriesView
+    private var categoryGridColumns: [GridItem] {
+        let device = DeviceInfo.shared.screenSize
+        let limit: Int
+        switch device {
+        case .compact, .standard, .plus, .max:
+            limit = 2
+        case .iPad:
+            limit = 4
+        case .iPadPro:
+            limit = 5
+        }
+        let columns = max(1, min(visionCategories.count, limit))
+        return Array(repeating: GridItem(.flexible(), spacing: DeviceInfo.shared.screenSize.gridSpacing), count: columns)
+    }
+
+    private var categoryGrid: some View {
+        LazyVGrid(columns: categoryGridColumns, spacing: DeviceInfo.shared.screenSize.gridSpacing) {
+            ForEach(visionCategories) { category in
+                Button {
+                    if let pc = PhotoCategory(rawValue: category.name) {
                         withAnimation(AppAnimations.modal) {
-                            showingCategoryPhotos = false
-                            selectedCategory = nil
+                            selectedCategory = pc
                         }
                     }
-                    .presentationDetents([.medium, .large])
-                    .presentationDragIndicator(.visible)
-                    .interactiveDismissDisabled()
+                } label: {
+                    CategoryResultCard(category: category)
+                        .environmentObject(themeManager)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .id(category.id)
+            }
+        }
+        .padding(.horizontal, DeviceInfo.shared.screenSize.horizontalPadding)
+    }
+
+    // Removed standalone duplicates header/button – replaced by toolbar
+    
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                LazyVStack(spacing: DeviceInfo.shared.spacing(1.2)) {
+                    Spacer().frame(height: DeviceInfo.shared.spacing(1.0))
+                    ZStack {
+                        analysisStatusSection
+                        if aiAnalysisManager.isAnalyzing {
+                            analysisStatusSection
+                                .shimmering()
+                        }
+                    }
+                    
+                    categoriesSection
+                    
+                    duplicatesSection
+                }
+                .padding(.bottom, DeviceInfo.shared.spacing(2.0))
+            }
+            .navigationTitle("Анализ Apple Vision")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarBackButtonHidden(true)
+            .toolbar {
+                // Close button on the left
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        onDismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                    }
+                    .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+                    .accessibilityLabel("Закрыть")
+                }
+
+                // Duplicates access on the right (always visible)
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        showingDuplicates = true
+                    } label: {
+                        ZStack(alignment: .topTrailing) {
+                            Image(systemName: "doc.on.doc")
+                            if aiAnalysisManager.duplicateGroups.count > 0 {
+                                Text("\(aiAnalysisManager.duplicateGroups.count)")
+                                    .font(.system(size: 9))
+                                    .padding(4)
+                                    .background(Color.orange)
+                                    .foregroundColor(.white)
+                                    .clipShape(Circle())
+                                    .offset(x: 8, y: -6)
+                            }
+                        }
+                    }
+                    .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+                    .accessibilityLabel("Дубликаты")
                 }
             }
         }
-    }
-    
-    private func startAnalysisIfNeeded() {
-        // Ensure we only start analysis when we actually have photos ready
-        guard !aiAnalysisManager.isAnalyzing else { return }
-
-        // If the PhotoManager has finished loading and we already have photos – start immediately
-        if !photoManager.isLoading && !photoManager.allPhotos.isEmpty {
-            aiAnalysisManager.analyzeAllPhotos()
-            return
+        .navigationViewStyle(.stack)
+        .sheet(isPresented: $showingDuplicates) {
+            DuplicatesView()
+                .environmentObject(photoManager)
+                .environmentObject(fullScreenPhotoManager)
+                .environmentObject(themeManager)
         }
-
-        // Otherwise poll until the PhotoManager finishes loading and the library is non-empty
-        Task {
-            // Poll every 100 ms — lightweight and avoids extra Combine plumbing
-            while photoManager.isLoading || photoManager.allPhotos.isEmpty {
-                try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 sec
+        .sheet(item: $selectedCategory) { category in
+            NavigationStack {
+                CategoryDetailView(category: category, aiAnalysisManager: aiAnalysisManager)
+                    .environmentObject(photoManager)
+                    .environmentObject(fullScreenPhotoManager)
             }
-            // Start analysis on the main actor once the prerequisites are satisfied
-            await MainActor.run {
-                if !aiAnalysisManager.isAnalyzing {
-                    aiAnalysisManager.analyzeAllPhotos()
-                }
-            }
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+            .interactiveDismissDisabled()
         }
-    }
-    
-    private func startAnalysis() {
-        aiAnalysisManager.analyzeAllPhotos()
-    }
-    
-    private func deleteDuplicates() {
-        print("🗑️ Deleting duplicates...")
-        
-        // Delete all duplicates except the first (best quality) photo in each group
-        for group in aiAnalysisManager.duplicateGroups {
-            let photosToDelete = Array(group.dropFirst()) // Keep first (best quality) photo
-            
-            for photo in photosToDelete {
-                photoManager.moveToTrash(photo)
+        .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea())
+        .onAppear {
+            // Теперь всегда запускаем анализ при появлении, даже если кэш валиден
+            if !aiAnalysisManager.isAnalyzing {
+                aiAnalysisManager.analyzeAllPhotos()
             }
         }
-        
-        print("🗑️ Moved \(aiAnalysisManager.duplicateGroups.reduce(0) { $0 + ($1.count - 1) }) duplicate photos to trash")
     }
     
     // MARK: - Enhanced Analysis Status Display
@@ -675,16 +719,114 @@ struct VisionCategoryPhotosView: View {
                     }
                 }
             }
-            .navigationTitle(category.rawValue)
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Готово") {
-                        onDismiss()
-                    }
+        }
+        .navigationTitle(category.rawValue)
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
+                Button("Готово") {
+                    onDismiss()
                 }
             }
         }
+    }
+}
+
+// MARK: - CategoryResultCard Component
+struct CategoryResultCard: View {
+    @EnvironmentObject var themeManager: ThemeManager
+    let category: VisionCategory
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Thumbnail grid (showing up to 4 photos)
+            Group {
+                if category.photos.count == 1 {
+                    // Single photo
+                    PhotoImageView(
+                        photo: category.photos[0].photo,
+                        targetSize: CGSize(width: 200, height: 200)
+                    )
+                    .aspectRatio(1, contentMode: .fill)
+                    .clipped()
+                } else if category.photos.count >= 2 {
+                    // Grid of photos
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 1), count: 2), spacing: 1) {
+                        ForEach(Array(category.photos.prefix(4).enumerated()), id: \.offset) { index, visionPhoto in
+                            PhotoImageView(
+                                photo: visionPhoto.photo,
+                                targetSize: CGSize(width: 100, height: 100)
+                            )
+                            .aspectRatio(1, contentMode: .fill)
+                            .clipped()
+                        }
+                    }
+                } else {
+                    // Fallback placeholder
+                    Rectangle()
+                        .fill(AppColors.secondaryBackground(for: themeManager.isDarkMode))
+                        .aspectRatio(1, contentMode: .fill)
+                        .overlay(
+                            Image(systemName: "photo")
+                                .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                        )
+                }
+            }
+            .frame(height: 120)
+            .clipShape(
+                .rect(
+                    topLeadingRadius: DeviceInfo.shared.screenSize.cornerRadius,
+                    bottomLeadingRadius: 0,
+                    bottomTrailingRadius: 0,
+                    topTrailingRadius: DeviceInfo.shared.screenSize.cornerRadius
+                )
+            )
+            
+            // Category info
+            VStack(spacing: DeviceInfo.shared.spacing(0.3)) {
+                HStack {
+                    VStack(alignment: .leading, spacing: DeviceInfo.shared.spacing(0.1)) {
+                        Text(category.name)
+                            .adaptiveFont(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
+                            .lineLimit(1)
+                        
+                        Text("\(category.totalCount) фото")
+                            .font(.system(size: DeviceInfo.shared.screenSize.fontSize.caption * 0.9))
+                            .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                    }
+                    
+                    Spacer()
+                    
+                    // Confidence indicator
+                    if let firstPhoto = category.photos.first {
+                        Text("\(firstPhoto.confidence)%")
+                            .font(.system(size: DeviceInfo.shared.screenSize.fontSize.caption * 0.8))
+                            .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+                            .padding(.horizontal, DeviceInfo.shared.spacing(0.4))
+                            .padding(.vertical, DeviceInfo.shared.spacing(0.2))
+                            .background(AppColors.accent(for: themeManager.isDarkMode).opacity(0.1))
+                            .clipShape(Capsule())
+                    }
+                }
+            }
+            .padding(DeviceInfo.shared.spacing(0.8))
+            .background(AppColors.cardBackground(for: themeManager.isDarkMode))
+            .clipShape(
+                .rect(
+                    topLeadingRadius: 0,
+                    bottomLeadingRadius: DeviceInfo.shared.screenSize.cornerRadius,
+                    bottomTrailingRadius: DeviceInfo.shared.screenSize.cornerRadius,
+                    topTrailingRadius: 0
+                )
+            )
+        }
+        .background(
+            RoundedRectangle(cornerRadius: DeviceInfo.shared.screenSize.cornerRadius)
+                .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
+                .shadow(color: AppColors.shadow(for: themeManager.isDarkMode), radius: 8, x: 0, y: 2)
+        )
     }
 }
 

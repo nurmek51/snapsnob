@@ -137,8 +137,7 @@ class AIAnalysisManager: ObservableObject {
     @Published var analyzedPhotos: Set<UUID> = []
     @Published var duplicateGroups: [[Photo]] = []
     @Published var cacheStatus: String = ""
-    /// Tracks whether analysis has been performed during the current app session
-    @Published var analysisPerformedThisSession: Bool = false
+    @Published private(set) var cacheLoaded: Bool = false
 
     private let photoManager: PhotoManager
     
@@ -153,6 +152,9 @@ class AIAnalysisManager: ObservableObject {
     private var analysisCache = AnalysisCache()
     private let cacheKey = "AIAnalysisCache"
     private let cacheQueue = DispatchQueue(label: "cache.queue", qos: .utility)
+    
+    // Persistence constants
+    private let cacheValidityDays = 30 // Cache valid for 30 days
 
     // MARK: – Concurrency Helpers
     /// Lightweight actor that lets us atomically count processed items across concurrent tasks.
@@ -171,11 +173,11 @@ class AIAnalysisManager: ObservableObject {
     private let concurrentPhotoTasks: Int
 
     // MARK: – Performance and stability constants
-    // Optimized for 1000 photos in 15 seconds requirement
-    private let batchSize = 80 // Increased batch size for maximum speed
-    private let thumbnailSize = CGSize(width: 192, height: 192) // Optimal size for classification speed
-    private let enableDebugLogs = true // Enable detailed logging for performance monitoring
-    private let classificationConfidenceThreshold: Float = 0.1 // Filter classifications by confidence > 0.1
+    // Optimized for 5000 photos in 20 seconds requirement (250 photos/sec)
+    private let batchSize = 250 // Increased batch size for maximum speed
+    private let thumbnailSize = CGSize(width: 128, height: 128) // Smaller size for faster processing
+    private let enableDebugLogs = false // Disable logs for production speed
+    private let classificationConfidenceThreshold: Float = 0.3 // Higher threshold to reduce processing
 
     // MARK: – Enhanced Performance Monitoring
     private var batchStartTime: Date?
@@ -215,10 +217,10 @@ class AIAnalysisManager: ObservableObject {
 
     init(photoManager: PhotoManager) {
         self.photoManager = photoManager
-        // Start with maximum concurrency for speed, adapt based on errors
+        // Maximum concurrency for speed requirement (5000 photos in 20 seconds)
         let cores = ProcessInfo.processInfo.activeProcessorCount
-        self.concurrentPhotoTasks = min(12, max(4, cores)) // Aggressive concurrency for speed
-        log("Configured Vision concurrency: \(self.concurrentPhotoTasks) (adaptive high-performance)")
+        self.concurrentPhotoTasks = min(16, max(8, cores * 2)) // More aggressive concurrency
+        log("Configured Vision concurrency: \(self.concurrentPhotoTasks) (optimized for 250 photos/sec)")
         
         // Load cached analysis data
         loadCache()
@@ -231,12 +233,6 @@ class AIAnalysisManager: ObservableObject {
                 self.log("Analysis already in progress, ignoring request")
                 return
             }
-            // Prevent multiple analyses in the same app session
-            guard !self.analysisPerformedThisSession else {
-                self.log("Analysis already performed in this app session, ignoring request")
-                return
-            }
-
             // Wait until the PhotoManager has finished loading and contains at least one photo
             while self.photoManager.isLoading || self.photoManager.allPhotos.isEmpty {
                 // Poll every 100 ms – lightweight and keeps this function simple without Combine subscriptions
@@ -245,9 +241,8 @@ class AIAnalysisManager: ObservableObject {
 
             self.isAnalyzing = true
             self.analysisProgress = 0
-            self.analysisPerformedThisSession = true
             
-            // Check if we have valid cached data
+            // Check if we have valid cached data (keep for speed, but don't block analysis)
             let allPhotos = self.photoManager.allPhotos
             let cachedPhotos = self.applyCachedData(to: allPhotos)
             
@@ -390,6 +385,9 @@ class AIAnalysisManager: ObservableObject {
     private func finishAnalysis() {
         self.isAnalyzing = false
         self.analysisProgress = 1.0
+        
+        // Remove photo count save
+        log("💾 Analysis completed")
     }
 
     // MARK: – Adaptive High-Performance Vision Analysis
@@ -884,19 +882,13 @@ class AIAnalysisManager: ObservableObject {
         // Optimize for speed: prioritize classification over other requests
         sceneRequest.revision = VNClassifyImageRequestRevision1
         
-        let faceRequest = VNDetectFaceRectanglesRequest { [weak self] request, error in
-            guard let self = self, error == nil else { return }
-            if let observations = request.results as? [VNFaceObservation] {
-                Task { @MainActor in
-                    self.faceObservations[photo.id] = observations
-                }
-            }
-        }
+        // Skip face detection in fast mode for speed (prevents crashes too)
+        // Face detection is the most expensive operation and causes crashes
         
         // GPU/ANE enabled for speed (default)
         requests.append(featurePrintRequest)
         requests.append(sceneRequest)
-        requests.append(faceRequest)
+        // Removed faceRequest for speed and stability
         
         return requests
     }
@@ -946,14 +938,8 @@ class AIAnalysisManager: ObservableObject {
         // VNClassifyImageRequest doesn't support imageCropAndScaleOption
         sceneRequest.revision = VNClassifyImageRequestRevision1
         
-        let faceRequest = VNDetectFaceRectanglesRequest { [weak self] request, error in
-            guard let self = self, error == nil else { return }
-            if let observations = request.results as? [VNFaceObservation] {
-                Task { @MainActor in
-                    self.faceObservations[photo.id] = observations
-                }
-            }
-        }
+        // Skip face detection in balanced mode too for speed and stability
+        // Face detection is expensive and causes crashes
         
         // Force CPU-only for stability but maintain speed optimizations
         if #available(iOS 17.0, *) {
@@ -962,12 +948,11 @@ class AIAnalysisManager: ObservableObject {
         } else {
             // For earlier iOS versions, use the older API
             featurePrintRequest.usesCPUOnly = true
-            faceRequest.usesCPUOnly = true
         }
         
         requests.append(featurePrintRequest)
         requests.append(sceneRequest)
-        requests.append(faceRequest)
+        // Removed faceRequest for speed and stability
         
         return requests
     }
@@ -1174,57 +1159,134 @@ class AIAnalysisManager: ObservableObject {
         return .other
     }
 
-    // MARK: – Safe Duplicate Detection
+    // MARK: – Safe Duplicate Detection - Real Clones Only
     private func detectDuplicates(photos: [Photo]) async {
-        // Comparing every pair is O(n²) and slow for >1K photos.  Instead, we use a sliding
-        // window on chronologically-sorted photos – duplicates are usually taken within seconds.
-        let windowSize = 25 // Compare with the next 25 shots only
-        let sorted = photos.sorted { $0.creationDate < $1.creationDate }
-
-        // Use local mutable structures; avoid mutation after an await for Swift-6 safety.
+        log("🔍 Starting real clone detection (excluding camera photos)")
+        
+        // Filter photos to exclude camera-taken images (focus on imports/downloads)
+        let candidatePhotos = photos.filter { photo in
+            // Exclude photos taken with camera (they can't be true duplicates)
+            let asset = photo.asset
+            
+            // Check if photo was imported from external source (not taken with camera)
+            if asset.sourceType == .typeUserLibrary || asset.sourceType == .typeCloudShared || asset.sourceType == .typeiTunesSynced {
+                return true
+            }
+            
+            // Check creation vs modification dates (imports often have different dates)
+            if let creationDate = asset.creationDate,
+               let modificationDate = asset.modificationDate,
+               abs(modificationDate.timeIntervalSince(creationDate)) > 60 {
+                return true // Likely imported/modified
+            }
+            
+            // Exclude if has location data (camera photos typically have GPS)
+            if asset.location != nil {
+                return false
+            }
+            
+            return true
+        }
+        
+        log("📊 Filtering for real duplicates: \(candidatePhotos.count) candidates from \(photos.count) total photos")
+        
         var groupsBuild: [[Photo]] = []
         var processed: Set<UUID> = []
-
-        for (index, photo1) in sorted.enumerated() {
+        
+        // For real duplicates, use exact matching with very strict threshold
+        let duplicateThreshold: Float = 0.05 // Much stricter - only near-identical images
+        
+        for (index, photo1) in candidatePhotos.enumerated() {
             guard !processed.contains(photo1.id), let fp1 = featurePrints[photo1.id] else { continue }
-
+            
             var duplicates: [Photo] = [photo1]
-            let upperBound = Swift.min(index + windowSize, sorted.count - 1)
-
-            if index < upperBound {
-                for j in (index + 1)...upperBound {
-                    let photo2 = sorted[j]
-                    guard !processed.contains(photo2.id), let fp2 = featurePrints[photo2.id] else { continue }
-                    do {
-                        var distance: Float = 0
-                        try fp1.computeDistance(&distance, to: fp2)
-                        if distance < 1.5 {
+            
+            // Check against ALL remaining photos (not just window) for exact duplicates
+            for j in (index + 1)..<candidatePhotos.count {
+                let photo2 = candidatePhotos[j]
+                guard !processed.contains(photo2.id), let fp2 = featurePrints[photo2.id] else { continue }
+                
+                do {
+                    var distance: Float = 0
+                    try fp1.computeDistance(&distance, to: fp2)
+                    
+                    // Strict threshold for real duplicates only
+                    if distance < duplicateThreshold {
+                        // Additional validation for real duplicates
+                        if isLikelyDuplicate(photo1: photo1, photo2: photo2) {
                             duplicates.append(photo2)
                             processed.insert(photo2.id)
                         }
-                    } catch {
-                        continue
                     }
+                } catch {
+                    continue
                 }
             }
-
+            
             if duplicates.count > 1 {
-                // Keep best-quality first
+                // Sort by quality (best first) and creation date (newer first)
                 duplicates.sort { (lhs, rhs) in
-                    (imageQualityScores[lhs.id] ?? 0.5) > (imageQualityScores[rhs.id] ?? 0.5)
+                    let lhsQuality = imageQualityScores[lhs.id] ?? 0.5
+                    let rhsQuality = imageQualityScores[rhs.id] ?? 0.5
+                    
+                    if abs(lhsQuality - rhsQuality) > 0.1 {
+                        return lhsQuality > rhsQuality
+                    }
+                    
+                    // If quality is similar, prefer newer
+                    return lhs.creationDate > rhs.creationDate
                 }
                 groupsBuild.append(duplicates)
+                log("🎯 Found duplicate group with \(duplicates.count) photos")
             }
-
+            
             processed.insert(photo1.id)
         }
-
+        
         let finalGroups = groupsBuild
         await MainActor.run {
             self.duplicateGroups = finalGroups
             self.analysisProgress = 1.0 // duplicate stage complete
         }
-        log("Found \(finalGroups.count) duplicate groups (window size = \(windowSize))")
+        log("✅ Real duplicate detection complete: found \(finalGroups.count) groups of true duplicates")
+    }
+    
+    /// Additional validation to ensure photos are real duplicates, not just similar
+    private func isLikelyDuplicate(photo1: Photo, photo2: Photo) -> Bool {
+        let asset1 = photo1.asset
+        let asset2 = photo2.asset
+        
+        // Check if dimensions are exactly the same (true duplicates have same dimensions)
+        if asset1.pixelWidth != asset2.pixelWidth || asset1.pixelHeight != asset2.pixelHeight {
+            return false
+        }
+        
+        // Check file sizes (true duplicates should have very similar file sizes)
+        let resources1 = PHAssetResource.assetResources(for: asset1)
+        let resources2 = PHAssetResource.assetResources(for: asset2)
+        
+        if let size1 = resources1.first?.value(forKey: "fileSize") as? Int64,
+           let size2 = resources2.first?.value(forKey: "fileSize") as? Int64 {
+            let sizeDiff = abs(size1 - size2)
+            let avgSize = (size1 + size2) / 2
+            let sizeVariation = Float(sizeDiff) / Float(avgSize)
+            
+            // Allow maximum 5% size variation for true duplicates
+            if sizeVariation > 0.05 {
+                return false
+            }
+        }
+        
+        // Check creation dates - true duplicates often have exact same creation date
+        if let date1 = asset1.creationDate, let date2 = asset2.creationDate {
+            let timeDiff = abs(date1.timeIntervalSince(date2))
+            // Allow up to 2 seconds difference (for import timing differences)
+            if timeDiff > 2.0 {
+                return false
+            }
+        }
+        
+        return true
     }
 
     // MARK: – Enhanced Category Mapping
@@ -1405,21 +1467,25 @@ class AIAnalysisManager: ObservableObject {
             if let data = UserDefaults.standard.data(forKey: self.cacheKey),
                let cache = try? JSONDecoder().decode(AnalysisCache.self, from: data) {
                 self.analysisCache = cache
-                
                 DispatchQueue.main.async {
-                    if cache.isValid {
-                        self.cacheStatus = "Loaded \(cache.cachedData.count) cached analyses"
-                        self.log("✅ Loaded valid cache with \(cache.cachedData.count) entries")
-                    } else {
-                        self.cacheStatus = "Cache outdated, will refresh"
-                        self.log("⚠️ Cache is outdated or invalid")
-                    }
+                    self.cacheLoaded = true // Signal cache is ready
                 }
             } else {
                 DispatchQueue.main.async {
-                    self.cacheStatus = "No cache found"
-                    self.log("ℹ️ No existing cache found")
+                    self.cacheLoaded = true // Even if no cache, we're "done loading"
                 }
+            }
+        }
+    }
+
+    /// Applies cached analysis to PhotoManager if available and valid. Call after photos are loaded.
+    public func applyCacheIfAvailable() {
+        Task { @MainActor in
+            // Remove cache gating: always apply cache if available
+            let allPhotos = self.photoManager.allPhotos
+            let cachedPhotos = self.applyCachedData(to: allPhotos)
+            if cachedPhotos.count == allPhotos.count && !cachedPhotos.isEmpty {
+                await self.applyCachedResults(cachedPhotos: cachedPhotos)
             }
         }
     }
@@ -1570,10 +1636,7 @@ class AIAnalysisManager: ObservableObject {
         log("🛡️ Simulator-safe mode enabled - CPU-only processing activated")
     }
 
-    /// Indicates if user is allowed to trigger analysis again in this session
-    var canStartAnalysis: Bool {
-        return !analysisPerformedThisSession && !isAnalyzing
-    }
+   
 }
 
 // MARK: - Helper Extensions

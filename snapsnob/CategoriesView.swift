@@ -36,13 +36,10 @@ struct CategoriesView: View {
         photoManager.albums.filter { !$0.photos.isEmpty }
     }
     
-    // Check if analysis has been completed in this session
-    private var hasCompletedAnalysis: Bool {
-        aiAnalysisManager.analysisPerformedThisSession
-    }
-    
+    // Remove hasCompletedAnalysis, shouldShowAlbums, and related logic
+    // Instead, show albums if not currently analyzing and no categorized photos exist
     private var shouldShowAlbums: Bool {
-        !hasCompletedAnalysis && aiAnalysisManager.getPhotosByCategory().isEmpty
+        return !aiAnalysisManager.isAnalyzing && photoManager.categorizedPhotos.isEmpty
     }
     
     private var totalPhotosCount: Int {
@@ -67,6 +64,34 @@ struct CategoriesView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: DeviceInfo.shared.spacing(1.2)) {
+                    // Адаптивный красивый хедер
+                    HStack(spacing: DeviceInfo.shared.spacing(0.8)) {
+                        Image(systemName: shouldShowAlbums ? "rectangle.stack" : "square.grid.2x2")
+                            .adaptiveFont(.title)
+                            .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+                        Text(shouldShowAlbums ? "Альбомы" : "Категории")
+                            .adaptiveFont(.title)
+                            .fontWeight(.bold)
+                            .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
+                        Spacer()
+                        // Счетчик
+                        Text(shouldShowAlbums ? "\(albums.count)" : "\(categories.count)")
+                            .adaptiveFont(.caption)
+                            .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                            .padding(.horizontal, DeviceInfo.shared.spacing(0.6))
+                            .padding(.vertical, DeviceInfo.shared.spacing(0.3))
+                            .background(AppColors.secondaryBackground(for: themeManager.isDarkMode))
+                            .clipShape(Capsule())
+                    }
+                    .adaptivePadding()
+                    .padding(.top, DeviceInfo.shared.spacing(0.5))
+                    .background(
+                        RoundedRectangle(cornerRadius: DeviceInfo.shared.screenSize.cornerRadius)
+                            .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
+                            .shadow(color: AppColors.shadow(for: themeManager.isDarkMode), radius: 8, x: 0, y: 2)
+                    )
+                    .padding(.horizontal, DeviceInfo.shared.screenSize.horizontalPadding * 0.2)
+                    
                     // Statistics Section
                     VStack(spacing: DeviceInfo.shared.spacing(0.6)) {
                         HStack(spacing: DeviceInfo.shared.spacing(0.6)) {
@@ -78,8 +103,8 @@ struct CategoriesView: View {
                     }
                     .adaptivePadding(1.2)
                     
-                    // AI Analysis Button - Only show if analysis hasn't been completed
-                    if aiAnalysisManager.canStartAnalysis {
+                    // AI Analysis Button - Only show if not currently analyzing
+                    if !aiAnalysisManager.isAnalyzing {
                         Button(action: {
                             print("👁️ Apple Vision Analysis button tapped")
                             showingAIAnalysis = true
@@ -135,8 +160,8 @@ struct CategoriesView: View {
                         .zIndex(1)
                     }
                     
-                    // Show completed analysis info if analysis is done
-                    if hasCompletedAnalysis && !aiAnalysisManager.isAnalyzing {
+                    // Show completed analysis info if categorized photos exist and not analyzing
+                    if !shouldShowAlbums && !aiAnalysisManager.isAnalyzing {
                         VStack(spacing: DeviceInfo.shared.spacing(0.4)) {
                             HStack(spacing: DeviceInfo.shared.spacing(0.6)) {
                                 Image(systemName: "checkmark.circle.fill")
@@ -256,22 +281,27 @@ struct CategoriesView: View {
                             if shouldShowAlbums {
                                 ForEach(albums) { album in
                                     AlbumCard(album: album) {
+                                        print("📂 Album selected from grid: \(album.title)")
                                         withAnimation(AppAnimations.modal) {
                                             selectedAlbum = album
                                         }
                                     }
+                                    .id(album.id) // Ensure proper identity for SwiftUI
                                 }
                             } else {
                                 ForEach(categories) { category in
                                     RoundedCategoryCard(category: category, photoManager: photoManager) {
+                                        print("📊 Category selected from grid: \(category.name)")
                                         withAnimation(AppAnimations.modal) {
                                             selectedCategory = category.photoCategory
                                         }
                                     }
+                                    .id(category.id) // Ensure proper identity for SwiftUI
                                 }
                             }
                         }
-                        .adaptivePadding(1.2)
+                        .padding(.horizontal, DeviceInfo.shared.screenSize.horizontalPadding) // Add horizontal padding to prevent edge issues
+                        .padding(.vertical, DeviceInfo.shared.spacing(0.5)) // Small vertical padding
                         
                         // Empty state for albums
                         if shouldShowAlbums && albums.isEmpty {
@@ -295,7 +325,7 @@ struct CategoriesView: View {
                         }
                         
                         // Empty state for categories
-                        if !shouldShowAlbums && categories.isEmpty && hasCompletedAnalysis {
+                        if !shouldShowAlbums && categories.isEmpty && !aiAnalysisManager.isAnalyzing {
                             VStack(spacing: DeviceInfo.shared.spacing(1.0)) {
                                 Image(systemName: "brain.head.profile")
                                     .font(.system(size: DeviceInfo.shared.screenSize.fontSize.title * 2.5))
@@ -317,24 +347,6 @@ struct CategoriesView: View {
                 }
                 .padding(.top, DeviceInfo.shared.spacing(0.4))
                 .padding(.bottom, DeviceInfo.shared.spacing(1.6))
-            }
-            // Keep the familiar iPhone width on larger screens.
-            .constrainedToDevice(usePadding: false)
-            .navigationViewStyle(.stack)
-            .navigationTitle("Категории")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        print("🔄 Refresh button tapped")
-                        refreshCategories()
-                    }) {
-                        Image(systemName: "arrow.clockwise")
-                            .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
-                            .rotationEffect(.degrees(isRefreshing ? 360 : 0))
-                            .animation(.linear(duration: 1).repeatCount(isRefreshing ? 10 : 0), value: isRefreshing)
-                    }
-                }
             }
             .sheet(item: $selectedCategory) { category in
                 NavigationStack {
@@ -365,8 +377,23 @@ struct CategoriesView: View {
             }
             .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
         }
-        .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
+        .navigationTitle("Категории")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: {
+                    print("🔄 Refresh button tapped")
+                    refreshCategories()
+                }) {
+                    Image(systemName: "arrow.clockwise")
+                        .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+                        .rotationEffect(.degrees(isRefreshing ? 360 : 0))
+                        .animation(.linear(duration: 1).repeatCount(isRefreshing ? 10 : 0), value: isRefreshing)
+                }
+            }
+        }
         .navigationViewStyle(.stack)
+        .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
     }
     
     private func refreshCategories() {
@@ -427,7 +454,10 @@ struct RoundedCategoryCard: View {
     @State private var isPressed = false
     
     var body: some View {
-        Button(action: onTap) {
+        Button(action: {
+            print("🎯 Category card tapped: \(category.name)")
+            onTap()
+        }) {
             VStack(spacing: 0) {
                 // Cover Image with rounded top corners (stretches full card width)
                 Group {

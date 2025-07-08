@@ -17,7 +17,7 @@ struct SnapSnobApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            AppCoordinator()
                 .environmentObject(photoManager)
                 .environmentObject(aiAnalysisManager)
                 .environmentObject(fullScreenPhotoManager)
@@ -28,5 +28,28 @@ struct SnapSnobApp: App {
                     photoManager.clearImageCaches()
                 }
         }
+    }
+}
+
+struct AppCoordinator: View {
+    @EnvironmentObject var photoManager: PhotoManager
+    @EnvironmentObject var aiAnalysisManager: AIAnalysisManager
+    @State private var didApplyCache = false  // Prevents multiple applications
+
+    var body: some View {
+        ContentView()
+            .onAppear { tryApplyCacheIfReady() }
+            .onChange(of: photoManager.isLoading) { _ in tryApplyCacheIfReady() }
+            .onChange(of: aiAnalysisManager.cacheLoaded) { _ in tryApplyCacheIfReady() }
+    }
+
+    private func tryApplyCacheIfReady() {
+        guard !didApplyCache,                    // Haven't applied yet
+              !photoManager.isLoading,           // Photos are loaded
+              !photoManager.allPhotos.isEmpty,   // Photos actually exist
+              aiAnalysisManager.cacheLoaded      // Cache is loaded
+        else { return }
+        aiAnalysisManager.applyCacheIfAvailable()
+        didApplyCache = true  // Prevent future applications
     }
 }
