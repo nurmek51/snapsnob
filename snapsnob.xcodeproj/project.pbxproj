@@ -17,21 +17,6 @@
 			path = snapsnob;
 			sourceTree = "<group>";
 		};
-		C746E3CF2E1D0FA10094912B /* daniksnap */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = daniksnap;
-			sourceTree = "<group>";
-		};
-		C788CC052E1BF37900690897 /* alibacksnap */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = alibacksnap;
-			sourceTree = "<group>";
-		};
-		C788CC152E1C120100690897 /* daniksnap */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = daniksnap;
-			sourceTree = "<group>";
-		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,9 +41,6 @@
 			isa = PBXGroup;
 			children = (
 				C70D96502E16C13F006B3599 /* snapsnob */,
-				C788CC052E1BF37900690897 /* alibacksnap */,
-				C788CC152E1C120100690897 /* daniksnap */,
-				C746E3CF2E1D0FA10094912B /* daniksnap */,
 				C70D964F2E16C13F006B3599 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -108,9 +90,6 @@
 			buildRules = (
 			);
 			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				C746E3CF2E1D0FA10094912B /* daniksnap */,
 			);
 			name = daniksnap;
 			packageProductDependencies = (
@@ -319,8 +298,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 26R63G83UJ;
+				CURRENT_PROJECT_VERSION = 1.1;
+				DEVELOPMENT_TEAM = DJDVY4P58A;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
@@ -336,8 +315,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = incubator.daniksnap;
+				MARKETING_VERSION = 1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = incubator.snapsnob;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -355,8 +334,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 26R63G83UJ;
+				CURRENT_PROJECT_VERSION = 1.1;
+				DEVELOPMENT_TEAM = DJDVY4P58A;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
@@ -372,8 +351,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = incubator.daniksnap;
+				MARKETING_VERSION = 1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = incubator.snapsnob;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -431,7 +410,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = daniksnap/daniksnap.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 1.1;
 				DEVELOPMENT_TEAM = 26R63G83UJ;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -450,7 +429,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.5;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = incubator.daniksnap;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;

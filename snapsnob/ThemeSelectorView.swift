@@ -5,8 +5,31 @@ struct ThemeSelectorView: View {
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        NavigationView {
+        ZStack(alignment: .topLeading) {
+            // Background
+            AppColors.background(for: themeManager.isDarkMode)
+                .ignoresSafeArea()
+            
             VStack(spacing: DeviceInfo.shared.spacing(1.5)) {
+                // Top bar with custom exit button
+                HStack {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .adaptiveFont(.title)
+                            .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+                            .padding(DeviceInfo.shared.spacing(0.5))
+                    }
+                    .padding(.leading, DeviceInfo.shared.screenSize.horizontalPadding)
+                    Spacer()
+                    Button("Готово") {
+                        dismiss()
+                    }
+                    .adaptiveFont(.body)
+                    .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+                    .padding(.trailing, DeviceInfo.shared.screenSize.horizontalPadding)
+                }
+                .padding(.top, DeviceInfo.shared.screenSize.horizontalPadding * 1.2)
+                
                 VStack(spacing: DeviceInfo.shared.spacing()) {
                     Text("Выберите тему")
                         .adaptiveFont(.title)
@@ -18,7 +41,7 @@ struct ThemeSelectorView: View {
                         .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                         .multilineTextAlignment(.center)
                 }
-                .padding(.top, DeviceInfo.shared.screenSize.horizontalPadding * 2)
+                .padding(.top, DeviceInfo.shared.screenSize.horizontalPadding * 1.2)
                 
                 VStack(spacing: DeviceInfo.shared.spacing()) {
                     ForEach(AppTheme.allCases, id: \.self) { theme in
@@ -37,19 +60,8 @@ struct ThemeSelectorView: View {
                 Spacer()
             }
             .constrainedToDevice()
-            .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
         }
-        .navigationTitle("Настройки темы")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Готово") {
-                    dismiss()
-                }
-                .adaptiveFont(.body)
-                .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
-            }
-        }
+        .id(themeManager.currentTheme) // Force redraw on theme change
     }
 }
 

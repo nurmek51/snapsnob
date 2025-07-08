@@ -44,12 +44,18 @@ class ThemeManager: ObservableObject {
     
     /// Sets the app theme and updates UI accordingly
     func setTheme(_ theme: AppTheme) {
+        let oldTheme = currentTheme
         currentTheme = theme
         saveTheme()
         updateThemeBasedOnSystem()
         
         // Force update window appearance
         updateWindowAppearance()
+        
+        // Always trigger a view update when theme changes
+        if oldTheme != theme {
+            objectWillChange.send()
+        }
     }
     
     @objc private func systemThemeChanged() {
@@ -60,18 +66,21 @@ class ThemeManager: ObservableObject {
     /// Updates isDarkMode based on current theme setting
     private func updateThemeBasedOnSystem() {
         let oldValue = isDarkMode
+        let oldTheme = currentTheme
         
         switch currentTheme {
         case .system:
-            isDarkMode = UITraitCollection.current.userInterfaceStyle == .dark
+            // Always update isDarkMode to match the current system style
+            let systemIsDark = UITraitCollection.current.userInterfaceStyle == .dark
+            isDarkMode = systemIsDark
         case .light:
             isDarkMode = false
         case .dark:
             isDarkMode = true
         }
         
-        // Only update if value actually changed
-        if oldValue != isDarkMode {
+        // Always trigger a view update if theme or isDarkMode changes
+        if oldValue != isDarkMode || oldTheme != currentTheme {
             objectWillChange.send()
         }
     }

@@ -109,9 +109,9 @@ struct FavoritesView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: {
-                        showingThemeSelector = true
+                        toggleTheme()
                     }) {
-                        Image(systemName: themeManager.currentTheme.icon)
+                        Image(systemName: themeIcon)
                             .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
                     }
                 }
@@ -126,10 +126,6 @@ struct FavoritesView: View {
                             .animation(.linear(duration: 1).repeatCount(isRefreshing ? 10 : 0), value: isRefreshing)
                     }
                 }
-            }
-            .sheet(isPresented: $showingThemeSelector) {
-                ThemeSelectorView()
-                    .environmentObject(themeManager)
             }
             .fullScreenCover(item: Binding<Photo?>(
                 get: { showingFullScreen ? selectedPhoto : nil },
@@ -156,9 +152,9 @@ struct FavoritesView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button(action: {
-                    showingThemeSelector = true
+                    toggleTheme()
                 }) {
-                    Image(systemName: themeManager.currentTheme.icon)
+                    Image(systemName: themeIcon)
                         .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
                 }
             }
@@ -418,6 +414,30 @@ struct FavoritesView: View {
         isRefreshing = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             isRefreshing = false
+        }
+    }
+    
+    /// Returns the correct icon for the theme switch button: sun for light, moon for dark, moon for system (default)
+    private var themeIcon: String {
+        switch themeManager.currentTheme {
+        case .light:
+            return "sun.max"
+        case .dark:
+            return "moon"
+        case .system:
+            return "moon" // default icon for system
+        }
+    }
+    
+    /// Toggles between light and dark themes. If system, switch to dark. If dark, switch to light. If light, switch to dark.
+    private func toggleTheme() {
+        switch themeManager.currentTheme {
+        case .system:
+            themeManager.setTheme(.dark)
+        case .dark:
+            themeManager.setTheme(.light)
+        case .light:
+            themeManager.setTheme(.dark)
         }
     }
 }

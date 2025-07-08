@@ -9,15 +9,17 @@ import SwiftUI
 /// A circular button style with transparent background and glass effect
 /// Used for action buttons (trash, favorite, keep) in photo cards
 struct TransparentCircleButtonStyle: ButtonStyle {
+    @EnvironmentObject var themeManager: ThemeManager
     /// Size of the circular button
     var size: CGFloat = 56
     
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
+            .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
             .frame(width: size, height: size)
             .background(
                 Circle()
-                    .fill(Color.black.opacity(0.3))
+                    .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
                     .background(
                         Circle()
                             .fill(.ultraThinMaterial)
@@ -26,7 +28,7 @@ struct TransparentCircleButtonStyle: ButtonStyle {
             // Smoother interactive spring & subtle scale
             .scaleEffect(configuration.isPressed ? 1.1 : 1.0)
             // Soft glow visible only on press
-            .shadow(color: Color.white.opacity(configuration.isPressed ? 0.4 : 0.0),
+            .shadow(color: AppColors.primaryText(for: themeManager.isDarkMode).opacity(configuration.isPressed ? 0.4 : 0.0),
                     radius: configuration.isPressed ? 6 : 0)
             .animation(.interactiveSpring(response: 0.4, dampingFraction: 0.65, blendDuration: 0.25), value: configuration.isPressed)
     }

@@ -371,7 +371,6 @@ struct HomeView: View {
                         // Trash
                         Button(action: { handleAction(.trash) }) {
                             Image(systemName: "xmark")
-                                .foregroundColor(.white)
                                 .adaptiveFont(.title)
                                 .fontWeight(.semibold)
                         }
@@ -381,7 +380,6 @@ struct HomeView: View {
                         // Favourite
                         Button(action: { handleAction(.favorite) }) {
                             Image(systemName: photo.isFavorite ? "heart.fill" : "heart")
-                                .foregroundColor(.white)
                                 .adaptiveFont(.title)
                                 .fontWeight(.semibold)
                         }
@@ -391,7 +389,6 @@ struct HomeView: View {
                         // Keep
                         Button(action: { handleAction(.keep) }) {
                             Image(systemName: "checkmark")
-                                .foregroundColor(.white)
                                 .adaptiveFont(.title)
                                 .fontWeight(.semibold)
                         }
