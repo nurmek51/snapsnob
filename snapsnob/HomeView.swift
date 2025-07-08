@@ -30,10 +30,14 @@ struct HomeView: View {
     // Swipe counter for periodic cache flush
     @State private var swipeCount: Int = 0
     
-    // MARK: - New Feedback States
+    // MARK: - Enhanced Action Banner States
     @State private var showActionLabel: Bool = false
     @State private var actionLabelText: String = ""
     @State private var actionLabelIcon: String = ""
+    @State private var actionBannerScale: CGFloat = 0.5
+    @State private var actionBannerOpacity: Double = 0
+    @State private var actionBannerColor: Color = .black
+    @State private var actionDirection: SwipeDirection = .right
     
     // Heart pop-up animation for double-tap favourite
     @State private var showHeartOverlay: Bool = false
@@ -407,8 +411,11 @@ struct HomeView: View {
                         if !isProcessingAction {
                             // Cancel any pending idle bounce while user is interacting
                             idleBounceWorkItem?.cancel()
-                            dragOffset = value.translation
-                            dragRotation = Double(value.translation.width / 20)
+                            
+                            // Update position and rotation in a single state change to prevent conflicts
+                            let translation = value.translation
+                            dragOffset = translation
+                            dragRotation = Double(translation.width / 25) // Slightly less sensitive rotation
                         }
                     }
                     .onEnded { value in
@@ -455,28 +462,68 @@ struct HomeView: View {
                     }
                 }
             )
-            // Action banner overlay – attached to card so it travels with swipe
+            // Enhanced Action Banner – Simplified animations for smoother performance
             .overlay(alignment: .top) {
                 if showActionLabel {
-                    HStack(spacing: 10) {
+                    // Main banner with simplified styling
+                    HStack(spacing: DeviceInfo.shared.spacing(1.2)) {
+                        // Icon without complex rotation animations
                         Image(systemName: actionLabelIcon)
+                            .font(.system(size: DeviceInfo.shared.spacing(2.0), weight: .bold))
                             .foregroundColor(.white)
+                            .scaleEffect(1.1)
+                            .shadow(color: .black.opacity(0.3), radius: 2, x: 1, y: 1)
+                        
+                        // Text with consistent styling
                         Text(actionLabelText)
-                            .fontWeight(.heavy)
+                            .font(.system(size: DeviceInfo.shared.spacing(1.6), weight: .heavy, design: .rounded))
                             .foregroundColor(.white)
+                            .shadow(color: .black.opacity(0.3), radius: 2, x: 1, y: 1)
                     }
-                    .padding(.horizontal, 28)
-                    .padding(.vertical, 14)
-                    .background(Color.black.opacity(0.7))
+                    .padding(.horizontal, DeviceInfo.shared.spacing(3.5))
+                    .padding(.vertical, DeviceInfo.shared.spacing(1.8))
+                    .background(
+                        // Simplified gradient background
+                        LinearGradient(
+                            colors: [
+                                actionBannerColor,
+                                actionBannerColor.opacity(0.8)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
                     .clipShape(Capsule())
-                    .transition(.opacity)
-                    .padding(.top, 20)
+                    .overlay(
+                        // Subtle border without complex gradients
+                        Capsule()
+                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    )
+                    .shadow(color: actionBannerColor.opacity(0.3), radius: 6, x: 0, y: 3)
+                    .scaleEffect(actionBannerScale)
+                    .opacity(actionBannerOpacity)
+                    .padding(.top, DeviceInfo.shared.spacing(2.5))
+                    .offset(x: actionDirection == .left ? -20 : actionDirection == .right ? 20 : 0)
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.6).combined(with: .opacity),
+                        removal: .scale(scale: 0.9).combined(with: .opacity)
+                    ))
                 }
             }
         }
     }
     
-    // MARK: - Photo Loading Logic
+    // MARK: - Photo Loading Logic (Optimized for Smooth Swipes)
+    // 
+    // The photo loading system uses a queue-based approach:
+    // 1. currentPhoto: Currently displayed photo
+    // 2. nextPhoto: Preloaded and ready for instant display
+    // 
+    // When user swipes:
+    // - nextPhoto instantly becomes currentPhoto (no loading delay)
+    // - A new nextPhoto is preloaded in background
+    // 
+    // This eliminates the lag between swipe animation and image appearance
     
     private func loadInitialPhotos() {
         guard !photoManager.nonSeriesPhotos.isEmpty else {
@@ -486,7 +533,11 @@ struct HomeView: View {
         }
 
         loadCurrentPhoto()
-        prefetchNextPhoto()
+        
+        // Delay next photo prefetching slightly to prioritize current photo loading
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            self.prefetchNextPhoto()
+        }
     }
     
     private func loadCurrentPhoto() {
@@ -506,13 +557,17 @@ struct HomeView: View {
         photoOpacity = 0
         photoScale = 0.8
         
+        // Store previous photo ID to avoid redundant prefetching
+        let previousPhotoId = currentPhoto?.id
         currentPhoto = photo
         
-        // Prefetch this photo for immediate display
-        photoManager.prefetchThumbnails(for: [photo], targetSize: cardSize)
+        // Prefetch this photo for immediate display (only if it's a new photo)
+        if previousPhotoId != photo.id {
+            photoManager.prefetchThumbnails(for: [photo], targetSize: cardSize)
+        }
         
         // Animate in with smooth transition
-        withAnimation(.easeOut(duration: 0.6)) {
+        withAnimation(.easeOut(duration: 0.5)) {
             photoOpacity = 1.0
             photoScale = 1.0
         }
@@ -527,27 +582,60 @@ struct HomeView: View {
             nextPhoto = nil
             return
         }
+        
+        // Only prefetch if it's a different photo
+        guard nextRandom.id != nextPhoto?.id else { return }
+        
+        print("📸 Prefetching next photo: \(nextRandom.asset.localIdentifier)")
         nextPhoto = nextRandom
-        photoManager.prefetchThumbnails(for: [nextRandom], targetSize: cardSize)
+        
+        // Prefetch in background to avoid blocking UI
+        DispatchQueue.global(qos: .userInitiated).async {
+            photoManager.prefetchThumbnails(for: [nextRandom], targetSize: cardSize)
+        }
     }
     
     private func advanceToNextPhoto() {
         guard !isTransitioning else { return }
         isTransitioning = true
 
-        // Clean up cache for current photo
-        if let current = currentPhoto {
-            photoManager.stopPrefetchingThumbnails(for: [current], targetSize: cardSize)
+        // Use preloaded next photo for instant transition
+        if let next = nextPhoto {
+            // Clean up cache for current photo
+            if let current = currentPhoto {
+                photoManager.stopPrefetchingThumbnails(for: [current], targetSize: cardSize)
+            }
+            
+            // Instantly move to next photo (already preloaded)
+            currentPhoto = next
+            
+            // Reset animation states for smooth appearance
+            photoOpacity = 0
+            photoScale = 0.8
+            
+            // Animate in the new photo with faster timing for smoother experience
+            withAnimation(.easeOut(duration: 0.3)) {
+                photoOpacity = 1.0
+                photoScale = 1.0
+            }
+            
+            // Preload the next photo in background
+            prefetchNextPhoto()
+            
+            // Schedule idle bounce hint
+            scheduleIdleBounce()
+        } else {
+            // Fallback: load a new photo if next wasn't available
+            loadCurrentPhoto()
+            prefetchNextPhoto()
         }
-
-        loadCurrentPhoto()
-        prefetchNextPhoto()
+        
         swipeCount += 1
         if swipeCount % 12 == 0 {
-            print("🧹 Clearing image caches after 20 swipes")
+            print("🧹 Clearing image caches after 12 swipes")
             photoManager.clearImageCaches()
         }
-        advanceToNextPhoto()
+        
         isTransitioning = false
     }
     
@@ -569,16 +657,16 @@ struct HomeView: View {
         
         switch action {
         case .trash:
-            showActionBanner(text: "Removed!", icon: "trash")
+            showActionBanner(text: "Removed!", icon: "trash", direction: .left)
             photoManager.moveToTrash(photo)
             animateActionAndAdvance(direction: .left)
         case .favorite:
-            showActionBanner(text: "Favorited!", icon: "heart.fill")
+            showActionBanner(text: "Favorited!", icon: "heart.fill", direction: .down)
             photoManager.setFavorite(photo, isFavorite: !photo.isFavorite)
             photoManager.markReviewed(photo)
             animateActionAndAdvance(direction: .down)
         case .keep:
-            showActionBanner(text: "Kept!", icon: "checkmark")
+            showActionBanner(text: "Kept!", icon: "checkmark", direction: .right)
             photoManager.markReviewed(photo)
             animateActionAndAdvance(direction: .right)
         }
@@ -596,17 +684,54 @@ struct HomeView: View {
         showHeartOverlay = true
     }
 
-    // MARK: - Banner helper
-    private func showActionBanner(text: String, icon: String) {
+    // MARK: - Enhanced Action Banner
+    private func showActionBanner(text: String, icon: String, direction: SwipeDirection = .right) {
+        // Cancel any existing banner animations to prevent conflicts
+        // actionBannerGlow = false // This line was removed as per the edit hint
+        
+        // Set content and direction
         actionLabelText = text
         actionLabelIcon = icon
-        withAnimation(.easeOut(duration: 0.2)) {
+        actionDirection = direction
+        
+        // Set color based on action type using app's theme
+        actionBannerColor = getBannerColor(for: text)
+        
+        // Reset animation states cleanly
+        actionBannerScale = 0.6
+        actionBannerOpacity = 0
+        
+        // Single, smooth entrance animation without complex timing chains
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.75, blendDuration: 0)) {
             showActionLabel = true
+            actionBannerOpacity = 1.0
+            actionBannerScale = 1.0
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
-            withAnimation(.easeOut(duration: 0.25)) {
+        
+        // Clean exit animation with single timing
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            withAnimation(.easeOut(duration: 0.3)) {
                 showActionLabel = false
+                actionBannerOpacity = 0
+                actionBannerScale = 0.8
             }
+        }
+    }
+    
+    // MARK: - Banner Color Helper
+    private func getBannerColor(for text: String) -> Color {
+        switch text {
+        case "Removed!":
+            // Use app's theme-aware colors instead of vibrant red
+            return AppColors.secondaryText(for: themeManager.isDarkMode).opacity(0.8)
+        case "Favorited!":
+            // Use accent color instead of bright pink
+            return AppColors.accent(for: themeManager.isDarkMode).opacity(0.9)
+        case "Kept!":
+            // Use primary text color instead of bright green
+            return AppColors.primaryText(for: themeManager.isDarkMode).opacity(0.8)
+        default:
+            return AppColors.primaryText(for: themeManager.isDarkMode)
         }
     }
     
@@ -625,8 +750,8 @@ struct HomeView: View {
         } else if translation.width > threshold {
             handleAction(.keep)
         } else {
-            // Reset position – favourites now handled by double-tap
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+            // Reset position with optimized spring animation – favourites now handled by double-tap
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0)) {
                 dragOffset = .zero
                 dragRotation = 0
             }
@@ -642,31 +767,29 @@ struct HomeView: View {
         switch direction {
         case .left:
             targetOffset = CGSize(width: -UIScreen.main.bounds.width, height: 0)
-            targetRotation = -30
+            targetRotation = -25 // Slightly reduced rotation for smoother animation
         case .right:
             targetOffset = CGSize(width: UIScreen.main.bounds.width, height: 0)
-            targetRotation = 30
+            targetRotation = 25 // Slightly reduced rotation for smoother animation
         case .down:
             targetOffset = CGSize(width: 0, height: UIScreen.main.bounds.height)
         }
         
-        // Animate card exit with fade-out and spring bounce
-        withAnimation(AppAnimations.cardSwipe) {
+        // Animate card exit with optimized spring animation
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.85, blendDuration: 0)) {
             dragOffset = targetOffset
             dragRotation = targetRotation
             photoOpacity = 0
         }
         
-        // Advance to next photo right after exit animation finishes
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+        // Advance to next photo with optimized timing
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            // Reset all gesture states cleanly
             dragOffset = .zero
             dragRotation = 0
             isProcessingAction = false
-            swipeCount += 1
-            if swipeCount % 12 == 0 {
-                print("🧹 Clearing image caches after 20 swipes")
-                photoManager.clearImageCaches()
-            }
+            
+            // Advance to the preloaded next photo
             advanceToNextPhoto()
         }
     }

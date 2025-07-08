@@ -606,12 +606,12 @@ class PhotoManager: ObservableObject {
         guard !assets.isEmpty else { return }
 
         #if DEBUG
-        let ids = assets.prefix(3).map { $0.localIdentifier.suffix(8) }.joined(separator: ", ")
+        let ids = assets.prefix(1).map { $0.localIdentifier.suffix(8) }.joined(separator: ", ")
         print("🗂️ Prefetching \(assets.count) thumbnails: [\(ids)...] – size: \(targetSize)")
         #endif
 
-        // Use a more conservative approach - only cache a few at a time
-        let limitedAssets = Array(assets.prefix(3))
+        // Use a more conservative approach - only cache one at a time for home view
+        let limitedAssets = Array(assets.prefix(1))
         
         imageManager.startCachingImages(
             for: limitedAssets,

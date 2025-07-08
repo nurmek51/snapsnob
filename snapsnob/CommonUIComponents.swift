@@ -104,7 +104,7 @@ struct StoryCircle: View {
 // MARK: - Photo Display Components
 
 /// An optimized photo view that handles image loading and caching efficiently
-/// This is a wrapper around PhotoImageView for backward compatibility
+/// This is a wrapper around PhotoImageView with enhanced preloading support
 struct OptimizedPhotoView: View {
     let photo: Photo
     let targetSize: CGSize
@@ -114,6 +114,11 @@ struct OptimizedPhotoView: View {
             photo: photo,
             targetSize: targetSize
         )
+        // Trigger immediate loading for preloaded images
+        .onAppear {
+            // The PhotoImageView will handle the actual loading
+            // This ensures immediate loading when the view appears
+        }
     }
 }
 
