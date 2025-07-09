@@ -1,0 +1,318 @@
+{
+  "" : {
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/snapsnob-master.dia",
+    "emit-module-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/snapsnob-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/snapsnob-master-emit-module.dia",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/snapsnob-master.swiftdeps"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/GeneratedAssetSymbols.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/GeneratedAssetSymbols.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/GeneratedAssetSymbols~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/AIAnalysisManager.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AIAnalysisManager.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AIAnalysisManager.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AIAnalysisManager.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AIAnalysisManager.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AIAnalysisManager.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AIAnalysisManager.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AIAnalysisManager.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AIAnalysisManager~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/AIAnalysisView.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AIAnalysisView.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AIAnalysisView.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AIAnalysisView.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AIAnalysisView.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AIAnalysisView.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AIAnalysisView.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AIAnalysisView.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AIAnalysisView~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/AdaptiveLayout.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AdaptiveLayout.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AdaptiveLayout.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AdaptiveLayout.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AdaptiveLayout.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AdaptiveLayout.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AdaptiveLayout.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AdaptiveLayout.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AdaptiveLayout~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/AlbumCard.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AlbumCard.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AlbumCard.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AlbumCard.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AlbumCard.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AlbumCard.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AlbumCard.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AlbumCard.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AlbumCard~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/AlbumDetailView.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AlbumDetailView.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AlbumDetailView.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AlbumDetailView.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AlbumDetailView.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AlbumDetailView.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AlbumDetailView.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AlbumDetailView.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AlbumDetailView~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/Animations.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/Animations.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/Animations.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/Animations.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/Animations.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/Animations.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/Animations.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/Animations.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/Animations~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/App.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/App.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/App.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/App.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/App.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/App.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/App.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/App.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/App~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/AppDelegate.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AppDelegate.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AppDelegate.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AppDelegate.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AppDelegate.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AppDelegate.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AppDelegate.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AppDelegate.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/AppDelegate~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/CategoriesView.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CategoriesView.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CategoriesView.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CategoriesView.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CategoriesView.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CategoriesView.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CategoriesView.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CategoriesView.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CategoriesView~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/CategoryBottomSheet.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CategoryBottomSheet.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CategoryBottomSheet.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CategoryBottomSheet.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CategoryBottomSheet.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CategoryBottomSheet.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CategoryBottomSheet.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CategoryBottomSheet.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CategoryBottomSheet~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/CategoryDetailView.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CategoryDetailView.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CategoryDetailView.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CategoryDetailView.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CategoryDetailView.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CategoryDetailView.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CategoryDetailView.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CategoryDetailView.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CategoryDetailView~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/CommonUIComponents.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CommonUIComponents.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CommonUIComponents.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CommonUIComponents.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CommonUIComponents.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CommonUIComponents.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CommonUIComponents.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CommonUIComponents.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/CommonUIComponents~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/Constants.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/Constants.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/Constants.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/Constants.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/Constants.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/Constants.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/Constants.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/Constants.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/Constants~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/ContentView.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/ContentView.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/ContentView.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/ContentView.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/ContentView.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/ContentView.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/ContentView.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/ContentView.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/ContentView~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/DragGesture+Velocity.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/DragGesture+Velocity.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/DragGesture+Velocity.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/DragGesture+Velocity.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/DragGesture+Velocity.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/DragGesture+Velocity.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/DragGesture+Velocity.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/DragGesture+Velocity.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/DragGesture+Velocity~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/DuplicatesView.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/DuplicatesView.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/DuplicatesView.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/DuplicatesView.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/DuplicatesView.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/DuplicatesView.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/DuplicatesView.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/DuplicatesView.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/DuplicatesView~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/EnhancedStoryView.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/EnhancedStoryView.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/EnhancedStoryView.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/EnhancedStoryView.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/EnhancedStoryView.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/EnhancedStoryView.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/EnhancedStoryView.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/EnhancedStoryView.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/EnhancedStoryView~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/FavoritesView.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FavoritesView.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FavoritesView.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FavoritesView.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FavoritesView.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FavoritesView.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FavoritesView.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FavoritesView.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FavoritesView~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/FullScreenPhotoGalleryView.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoGalleryView.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoGalleryView.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoGalleryView.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoGalleryView.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoGalleryView.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoGalleryView.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoGalleryView.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoGalleryView~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/FullScreenPhotoManager.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoManager.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoManager.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoManager.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoManager.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoManager.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoManager.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoManager.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoManager~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/FullScreenPhotoView.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoView.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoView.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoView.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoView.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoView.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoView.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoView.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoView~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/HomeView.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/HomeView.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/HomeView.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/HomeView.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/HomeView.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/HomeView.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/HomeView.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/HomeView.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/HomeView~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/PhotoImageView.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/PhotoImageView.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/PhotoImageView.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/PhotoImageView.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/PhotoImageView.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/PhotoImageView.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/PhotoImageView.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/PhotoImageView.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/PhotoImageView~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/PhotoManager.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/PhotoManager.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/PhotoManager.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/PhotoManager.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/PhotoManager.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/PhotoManager.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/PhotoManager.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/PhotoManager.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/PhotoManager~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/SelectablePhotoGrid.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SelectablePhotoGrid.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SelectablePhotoGrid.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SelectablePhotoGrid.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SelectablePhotoGrid.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SelectablePhotoGrid.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SelectablePhotoGrid.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SelectablePhotoGrid.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SelectablePhotoGrid~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/SoundManager.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SoundManager.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SoundManager.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SoundManager.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SoundManager.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SoundManager.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SoundManager.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SoundManager.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SoundManager~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/SwipeablePhotoGrid.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SwipeablePhotoGrid.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SwipeablePhotoGrid.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SwipeablePhotoGrid.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SwipeablePhotoGrid.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SwipeablePhotoGrid.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SwipeablePhotoGrid.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SwipeablePhotoGrid.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SwipeablePhotoGrid~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/ThemeManager.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/ThemeManager.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/ThemeManager.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/ThemeManager.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/ThemeManager.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/ThemeManager.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/ThemeManager.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/ThemeManager.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/ThemeManager~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/ThemeSelectorView.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/ThemeSelectorView.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/ThemeSelectorView.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/ThemeSelectorView.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/ThemeSelectorView.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/ThemeSelectorView.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/ThemeSelectorView.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/ThemeSelectorView.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/ThemeSelectorView~partial.swiftmodule"
+  },
+  "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/TrashView.swift" : {
+    "const-values" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/TrashView.swiftconstvalues",
+    "dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/TrashView.d",
+    "diagnostics" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/TrashView.dia",
+    "index-unit-output-path" : "/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/TrashView.o",
+    "llvm-bc" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/TrashView.bc",
+    "object" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/TrashView.o",
+    "swift-dependencies" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/TrashView.swiftdeps",
+    "swiftmodule" : "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/TrashView~partial.swiftmodule"
+  }
+}

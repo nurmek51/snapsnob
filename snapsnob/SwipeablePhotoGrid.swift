@@ -41,18 +41,18 @@ private struct SwipeablePhotoCell: View {
     @State private var actionType: ActionType = .none
     
     private enum ActionType {
-        case none, removeFavorite, addSuperStar
+        case none, removeSuperStar, addSuperStar
     }
     
     var body: some View {
         ZStack {
             // Background action indicators
             HStack {
-                // Left side - Remove from favorites
+                // Left side - Remove Super Star status
                 if dragOffset.width < -20 {
                     HStack {
-                        Image(systemName: "heart.slash.fill")
-                            .foregroundColor(.red)
+                        Image(systemName: "star.slash.fill")
+                            .foregroundColor(.orange)
                             .font(.system(size: 16))
                         Spacer()
                     }
@@ -124,7 +124,7 @@ private struct SwipeablePhotoCell: View {
                             
                             // Determine action type based on drag direction
                             if value.translation.width < -40 {
-                                actionType = .removeFavorite
+                                actionType = .removeSuperStar
                             } else if value.translation.width > 40 {
                                 actionType = .addSuperStar
                             } else {
@@ -145,11 +145,11 @@ private struct SwipeablePhotoCell: View {
                     .fill(.black.opacity(0.7))
                     .overlay(
                         VStack {
-                            Image(systemName: actionType == .addSuperStar ? "star.fill" : "heart.slash.fill")
-                                .foregroundColor(actionType == .addSuperStar ? .yellow : .red)
+                            Image(systemName: actionType == .addSuperStar ? "star.fill" : "star.slash.fill")
+                                .foregroundColor(actionType == .addSuperStar ? .yellow : .orange)
                                 .font(.system(size: 24))
                             
-                            Text(actionType == .addSuperStar ? "Super Star!" : "Removed")
+                            Text(actionType == .addSuperStar ? "Super Star!" : "Super Star Removed")
                                 .foregroundColor(.white)
                                 .font(.caption)
                                 .fontWeight(.medium)
@@ -167,8 +167,8 @@ private struct SwipeablePhotoCell: View {
         let translation = value.translation
         
         if translation.width < -threshold {
-            // Remove from favorites
-            performAction(.removeFavorite)
+            // Remove Super Star status
+            performAction(.removeSuperStar)
         } else if translation.width > threshold {
             // Add super star
             performAction(.addSuperStar)
@@ -189,9 +189,9 @@ private struct SwipeablePhotoCell: View {
         // Animate to completion
         let targetOffset: CGSize
         switch action {
-        case .removeFavorite:
+        case .removeSuperStar:
             targetOffset = CGSize(width: -120, height: 0)
-            photoManager.setFavorite(photo, isFavorite: false)
+            photoManager.setSuperStar(photo, isSuperStar: false)
         case .addSuperStar:
             targetOffset = CGSize(width: 120, height: 0)
             photoManager.setSuperStar(photo, isSuperStar: true)

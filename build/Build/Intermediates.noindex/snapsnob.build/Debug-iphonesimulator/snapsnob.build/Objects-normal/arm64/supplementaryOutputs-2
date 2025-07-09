@@ -1,0 +1,18 @@
+"/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/SoundManager.swift":
+  dependencies: "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SoundManager.d"
+  const-values: "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SoundManager.swiftconstvalues"
+  object: "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SoundManager.o"
+  swift-dependencies: "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SoundManager.swiftdeps"
+  diagnostics: "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/SoundManager.dia"
+"/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/PhotoImageView.swift":
+  object: "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/PhotoImageView.o"
+  swift-dependencies: "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/PhotoImageView.swiftdeps"
+  dependencies: "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/PhotoImageView.d"
+  const-values: "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/PhotoImageView.swiftconstvalues"
+  diagnostics: "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/PhotoImageView.dia"
+"/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/snapsnob/FullScreenPhotoManager.swift":
+  dependencies: "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoManager.d"
+  diagnostics: "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoManager.dia"
+  swift-dependencies: "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoManager.swiftdeps"
+  const-values: "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoManager.swiftconstvalues"
+  object: "/Users/nurmek51/Library/Mobile Documents/com~apple~CloudDocs/snapsnob/build/Build/Intermediates.noindex/snapsnob.build/Debug-iphonesimulator/snapsnob.build/Objects-normal/arm64/FullScreenPhotoManager.o"

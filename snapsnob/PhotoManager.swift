@@ -11,6 +11,7 @@ struct Photo: Identifiable, Hashable {
     var category: PhotoCategory?
     var qualityScore: Double = 0.0
     var dateAdded: Date
+    var dateMovedToTrash: Date? = nil // Timestamp when photo was moved to trash
     var features: [Float]? // Feature embeddings for duplicate/series detection
     var categoryConfidence: Float = 0.0
     var isFavorite: Bool = false // Whether the user marked this photo as favourite
@@ -403,6 +404,7 @@ class PhotoManager: ObservableObject {
     func moveToTrash(_ photo: Photo) {
         if let index = allPhotos.firstIndex(where: { $0.id == photo.id }) {
             allPhotos[index].isTrashed = true
+            allPhotos[index].dateMovedToTrash = Date() // Set timestamp when moved to trash
             trashedPhotoIDs.insert(photo.asset.localIdentifier)
             reviewedPhotoIDs.remove(photo.asset.localIdentifier) // ensure not marked reviewed simultaneously
             persistFlags()
@@ -415,6 +417,7 @@ class PhotoManager: ObservableObject {
     func restoreFromTrash(_ photo: Photo) {
         if let index = allPhotos.firstIndex(where: { $0.id == photo.id }) {
             allPhotos[index].isTrashed = false
+            allPhotos[index].dateMovedToTrash = nil // Clear trash timestamp when restored
             trashedPhotoIDs.remove(photo.asset.localIdentifier)
             persistFlags()
             updateDisplayPhotos()
@@ -547,6 +550,16 @@ class PhotoManager: ObservableObject {
         }
     }
     
+    /// Unmark a photo as reviewed (for undo functionality)
+    func unmarkReviewed(_ photo: Photo) {
+        if let index = allPhotos.firstIndex(where: { $0.id == photo.id }) {
+            allPhotos[index].isReviewed = false
+            reviewedPhotoIDs.remove(photo.asset.localIdentifier)
+            persistFlags()
+            updateDisplayPhotos()
+        }
+    }
+    
     /// Non-mutating helper that performs the same logic as the old `detectPhotoSeries()` but
     /// returns the result instead of touching @Published state. Runs on a background queue.
     private func calculateSeries(from sourcePhotos: [Photo]) -> [PhotoSeriesData] {
@@ -655,16 +668,18 @@ class PhotoManager: ObservableObject {
             DispatchQueue.main.async {
                 // Order newest first to match Photos behaviour
                 self.displayPhotos = newDisplay.sorted { $0.creationDate > $1.creationDate }
-                self.trashedPhotos = newTrash.sorted { $0.creationDate > $1.creationDate }
+                // Sort trash by most recently added to trash first
+                self.trashedPhotos = newTrash.sorted { ($0.dateMovedToTrash ?? Date.distantPast) > ($1.dateMovedToTrash ?? Date.distantPast) }
                 self.photoSeries = newSeries
             }
         }
     }
     
     /// Get photos that are NOT part of any series - these should appear in the main feed
+    /// Excludes favorited photos as they are already curated content
     var nonSeriesPhotos: [Photo] {
         let seriesPhotoIds = Set(photoSeries.flatMap { $0.photos.map { $0.id } })
-        return displayPhotos.filter { !seriesPhotoIds.contains($0.id) }
+        return displayPhotos.filter { !seriesPhotoIds.contains($0.id) && !$0.isFavorite }
     }
 
     /// Determine whether the given asset originated from the system camera (as opposed to e.g. screenshots, WhatsApp, etc.)

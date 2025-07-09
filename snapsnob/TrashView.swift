@@ -161,7 +161,7 @@ struct TrashPhotoCard: View {
                 .padding(UIDevice.current.userInterfaceIdiom == .pad ? 12 : 8)
             }
             
-            Text(dateFormatter.string(from: photo.dateAdded))
+            Text(dateFormatter.string(from: photo.dateMovedToTrash ?? photo.dateAdded))
                 .font(UIDevice.current.userInterfaceIdiom == .pad ? .caption : .caption2)
                 .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
         }

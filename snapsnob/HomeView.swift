@@ -44,6 +44,19 @@ struct HomeView: View {
     @State private var heartOverlayScale: CGFloat = 0.8
     @State private var heartOverlayOpacity: Double = 0.0
     
+    // MARK: - Undo Functionality States
+    @State private var lastAction: UndoAction? = nil
+    
+    // Structure to store undo action data
+    private struct UndoAction {
+        let photo: Photo
+        let action: PhotoAction
+        let timestamp: Date
+    }
+    
+    // MARK: - Permission Tracking State
+    @State private var hasShownPermissionPrompt = false
+    
     // Safe-area top padding helper
     private var topSafePadding: CGFloat {
         let keyWindow = UIApplication.shared.connectedScenes
@@ -123,6 +136,7 @@ struct HomeView: View {
             .environmentObject(photoManager)
             .environmentObject(aiAnalysisManager)
         }
+        // Undo button overlay
         // (global banner overlay removed – banner now lives on the card)
     }
     
@@ -130,38 +144,63 @@ struct HomeView: View {
     
     @ViewBuilder
     private var photoAccessDeniedView: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 30 : 20) {
+            // Icon with app's theme colors
             Image(systemName: "photo.on.rectangle.angled")
-                .font(.system(size: 60))
-                .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                .font(.system(size: UIDevice.current.userInterfaceIdiom == .pad ? 80 : 60))
+                .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
             
-            Text("Доступ к фото запрещен")
-                .font(.title2)
-                .fontWeight(.semibold)
-                .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
+            VStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 12 : 8) {
+                Text("Доступ к фото запрещен")
+                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .largeTitle : .title2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
+                
+                Text("Для работы приложения необходим доступ к фото. Разрешите доступ в настройках системы.")
+                    .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .body)
+                    .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(nil)
+                    .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 40 : 20)
+            }
             
-            Text("Разрешите доступ к фото в настройках")
-                .font(.body)
-                .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                .multilineTextAlignment(.center)
-            
+            // Styled button matching app design
             Button(action: {
                 print("🔧 Opening settings for photo access")
+                hasShownPermissionPrompt = true
+                UserDefaults.standard.set(true, forKey: "hasShownPermissionPrompt")
+                
                 if let url = URL(string: UIApplication.openSettingsURLString) {
                     UIApplication.shared.open(url)
                 }
             }) {
-                Text("Открыть настройки")
-                    .fontWeight(.medium)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-                    .background(Color.blue)
-                    .cornerRadius(8)
+                HStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 12 : 8) {
+                    Image(systemName: "gear")
+                        .font(.system(size: UIDevice.current.userInterfaceIdiom == .pad ? 18 : 16, weight: .semibold))
+                    Text("Открыть настройки")
+                        .font(.system(size: UIDevice.current.userInterfaceIdiom == .pad ? 18 : 16, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 32 : 24)
+                .padding(.vertical, UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12)
+                .background(
+                    Capsule()
+                        .fill(AppColors.accent(for: themeManager.isDarkMode))
+                        .shadow(color: AppColors.shadow(for: themeManager.isDarkMode), radius: 8, x: 0, y: 4)
+                )
             }
+            .buttonStyle(PlainButtonStyle())
+            .scaleEffect(hasShownPermissionPrompt ? 0.95 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: hasShownPermissionPrompt)
         }
-        .padding()
+        .padding(UIDevice.current.userInterfaceIdiom == .pad ? 40 : 20)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .constrainedToDevice(usePadding: false)
+        .onAppear {
+            // Load permission prompt state
+            hasShownPermissionPrompt = UserDefaults.standard.bool(forKey: "hasShownPermissionPrompt")
+            print("📱 Permission denied view appeared. Has shown prompt: \(hasShownPermissionPrompt)")
+        }
     }
     
     @ViewBuilder
@@ -459,44 +498,60 @@ struct HomeView: View {
                     }
                 }
             )
-            // Enhanced Action Banner – Simplified animations for smoother performance
+            // Enhanced Action Banner – Now integrated with undo functionality
             .overlay(alignment: .top) {
                 if showActionLabel {
-                    // Main banner with simplified styling
-                    HStack(spacing: DeviceInfo.shared.spacing(1.2)) {
-                        // Icon without complex rotation animations
-                        Image(systemName: actionLabelIcon)
-                            .font(.system(size: DeviceInfo.shared.spacing(2.0), weight: .bold))
-                            .foregroundColor(.white)
-                            .scaleEffect(1.1)
-                            .shadow(color: .black.opacity(0.3), radius: 2, x: 1, y: 1)
-                        
-                        // Text with consistent styling
-                        Text(actionLabelText)
-                            .font(.system(size: DeviceInfo.shared.spacing(1.6), weight: .heavy, design: .rounded))
-                            .foregroundColor(.white)
-                            .shadow(color: .black.opacity(0.3), radius: 2, x: 1, y: 1)
-                    }
-                    .padding(.horizontal, DeviceInfo.shared.spacing(3.5))
-                    .padding(.vertical, DeviceInfo.shared.spacing(1.8))
-                    .background(
-                        // Simplified gradient background
-                        LinearGradient(
-                            colors: [
-                                actionBannerColor,
-                                actionBannerColor.opacity(0.8)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
+                    // Main banner with undo functionality
+                    Button(action: {
+                        // Only allow undo if there's a recent action
+                        if lastAction != nil {
+                            performUndo()
+                        }
+                    }) {
+                        HStack(spacing: DeviceInfo.shared.spacing(1.2)) {
+                            // Action icon
+                            Image(systemName: actionLabelIcon)
+                                .font(.system(size: DeviceInfo.shared.spacing(2.0), weight: .bold))
+                                .foregroundColor(.white)
+                                .scaleEffect(1.1)
+                                .shadow(color: .black.opacity(0.3), radius: 2, x: 1, y: 1)
+                            
+                            // Action text
+                            Text(actionLabelText)
+                                .font(.system(size: DeviceInfo.shared.spacing(1.6), weight: .heavy, design: .rounded))
+                                .foregroundColor(.white)
+                                .shadow(color: .black.opacity(0.3), radius: 2, x: 1, y: 1)
+                            
+                            // Undo icon (only show if there's an action to undo)
+                            if lastAction != nil {
+                                Image(systemName: "arrow.uturn.left")
+                                    .font(.system(size: DeviceInfo.shared.spacing(1.8), weight: .bold))
+                                    .foregroundColor(.white.opacity(0.9))
+                                    .shadow(color: .black.opacity(0.3), radius: 2, x: 1, y: 1)
+                            }
+                        }
+                        .padding(.horizontal, DeviceInfo.shared.spacing(3.5))
+                        .padding(.vertical, DeviceInfo.shared.spacing(1.8))
+                        .background(
+                            // Simplified gradient background
+                            LinearGradient(
+                                colors: [
+                                    actionBannerColor,
+                                    actionBannerColor.opacity(0.8)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
                         )
-                    )
-                    .clipShape(Capsule())
-                    .overlay(
-                        // Subtle border without complex gradients
-                        Capsule()
-                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                    )
-                    .shadow(color: actionBannerColor.opacity(0.3), radius: 6, x: 0, y: 3)
+                        .clipShape(Capsule())
+                        .overlay(
+                            // Subtle border without complex gradients
+                            Capsule()
+                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                        )
+                        .shadow(color: actionBannerColor.opacity(0.3), radius: 6, x: 0, y: 3)
+                    }
+                    .buttonStyle(PlainButtonStyle())
                     .scaleEffect(actionBannerScale)
                     .opacity(actionBannerOpacity)
                     .padding(.top, DeviceInfo.shared.spacing(2.5))
@@ -643,6 +698,9 @@ struct HomeView: View {
         idleBounceWorkItem?.cancel()
         isProcessingAction = true
         
+        // Store action for undo functionality
+        lastAction = UndoAction(photo: photo, action: action, timestamp: Date())
+        
         switch action {
         case .trash:
             showActionBanner(text: "Removed!", icon: "trash", direction: .left)
@@ -658,6 +716,54 @@ struct HomeView: View {
             photoManager.markReviewed(photo)
             animateActionAndAdvance(direction: .right)
         }
+        
+        // Log action for debugging
+        print("🔄 Action stored for undo: \(action), Photo: \(photo.asset.localIdentifier)")
+    }
+    
+    // MARK: - Undo Functionality
+    
+    private func performUndo() {
+        guard let undoAction = lastAction else {
+            print("⚠️ No action to undo")
+            return
+        }
+        
+        print("🔄 Performing undo for action: \(undoAction.action), Photo: \(undoAction.photo.asset.localIdentifier)")
+        
+        // Cancel undo timer
+        // undoButtonTimer?.cancel() // This line was removed as per the edit hint
+        
+        // Hide undo button immediately
+        // hideUndoButton() // This line was removed as per the edit hint
+        
+        // Reverse the action
+        switch undoAction.action {
+        case .trash:
+            // Restore from trash
+            photoManager.restoreFromTrash(undoAction.photo)
+            print("♻️ Restored photo from trash")
+        case .favorite:
+            // Remove from favorites and unmark as reviewed
+            photoManager.setFavorite(undoAction.photo, isFavorite: false)
+            photoManager.unmarkReviewed(undoAction.photo)
+            print("💔 Removed from favorites and unmarked as reviewed")
+        case .keep:
+            // Unmark as reviewed
+            photoManager.unmarkReviewed(undoAction.photo)
+            print("↩️ Unmarked as reviewed")
+        }
+        
+        // Clear the last action
+        lastAction = nil
+        
+        // Provide feedback
+        SoundManager.playClick()
+        
+        // Show a brief confirmation
+        showActionBanner(text: "Undone!", icon: "checkmark", direction: .right)
+        
+        print("✅ Undo completed successfully")
     }
 
     // MARK: - Double-tap favourite helper
@@ -696,12 +802,14 @@ struct HomeView: View {
             actionBannerScale = 1.0
         }
         
-        // Clean exit animation with single timing
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+        // Clean exit animation with extended timing for undo functionality
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
             withAnimation(.easeOut(duration: 0.3)) {
                 showActionLabel = false
                 actionBannerOpacity = 0
                 actionBannerScale = 0.8
+                // Clear the last action when banner disappears
+                lastAction = nil
             }
         }
     }
