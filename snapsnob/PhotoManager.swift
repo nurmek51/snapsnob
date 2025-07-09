@@ -494,6 +494,10 @@ class PhotoManager: ObservableObject {
             if !success {
                 print("❌ Failed to update system favourite flag: \(error?.localizedDescription ?? "unknown")")
             }
+            // --- Always update display photos after favorite change ---
+            DispatchQueue.main.async {
+                self.updateDisplayPhotos()
+            }
         }
     }
     
@@ -623,14 +627,27 @@ class PhotoManager: ObservableObject {
         print("🗂️ Prefetching \(assets.count) thumbnails: [\(ids)...] – size: \(targetSize)")
         #endif
 
+        // Convert logical points to pixels if caller passed point size (typically < 500 pt)
+        let scale = UIScreen.main.scale
+        let pixelTargetSize: CGSize = targetSize.width < 500 ? CGSize(width: targetSize.width * scale, height: targetSize.height * scale) : targetSize
+
         // Use a more conservative approach - only cache one at a time for home view
         let limitedAssets = Array(assets.prefix(1))
-        
+
+        let opts = PHImageRequestOptions()
+        opts.deliveryMode = .fastFormat
+        opts.resizeMode = .fast
+        opts.isSynchronous = false
+
+        #if DEBUG
+        print("🗂️→ PHCachingImageManager startCachingImages pixelSize=\(pixelTargetSize) (from targetSize=\(targetSize)) for asset=\(assets.first?.localIdentifier.suffix(8) ?? "-")")
+        #endif
+
         imageManager.startCachingImages(
             for: limitedAssets,
-            targetSize: targetSize,
+            targetSize: pixelTargetSize,
             contentMode: .aspectFill,
-            options: nil
+            options: opts
         )
     }
 
@@ -653,6 +670,35 @@ class PhotoManager: ObservableObject {
         // Also clear the PhotoImageView cache
         // We'll need to add a notification for this
         NotificationCenter.default.post(name: NSNotification.Name("ClearImageCache"), object: nil)
+    }
+    
+    /// Clear old cached images selectively to maintain performance
+    func clearOldCaches() {
+        // Only clear caches for photos not in current display set
+        let currentPhotoIds = Set(displayPhotos.prefix(50).map { $0.asset.localIdentifier })
+        let seriesPhotoIds = Set(photoSeries.flatMap { $0.photos.prefix(10).map { $0.asset.localIdentifier } })
+        let keepIds = currentPhotoIds.union(seriesPhotoIds)
+        
+        // Notify image loaders to clear non-essential caches
+        NotificationCenter.default.post(
+            name: NSNotification.Name("ClearOldImageCache"), 
+            object: nil, 
+            userInfo: ["keepIds": keepIds]
+        )
+        
+        // Also clear some PHCachingImageManager caches but keep current photos
+        let assetsToKeep = displayPhotos.prefix(20).map { $0.asset }
+        imageManager.stopCachingImagesForAllAssets()
+        
+        // Re-cache only the most essential images
+        if !assetsToKeep.isEmpty {
+            imageManager.startCachingImages(
+                for: assetsToKeep,
+                targetSize: PhotoManager.defaultThumbnailSize,
+                contentMode: .aspectFill,
+                options: nil
+            )
+        }
     }
 
     // MARK: - Feed / Display helpers

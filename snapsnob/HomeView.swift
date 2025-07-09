@@ -30,6 +30,13 @@ struct HomeView: View {
     // Swipe counter for periodic cache flush
     @State private var swipeCount: Int = 0
     
+    // MARK: - Enhanced Animation States for Tinder-style transitions
+    @State private var cardAnimation: Animation? = nil
+    @State private var nextCardOpacity: Double = 0
+    @State private var nextCardScale: CGFloat = 0.85
+    @State private var backgroundCards: [Photo] = []
+    @State private var swipeVelocity: CGFloat = 0
+    
     // MARK: - Enhanced Action Banner States
     @State private var showActionLabel: Bool = false
     @State private var actionLabelText: String = ""
@@ -46,6 +53,8 @@ struct HomeView: View {
     
     // MARK: - Undo Functionality States
     @State private var lastAction: UndoAction? = nil
+    @State private var photoQueue: [Photo] = []
+    @State private var processedPhotos: Set<UUID> = []
     
     // Structure to store undo action data
     private struct UndoAction {
@@ -67,14 +76,45 @@ struct HomeView: View {
         return keyWindow?.safeAreaInsets.top ?? 44
     }
     
-    // Header height measurement no longer needed with VStack layout
-    
     // MARK: - Card Size Helper
     /// Slightly larger than the default adaptive size, but still clamped to the screen width so it remains responsive.
     private var cardSize: CGSize {
         // Use the adaptive base size directly for perfect consistency across devices.
         DeviceInfo.shared.cardSize()
     }
+    
+    // MARK: - Shadow Properties
+    private var shadowRadius: CGFloat {
+        15 + abs(dragOffset.width) / 50
+    }
+    
+    private var shadowX: CGFloat {
+        dragOffset.width / 50
+    }
+    
+    private var shadowY: CGFloat {
+        4 + abs(dragOffset.width) / 100
+    }
+    
+    // MARK: - Advanced Spring Animation Configuration
+    private var swipeSpringAnimation: Animation {
+        .interpolatingSpring(stiffness: 300, damping: 25)
+    }
+    
+    private var snapBackSpringAnimation: Animation {
+        .interpolatingSpring(stiffness: 500, damping: 30)
+    }
+    
+    private var cardEntranceAnimation: Animation {
+        .interpolatingSpring(stiffness: 250, damping: 20)
+    }
+    
+    @State private var hasInitialized = false // Prevents double-initialization
+    
+    // Add state for favorite star animation
+    @State private var favoriteIconScale: CGFloat = 1.0
+    @State private var favoriteIconRotation: Double = 0.0
+    @State private var showFavoriteAnimation = false
     
     var body: some View {
         NavigationView {
@@ -102,28 +142,56 @@ struct HomeView: View {
         .navigationViewStyle(.stack)
         .onAppear {
             print("📱 HomeView appeared")
-            loadInitialPhotos()
+            // Only initialize if not loading and not already initialized
+            if !photoManager.isLoading && !hasInitialized && !photoManager.nonSeriesPhotos.isEmpty {
+                hasInitialized = true
+                loadInitialPhotos()
+                scheduleIdleBounce()
+            }
         }
-        .onChange(of: photoManager.nonSeriesPhotos) { _, _ in
-            // Avoid triggering a second card refresh while we are already
-            // handling a swipe transition. This previously caused two images
-            // to load per swipe (one from advanceToNextPhoto and one here).
+        .onChange(of: photoManager.isLoading) { _, isLoading in
+            // When loading finishes, initialize if not already done
+            if !isLoading && !hasInitialized && !photoManager.nonSeriesPhotos.isEmpty {
+                hasInitialized = true
+                loadInitialPhotos()
+                scheduleIdleBounce()
+            }
+        }
+        .onChange(of: photoManager.nonSeriesPhotos) { _, newPhotos in
+            // When photos update, initialize if not already done
+            if !photoManager.isLoading && !hasInitialized && !newPhotos.isEmpty {
+                hasInitialized = true
+                loadInitialPhotos()
+                scheduleIdleBounce()
+            }
             guard !isProcessingAction && !isTransitioning else { return }
-            // If the current photo is still part of the feed there's nothing to do – prevents double loads per swipe.
-            guard let current = currentPhoto else { loadCurrentPhoto(); prefetchNextPhoto(); return }
+            guard let current = currentPhoto else {
+                rebuildPhotoQueue()
+                if let first = photoQueue.first {
+                    currentPhoto = first
+                    photoManager.prefetchThumbnails(for: [first], targetSize: cardSize)
+                    preloadNextPhotos()
+                }
+                scheduleIdleBounce()
+                return
+            }
 
             let stillValid = photoManager.nonSeriesPhotos.contains { $0.id == current.id }
             guard !stillValid else { return }
 
-            // Either the current card was trashed / reviewed outside swipe pipeline or feed was programmatically reset.
-            // In that case load a fresh card.
             if photoManager.nonSeriesPhotos.isEmpty {
                 currentPhoto = nil
                 nextPhoto = nil
+                photoQueue = []
             } else {
-                loadCurrentPhoto()
-                prefetchNextPhoto()
+                rebuildPhotoQueue()
+                if let first = photoQueue.first {
+                    currentPhoto = first
+                    photoManager.prefetchThumbnails(for: [first], targetSize: cardSize)
+                    preloadNextPhotos()
+                }
             }
+            scheduleIdleBounce()
         }
         .sheet(isPresented: $showingTrash) {
             TrashView(photoManager: photoManager)
@@ -141,6 +209,16 @@ struct HomeView: View {
     }
     
     // MARK: - View Components
+    
+    // Add a computed property for adaptive story circle top padding
+    private var storyCircleTopPadding: CGFloat {
+        // Match the circleSize in StoryCircle
+        let circleSize: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? 95 : 75
+        // Add border width and shadow (max 8pt on iPad, 6pt on iPhone)
+        let borderAndShadow: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? 8 : 6
+        // Add a little extra for safety
+        return (circleSize / 2) + borderAndShadow + DeviceInfo.shared.spacing(0.5)
+    }
     
     @ViewBuilder
     private var photoAccessDeniedView: some View {
@@ -251,7 +329,7 @@ struct HomeView: View {
             }
             // Align title flush to the safe horizontal edge instead of the large adaptive padding
             .padding(.horizontal, DeviceInfo.shared.screenSize.horizontalPadding)
-            // Larger vertical gap so the story circles are fully visible and not cropped
+            // Restore to original spacing (no extra gap)
             .padding(.bottom, DeviceInfo.shared.spacing(2.0))
             
             // Stories row with a static trash icon at the trailing edge.
@@ -273,6 +351,8 @@ struct HomeView: View {
                             )
                         }
                     }
+                    // Add top padding so the full circle (including border/shadow) is visible
+                    .padding(.top, UIDevice.current.userInterfaceIdiom == .pad ? 8 : 6)
                     .padding(.horizontal, DeviceInfo.shared.screenSize.horizontalPadding)
                 }
                 // Static trash icon area – sits on the same layer as stories conveyor, no overlapping.
@@ -379,203 +459,352 @@ struct HomeView: View {
     private var photoCardView: some View {
         if let photo = currentPhoto {
             ZStack {
-                // Lightweight gradient backdrop (no blur) for depth
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.white.opacity(0.1), Color.black.opacity(0.4)],
-                            startPoint: .top, endPoint: .bottom
-                        )
-                    )
+                // Background cards for depth effect (Tinder-style)
+                backgroundCardsView
                 
-                // Background card with border and shadow
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
-                    .shadow(color: AppColors.shadow(for: themeManager.isDarkMode), radius: 4, x: 0, y: 2)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24)
-                            .stroke(AppColors.border(for: themeManager.isDarkMode), lineWidth: 2)
-                    )
-                
-                // Photo with smooth loading
-                OptimizedPhotoView(photo: photo, targetSize: cardSize)
-                    .clipShape(RoundedRectangle(cornerRadius: 24))
-                    .opacity(photoOpacity)
-                    .scaleEffect(photoScale)
-                
-                // Action buttons overlay
-                VStack {
-                    Spacer()
-                    HStack(spacing: DeviceInfo.shared.screenSize.horizontalPadding * 1.5) {
-                        // Trash
-                        Button(action: { handleAction(.trash) }) {
-                            Image(systemName: "xmark")
-                                .adaptiveFont(.title)
-                                .fontWeight(.semibold)
-                        }
-                        .buttonStyle(TransparentCircleButtonStyle(size: DeviceInfo.shared.screenSize.horizontalPadding * 3))
-                        .disabled(isProcessingAction)
-                        
-                        // Favourite
-                        Button(action: { handleAction(.favorite) }) {
-                            Image(systemName: photo.isFavorite ? "heart.fill" : "heart")
-                                .adaptiveFont(.title)
-                                .fontWeight(.semibold)
-                        }
-                        .buttonStyle(TransparentCircleButtonStyle(size: DeviceInfo.shared.screenSize.horizontalPadding * 3))
-                        .disabled(isProcessingAction)
-                        
-                        // Keep
-                        Button(action: { handleAction(.keep) }) {
-                            Image(systemName: "checkmark")
-                                .adaptiveFont(.title)
-                                .fontWeight(.semibold)
-                        }
-                        .buttonStyle(TransparentCircleButtonStyle(size: DeviceInfo.shared.screenSize.horizontalPadding * 3))
-                        .disabled(isProcessingAction)
-                    }
-                    .padding(.bottom, DeviceInfo.shared.screenSize.horizontalPadding * 2)
-                    .opacity(photoOpacity)
-                }
-            }
-            .rotationEffect(.degrees(dragRotation))
-            // Combine drag-driven offset with idle bounce offset so the whole card moves
-            .offset(x: dragOffset.width + idleOffset, y: dragOffset.height)
-            .gesture(
-                DragGesture()
-                    .onChanged { value in
-                        if !isProcessingAction {
-                            // Cancel any pending idle bounce while user is interacting
-                            idleBounceWorkItem?.cancel()
-                            
-                            // Update position and rotation in a single state change to prevent conflicts
-                            let translation = value.translation
-                            dragOffset = translation
-                            dragRotation = Double(translation.width / 25) // Slightly less sensitive rotation
-                        }
-                    }
-                    .onEnded { value in
-                        if !isProcessingAction {
-                            handleDragEnd(value: value)
-                        }
-                    }
-            )
-            // Double-tap to favourite – high priority so it wins over single-tap
-            .highPriorityGesture(
-                TapGesture(count: 2)
-                    .onEnded {
-                        handleDoubleTap()
-                    }
-            )
-            // Single tap opens full-screen
-            .onTapGesture {
-                if !isProcessingAction {
-                    handleTap(photo: photo)
-                }
+                // Main card
+                mainCardView(photo: photo)
             }
             // Apply the fixed card size so the card does not dynamically resize
             .frame(width: cardSize.width, height: cardSize.height)
             // Feedback overlays
-            .overlay(
-                Group {
-                    if showHeartOverlay {
-                        Image(systemName: "heart.fill")
-                            .foregroundColor(.white)
-                            .font(.system(size: 100))
-                            .scaleEffect(heartOverlayScale)
-                            .opacity(heartOverlayOpacity)
-                            .onAppear {
-                                // Animate heart pop
-                                withAnimation(.easeOut(duration: 0.4)) {
-                                    heartOverlayScale = 1.2
-                                    heartOverlayOpacity = 0.0
-                                }
-                                // Remove after animation completes
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                                    showHeartOverlay = false
-                                }
-                            }
-                    }
-                }
+            .overlay(heartOverlay)
+            // Enhanced Action Banner
+            .overlay(alignment: .top) { actionBannerView }
+        }
+    }
+    
+    @ViewBuilder
+    private var backgroundCardsView: some View {
+        ForEach(backgroundCards.prefix(1), id: \.id) { bgPhoto in
+            if let index = backgroundCards.firstIndex(where: { $0.id == bgPhoto.id }) {
+                photoCardBackground(photo: bgPhoto, index: index)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func mainCardView(photo: Photo) -> some View {
+        ZStack {
+            // Gradient backdrop
+            gradientBackdrop
+            
+            // Card with shadow
+            cardWithShadow
+            
+            // Photo
+            OptimizedPhotoView(photo: photo, targetSize: cardSize)
+                .clipShape(RoundedRectangle(cornerRadius: 24))
+                .transition(.opacity.combined(with: .scale))
+            
+            // Swipe indicators
+            swipeIndicatorOverlay
+            
+            // Action buttons
+            actionButtonsOverlay
+        }
+        .rotationEffect(.degrees(dragRotation))
+        .offset(x: dragOffset.width + idleOffset, y: dragOffset.height)
+        .scaleEffect(photoScale)
+        .opacity(photoOpacity)
+        .animation(cardAnimation, value: dragOffset)
+        .animation(cardAnimation, value: dragRotation)
+        .animation(cardAnimation, value: photoScale)
+        .animation(cardAnimation, value: photoOpacity)
+        .gesture(swipeGesture)
+        .highPriorityGesture(doubleTapGesture)
+        .onTapGesture { if !isProcessingAction { handleTap(photo: photo) } }
+    }
+    
+    @ViewBuilder
+    private var gradientBackdrop: some View {
+        RoundedRectangle(cornerRadius: 24)
+            .fill(
+                LinearGradient(
+                    colors: [Color.white.opacity(0.1), Color.black.opacity(0.4)],
+                    startPoint: .top, endPoint: .bottom
+                )
             )
-            // Enhanced Action Banner – Now integrated with undo functionality
-            .overlay(alignment: .top) {
-                if showActionLabel {
-                    // Main banner with undo functionality
-                    Button(action: {
-                        // Only allow undo if there's a recent action
-                        if lastAction != nil {
-                            performUndo()
-                        }
-                    }) {
-                        HStack(spacing: DeviceInfo.shared.spacing(1.2)) {
-                            // Action icon
-                            Image(systemName: actionLabelIcon)
-                                .font(.system(size: DeviceInfo.shared.spacing(2.0), weight: .bold))
-                                .foregroundColor(.white)
-                                .scaleEffect(1.1)
-                                .shadow(color: .black.opacity(0.3), radius: 2, x: 1, y: 1)
-                            
-                            // Action text
-                            Text(actionLabelText)
-                                .font(.system(size: DeviceInfo.shared.spacing(1.6), weight: .heavy, design: .rounded))
-                                .foregroundColor(.white)
-                                .shadow(color: .black.opacity(0.3), radius: 2, x: 1, y: 1)
-                            
-                            // Undo icon (only show if there's an action to undo)
-                            if lastAction != nil {
-                                Image(systemName: "arrow.uturn.left")
-                                    .font(.system(size: DeviceInfo.shared.spacing(1.8), weight: .bold))
-                                    .foregroundColor(.white.opacity(0.9))
-                                    .shadow(color: .black.opacity(0.3), radius: 2, x: 1, y: 1)
-                            }
-                        }
-                        .padding(.horizontal, DeviceInfo.shared.spacing(3.5))
-                        .padding(.vertical, DeviceInfo.shared.spacing(1.8))
-                        .background(
-                            // Simplified gradient background
-                            LinearGradient(
-                                colors: [
-                                    actionBannerColor,
-                                    actionBannerColor.opacity(0.8)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .clipShape(Capsule())
-                        .overlay(
-                            // Subtle border without complex gradients
-                            Capsule()
-                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                        )
-                        .shadow(color: actionBannerColor.opacity(0.3), radius: 6, x: 0, y: 3)
+            .scaleEffect(max(0.95 - abs(dragOffset.width) / 1000, 0.9))
+    }
+    
+    @ViewBuilder
+    private var cardWithShadow: some View {
+        RoundedRectangle(cornerRadius: 24)
+            .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
+            .shadow(
+                color: AppColors.shadow(for: themeManager.isDarkMode).opacity(0.3),
+                radius: shadowRadius,
+                x: shadowX,
+                y: shadowY
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(AppColors.border(for: themeManager.isDarkMode), lineWidth: 2)
+            )
+    }
+    
+    @ViewBuilder
+    private var swipeIndicatorOverlay: some View {
+        Group {
+            if dragOffset.width < -50 {
+                // Trash indicator
+                HStack {
+                    Spacer()
+                    VStack {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 80))
+                            .foregroundColor(.red)
+                            .opacity(trashIndicatorOpacity)
+                            .scaleEffect(trashIndicatorScale)
+                        Spacer()
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    .scaleEffect(actionBannerScale)
-                    .opacity(actionBannerOpacity)
-                    .padding(.top, DeviceInfo.shared.spacing(2.5))
-                    .offset(x: actionDirection == .left ? -20 : actionDirection == .right ? 20 : 0)
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.6).combined(with: .opacity),
-                        removal: .scale(scale: 0.9).combined(with: .opacity)
-                    ))
+                    .padding(.trailing, 30)
+                    .padding(.top, 30)
+                }
+            } else if dragOffset.width > 50 {
+                // Keep indicator
+                HStack {
+                    VStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 80))
+                            .foregroundColor(.green)
+                            .opacity(keepIndicatorOpacity)
+                            .scaleEffect(keepIndicatorScale)
+                        Spacer()
+                    }
+                    .padding(.leading, 30)
+                    .padding(.top, 30)
+                    Spacer()
                 }
             }
         }
     }
     
-    // MARK: - Photo Loading Logic (Optimized for Smooth Swipes)
-    // 
-    // The photo loading system uses a queue-based approach:
-    // 1. currentPhoto: Currently displayed photo
-    // 2. nextPhoto: Preloaded and ready for instant display
-    // 
-    // When user swipes:
-    // - nextPhoto instantly becomes currentPhoto (no loading delay)
-    // - A new nextPhoto is preloaded in background
-    // 
-    // This eliminates the lag between swipe animation and image appearance
+    // Computed properties for indicator animations
+    private var trashIndicatorOpacity: Double {
+        Double(min(abs(dragOffset.width) / 150.0, 1.0))
+    }
+    
+    private var trashIndicatorScale: CGFloat {
+        CGFloat(min(abs(dragOffset.width) / 150.0, 1.2))
+    }
+    
+    private var keepIndicatorOpacity: Double {
+        Double(min(dragOffset.width / 150.0, 1.0))
+    }
+    
+    private var keepIndicatorScale: CGFloat {
+        CGFloat(min(dragOffset.width / 150.0, 1.2))
+    }
+    
+    @ViewBuilder
+    private var actionButtonsOverlay: some View {
+        VStack {
+            Spacer()
+            HStack(spacing: DeviceInfo.shared.screenSize.horizontalPadding * 1.5) {
+                // Trash button
+                trashButton
+                
+                // Favorite button
+                favoriteButton
+                
+                // Keep button
+                keepButton
+            }
+            .padding(.bottom, DeviceInfo.shared.screenSize.horizontalPadding * 2)
+        }
+    }
+    
+    private var trashButton: some View {
+        Button(action: { handleAction(.trash) }) {
+            Image(systemName: "xmark")
+                .adaptiveFont(.title)
+                .fontWeight(.semibold)
+        }
+        .buttonStyle(TransparentCircleButtonStyle(size: DeviceInfo.shared.screenSize.horizontalPadding * 3))
+        .disabled(isProcessingAction)
+        .scaleEffect(dragOffset.width < -50 ? 1.2 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: dragOffset.width)
+    }
+    
+    @ViewBuilder
+    private var favoriteButton: some View {
+        let latestPhoto = currentPhoto.flatMap { cp in photoManager.displayPhotos.first(where: { $0.asset.localIdentifier == cp.asset.localIdentifier }) } ?? currentPhoto
+        Button(action: { toggleFavoriteHome() }) {
+            Image(systemName: (latestPhoto?.isFavorite ?? false) ? "heart.fill" : "heart")
+                .font(.system(size: DeviceInfo.shared.screenSize.fontSize.title, weight: .semibold))
+                .foregroundColor((latestPhoto?.isFavorite ?? false) ? .red : AppColors.primaryText(for: themeManager.isDarkMode))
+                .scaleEffect(favoriteIconScale)
+                .animation(.spring(response: 0.4, dampingFraction: 0.6), value: favoriteIconScale)
+        }
+        .buttonStyle(TransparentCircleButtonStyle(size: DeviceInfo.shared.screenSize.horizontalPadding * 3))
+        .disabled(isProcessingAction)
+    }
+    
+    private var keepButton: some View {
+        Button(action: { handleAction(.keep) }) {
+            Image(systemName: "checkmark")
+                .adaptiveFont(.title)
+                .fontWeight(.semibold)
+        }
+        .buttonStyle(TransparentCircleButtonStyle(size: DeviceInfo.shared.screenSize.horizontalPadding * 3))
+        .disabled(isProcessingAction)
+        .scaleEffect(dragOffset.width > 50 ? 1.2 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: dragOffset.width)
+    }
+    
+    private var swipeGesture: some Gesture {
+        DragGesture()
+            .onChanged { value in
+                if !isProcessingAction {
+                    // Cancel any pending idle bounce while user is interacting
+                    idleBounceWorkItem?.cancel()
+                    
+                    // Smooth real-time updates
+                    withAnimation(.interactiveSpring(response: 0.15, dampingFraction: 1)) {
+                        dragOffset = value.translation
+                        // More responsive rotation with velocity consideration
+                        let velocity = value.velocity.width
+                        dragRotation = Double(value.translation.width / 20) + Double(velocity / 500)
+                        dragRotation = max(-45, min(45, dragRotation)) // Clamp rotation
+                    }
+                    
+                    // Track velocity for physics-based animations
+                    swipeVelocity = value.velocity.width
+                }
+            }
+            .onEnded { value in
+                if !isProcessingAction {
+                    handleDragEnd(value: value)
+                }
+            }
+    }
+    
+    private var doubleTapGesture: some Gesture {
+        TapGesture(count: 2)
+            .onEnded {
+                animateHeartPop()
+                toggleFavoriteHome()
+            }
+    }
+    
+    @ViewBuilder
+    private var heartOverlay: some View {
+        Group {
+            if showHeartOverlay {
+                Image(systemName: "heart.fill")
+                    .foregroundColor(.white)
+                    .font(.system(size: 100))
+                    .scaleEffect(heartOverlayScale)
+                    .opacity(heartOverlayOpacity)
+                    .animation(.spring(response: 0.5, dampingFraction: 0.6), value: heartOverlayScale)
+                    .animation(.easeOut(duration: 0.4), value: heartOverlayOpacity)
+                    .onAppear {
+                        // Animate heart pop with spring physics
+                        heartOverlayScale = 1.5
+                        heartOverlayOpacity = 0.8
+                        
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            heartOverlayOpacity = 0.0
+                        }
+                        
+                        // Remove after animation completes
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                            showHeartOverlay = false
+                            heartOverlayScale = 0.8
+                        }
+                    }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var actionBannerView: some View {
+        if showActionLabel {
+            // Main banner with undo functionality
+            Button(action: {
+                // Only allow undo if there's a recent action
+                if lastAction != nil {
+                    performUndo()
+                }
+            }) {
+                HStack(spacing: DeviceInfo.shared.spacing(1.2)) {
+                    // Action icon
+                    Image(systemName: actionLabelIcon)
+                        .font(.system(size: DeviceInfo.shared.spacing(2.0), weight: .bold))
+                        .foregroundColor(.white)
+                        .scaleEffect(1.1)
+                        .shadow(color: .black.opacity(0.3), radius: 2, x: 1, y: 1)
+                    
+                    // Action text
+                    Text(actionLabelText)
+                        .font(.system(size: DeviceInfo.shared.spacing(1.6), weight: .heavy, design: .rounded))
+                        .foregroundColor(.white)
+                        .shadow(color: .black.opacity(0.3), radius: 2, x: 1, y: 1)
+                    
+                    // Undo icon (only show if there's an action to undo)
+                    if lastAction != nil {
+                        Image(systemName: "arrow.uturn.left")
+                            .font(.system(size: DeviceInfo.shared.spacing(1.8), weight: .bold))
+                            .foregroundColor(.white.opacity(0.9))
+                            .shadow(color: .black.opacity(0.3), radius: 2, x: 1, y: 1)
+                    }
+                }
+                .padding(.horizontal, DeviceInfo.shared.spacing(3.5))
+                .padding(.vertical, DeviceInfo.shared.spacing(1.8))
+                .background(
+                    // Simplified gradient background
+                    LinearGradient(
+                        colors: [
+                            actionBannerColor,
+                            actionBannerColor.opacity(0.8)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .clipShape(Capsule())
+                .overlay(
+                    // Subtle border without complex gradients
+                    Capsule()
+                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                )
+                .shadow(color: actionBannerColor.opacity(0.3), radius: 6, x: 0, y: 3)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .scaleEffect(actionBannerScale)
+            .opacity(actionBannerOpacity)
+            .padding(.top, DeviceInfo.shared.spacing(2.5))
+            .offset(x: actionDirection == .left ? -20 : actionDirection == .right ? 20 : 0)
+            .transition(.asymmetric(
+                insertion: .scale(scale: 0.6).combined(with: .opacity),
+                removal: .scale(scale: 0.9).combined(with: .opacity)
+            ))
+        }
+    }
+    
+    // MARK: - Background Card View
+    @ViewBuilder
+    private func photoCardBackground(photo: Photo, index: Int) -> some View {
+        let scale = 0.96 // Slightly smaller than main card
+        let yOffset: CGFloat = 12 // Subtle offset
+        ZStack {
+            RoundedRectangle(cornerRadius: 24)
+                .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
+                .shadow(color: AppColors.shadow(for: themeManager.isDarkMode).opacity(0.08), 
+                        radius: 4, x: 0, y: 2)
+            OptimizedPhotoView(photo: photo, targetSize: cardSize)
+                .clipShape(RoundedRectangle(cornerRadius: 24))
+                .opacity(0.95)
+        }
+        .frame(width: cardSize.width, height: cardSize.height)
+        .scaleEffect(scale)
+        .offset(y: yOffset)
+        .opacity(0.85)
+    }
+    
+    // MARK: - Photo Loading Logic (Optimized for Zero-Lag Swipes)
     
     private func loadInitialPhotos() {
         guard !photoManager.nonSeriesPhotos.isEmpty else {
@@ -584,104 +813,110 @@ struct HomeView: View {
             return
         }
 
-        loadCurrentPhoto()
+        // Build photo queue excluding favorites and already processed
+        rebuildPhotoQueue()
         
-        // Delay next photo prefetching slightly to prioritize current photo loading
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            self.prefetchNextPhoto()
+        // Load first two photos
+        if let first = photoQueue.first {
+            currentPhoto = first
+            photoManager.prefetchThumbnails(for: [first], targetSize: cardSize)
+            
+            // Animate entrance
+            photoOpacity = 0
+            photoScale = 0.85
+            withAnimation(cardEntranceAnimation) {
+                photoOpacity = 1.0
+                photoScale = 1.0
+            }
+        }
+        
+        // Preload next photos for background cards and smooth transitions
+        preloadNextPhotos()
+    }
+    
+    private func rebuildPhotoQueue() {
+        // Get all non-series, non-favorite photos that haven't been processed
+        let availablePhotos = photoManager.nonSeriesPhotos.filter { photo in
+            !photo.isFavorite && !processedPhotos.contains(photo.id)
+        }
+        // Shuffle for random order
+        photoQueue = availablePhotos.shuffled()
+        // Prepare background cards (only one next card)
+        if photoQueue.count > 1 {
+            backgroundCards = Array(photoQueue.prefix(2).dropFirst())
+        } else {
+            backgroundCards = []
         }
     }
     
-    private func loadCurrentPhoto() {
-        let available = photoManager.nonSeriesPhotos
-        guard !available.isEmpty else {
-            currentPhoto = nil
-            return
-        }
-
-        guard let photo = available.randomElement() else {
-            currentPhoto = nil
-            return
-        }
-        print("📸 Loading random photo: \(photo.asset.localIdentifier)")
+    private func preloadNextPhotos() {
+        // Preload next 3 photos for instant transitions
+        let photosToPreload = Array(photoQueue.prefix(4).dropFirst())
+        guard !photosToPreload.isEmpty else { return }
         
-        // Reset animation states
-        photoOpacity = 0
-        photoScale = 0.8
-        
-        // Store previous photo ID to avoid redundant prefetching
-        let previousPhotoId = currentPhoto?.id
-        currentPhoto = photo
-        
-        // Prefetch this photo for immediate display (only if it's a new photo)
-        if previousPhotoId != photo.id {
-            photoManager.prefetchThumbnails(for: [photo], targetSize: cardSize)
-        }
-        
-        // Animate in with smooth transition
-        withAnimation(.easeOut(duration: 0.5)) {
-            photoOpacity = 1.0
-            photoScale = 1.0
-        }
-
-        // Schedule idle bounce hint after initial appear
-        scheduleIdleBounce()
-    }
-    
-    private func prefetchNextPhoto() {
-        let remaining = photoManager.nonSeriesPhotos.filter { $0.id != currentPhoto?.id }
-        guard let nextRandom = remaining.randomElement() else {
-            nextPhoto = nil
-            return
-        }
-        
-        // Only prefetch if it's a different photo
-        guard nextRandom.id != nextPhoto?.id else { return }
-        
-        print("📸 Prefetching next photo: \(nextRandom.asset.localIdentifier)")
-        nextPhoto = nextRandom
-        
-        // Prefetch in background to avoid blocking UI
+        // Use background queue for preloading
         DispatchQueue.global(qos: .userInitiated).async {
-            photoManager.prefetchThumbnails(for: [nextRandom], targetSize: cardSize)
+            self.photoManager.prefetchThumbnails(for: photosToPreload, targetSize: self.cardSize)
         }
     }
     
     private func advanceToNextPhoto() {
         guard !isTransitioning else { return }
         isTransitioning = true
-
-        // Use preloaded next photo for instant transition
-        if let next = nextPhoto {
-            // Clean up cache for current photo
-            if let current = currentPhoto {
-                photoManager.stopPrefetchingThumbnails(for: [current], targetSize: cardSize)
-            }
-            
-            // Important: Don't reset animation states here to prevent flash
-            // Instead, update the photo directly and let SwiftUI handle the transition
+        // Remove current photo from queue
+        if let current = currentPhoto {
+            processedPhotos.insert(current.id)
+            photoQueue.removeAll { $0.id == current.id }
+        }
+        // Get next photo from queue
+        if let next = photoQueue.first {
             currentPhoto = next
-            
-            // Preload the next photo in background immediately
-            prefetchNextPhoto()
-            
-            // Schedule idle bounce hint
+            // Update background cards (only one next card)
+            if photoQueue.count > 1 {
+                backgroundCards = Array(photoQueue.prefix(2).dropFirst())
+            } else {
+                backgroundCards = []
+            }
+            // Preload more photos
+            preloadNextPhotos()
+            // Animate entrance with spring physics
+            photoOpacity = 0
+            photoScale = 0.85
+            withAnimation(cardEntranceAnimation) {
+                photoOpacity = 1.0
+                photoScale = 1.0
+            }
             scheduleIdleBounce()
         } else {
-            // Fallback: load a new photo if next wasn't available
-            loadCurrentPhoto()
-            prefetchNextPhoto()
+            // No more photos - rebuild queue or show empty state
+            rebuildPhotoQueue()
+            if photoQueue.isEmpty {
+                currentPhoto = nil
+            } else {
+                // Recursive call to load from fresh queue
+                advanceToNextPhoto()
+            }
         }
-        
+        // Clean up memory periodically
         swipeCount += 1
-        if swipeCount % 12 == 0 {
-            print("🧹 Clearing image caches after 12 swipes")
-            photoManager.clearImageCaches()
+        if swipeCount % 10 == 0 {
+            cleanupMemory()
         }
-        
         isTransitioning = false
     }
     
+    private func cleanupMemory() {
+        // Clear old processed photos if too many
+        if processedPhotos.count > 100 {
+            processedPhotos.removeAll()
+        }
+        
+        // Selective cache clearing
+        DispatchQueue.global(qos: .utility).async {
+            self.photoManager.clearOldCaches()
+        }
+    }
+
     // MARK: - User Interactions
     
     enum PhotoAction {
@@ -693,6 +928,7 @@ struct HomeView: View {
         
         // 🔊 Feedback
         SoundManager.playClick()
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
         
         // Cancel any pending idle hint
         idleBounceWorkItem?.cancel()
@@ -710,6 +946,12 @@ struct HomeView: View {
             showActionBanner(text: "Favorited!", icon: "heart.fill", direction: .down)
             photoManager.setFavorite(photo, isFavorite: !photo.isFavorite)
             photoManager.markReviewed(photo)
+            // Update currentPhoto, photoQueue, and backgroundCards with the latest Photo
+            if let updated = photoManager.displayPhotos.first(where: { $0.asset.localIdentifier == photo.asset.localIdentifier }) {
+                currentPhoto = updated
+                photoQueue = photoQueue.map { $0.asset.localIdentifier == updated.asset.localIdentifier ? updated : $0 }
+                backgroundCards = backgroundCards.map { $0.asset.localIdentifier == updated.asset.localIdentifier ? updated : $0 }
+            }
             animateActionAndAdvance(direction: .down)
         case .keep:
             showActionBanner(text: "Kept!", icon: "checkmark", direction: .right)
@@ -728,41 +970,42 @@ struct HomeView: View {
             print("⚠️ No action to undo")
             return
         }
-        
-        print("🔄 Performing undo for action: \(undoAction.action), Photo: \(undoAction.photo.asset.localIdentifier)")
-        
-        // Cancel undo timer
-        // undoButtonTimer?.cancel() // This line was removed as per the edit hint
-        
-        // Hide undo button immediately
-        // hideUndoButton() // This line was removed as per the edit hint
-        
+        print("🔄 Performing undo for action: \(undoAction.action)")
         // Reverse the action
         switch undoAction.action {
         case .trash:
-            // Restore from trash
             photoManager.restoreFromTrash(undoAction.photo)
-            print("♻️ Restored photo from trash")
         case .favorite:
-            // Remove from favorites and unmark as reviewed
             photoManager.setFavorite(undoAction.photo, isFavorite: false)
             photoManager.unmarkReviewed(undoAction.photo)
-            print("💔 Removed from favorites and unmarked as reviewed")
         case .keep:
-            // Unmark as reviewed
             photoManager.unmarkReviewed(undoAction.photo)
-            print("↩️ Unmarked as reviewed")
         }
-        
+        // Insert photo back at the beginning of queue
+        photoQueue.insert(undoAction.photo, at: 0)
+        processedPhotos.remove(undoAction.photo.id)
+        // Swap current photo with undone photo
+        currentPhoto = undoAction.photo
+        // Update background cards (only one next card)
+        if photoQueue.count > 1 {
+            backgroundCards = Array(photoQueue.prefix(2).dropFirst())
+        } else {
+            backgroundCards = []
+        }
         // Clear the last action
         lastAction = nil
-        
         // Provide feedback
         SoundManager.playClick()
-        
-        // Show a brief confirmation
-        showActionBanner(text: "Undone!", icon: "checkmark", direction: .right)
-        
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        // Animate the card appearing
+        photoOpacity = 0
+        photoScale = 0.85
+        withAnimation(cardEntranceAnimation) {
+            photoOpacity = 1.0
+            photoScale = 1.0
+        }
+        // Show confirmation
+        showActionBanner(text: "Undone!", icon: "arrow.uturn.left", direction: .right)
         print("✅ Undo completed successfully")
     }
 
@@ -838,19 +1081,25 @@ struct HomeView: View {
     }
     
     private func handleDragEnd(value: DragGesture.Value) {
-        let threshold: CGFloat = 80
+        let horizontalThreshold: CGFloat = 100
+        let velocityThreshold: CGFloat = 500
         let translation = value.translation
+        let velocity = value.velocity
         
-        if translation.width < -threshold {
-            handleAction(.trash)
-        } else if translation.width > threshold {
-            handleAction(.keep)
-        } else {
-            // Reset position with optimized spring animation – favourites now handled by double-tap
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0)) {
-                dragOffset = .zero
-                dragRotation = 0
+        // Check if swipe passes threshold (position or velocity)
+        if abs(translation.width) > horizontalThreshold || abs(velocity.width) > velocityThreshold {
+            // Determine direction
+            if translation.width < 0 || velocity.width < -velocityThreshold {
+                handleAction(.trash)
+            } else {
+                handleAction(.keep)
             }
+        } else {
+            // Snap back with spring physics
+            cardAnimation = snapBackSpringAnimation
+            dragOffset = .zero
+            dragRotation = 0
+            
             // Restart idle bounce timer after user cancels swipe
             scheduleIdleBounce()
         }
@@ -860,35 +1109,40 @@ struct HomeView: View {
         var targetOffset: CGSize
         var targetRotation: Double = 0
         
+        // Calculate throw distance based on velocity
+        let throwMultiplier = max(1.0, abs(swipeVelocity) / 500)
+        let baseDistance = UIScreen.main.bounds.width * 1.5
+        
         switch direction {
         case .left:
-            targetOffset = CGSize(width: -UIScreen.main.bounds.width, height: 0)
-            targetRotation = -25 // Slightly reduced rotation for smoother animation
+            targetOffset = CGSize(width: -baseDistance * throwMultiplier, height: 50)
+            targetRotation = -30
         case .right:
-            targetOffset = CGSize(width: UIScreen.main.bounds.width, height: 0)
-            targetRotation = 25 // Slightly reduced rotation for smoother animation
+            targetOffset = CGSize(width: baseDistance * throwMultiplier, height: 50)
+            targetRotation = 30
         case .down:
             targetOffset = CGSize(width: 0, height: UIScreen.main.bounds.height)
+            targetRotation = 0
         }
         
-        // Animate card exit with optimized spring animation
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.85, blendDuration: 0)) {
-            dragOffset = targetOffset
-            dragRotation = targetRotation
-            photoOpacity = 0
-        }
+        // Use physics-based spring animation
+        cardAnimation = swipeSpringAnimation
+        dragOffset = targetOffset
+        dragRotation = targetRotation
+        photoOpacity = 0
+        photoScale = 0.8
         
-        // Advance to next photo with optimized timing
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            // Reset all gesture states cleanly
-            dragOffset = .zero
-            dragRotation = 0
-            photoOpacity = 1.0 // Reset opacity for next card
-            photoScale = 1.0   // Reset scale for next card
-            isProcessingAction = false
+        // Advance to next photo with shorter delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            // Reset all states
+            self.cardAnimation = nil
+            self.dragOffset = .zero
+            self.dragRotation = 0
+            self.swipeVelocity = 0
+            self.isProcessingAction = false
             
-            // Advance to the preloaded next photo
-            advanceToNextPhoto()
+            // Advance to next
+            self.advanceToNextPhoto()
         }
     }
 
@@ -919,6 +1173,35 @@ struct HomeView: View {
     }
 
     // (global banner overlay helper removed)
+
+    // Add the toggleFavoriteHome function
+    private func toggleFavoriteHome() {
+        guard let photo = currentPhoto else { return }
+        // Provide haptic feedback
+        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+        impactFeedback.impactOccurred()
+        // Play sound feedback
+        SoundManager.playClick()
+        // Start animation
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+            favoriteIconScale = 1.3
+        }
+        // Toggle favorite state in PhotoManager
+        photoManager.setFavorite(photo, isFavorite: !photo.isFavorite)
+        // Update currentPhoto, photoQueue, and backgroundCards with the latest Photo
+        if let updated = photoManager.displayPhotos.first(where: { $0.asset.localIdentifier == photo.asset.localIdentifier }) {
+            currentPhoto = updated
+            photoQueue = photoQueue.map { $0.asset.localIdentifier == updated.asset.localIdentifier ? updated : $0 }
+            backgroundCards = backgroundCards.map { $0.asset.localIdentifier == updated.asset.localIdentifier ? updated : $0 }
+        }
+        // Reset scale after animation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                favoriteIconScale = 1.0
+            }
+        }
+        print((photo.isFavorite ? "⭐ Added to favorites" : "💔 Removed from favorites"))
+    }
 }
 
 // MARK: - Supporting Types

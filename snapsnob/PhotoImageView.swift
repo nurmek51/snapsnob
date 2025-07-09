@@ -107,8 +107,10 @@ class ImageLoader: ObservableObject {
         let assetID = asset.localIdentifier
         
         // Convert logical points to pixels to obtain a sharper thumbnail on Retina screens.
+        // Detect if the caller already provided a pixel-scaled size (e.g. 330 px for 110 pt @3x) to avoid double scaling.
         let scale = UIScreen.main.scale
-        let pixelSize = CGSize(width: targetSize.width * scale, height: targetSize.height * scale)
+        let isPointSize = targetSize.width < 250 // heuristic – thumbnails & grid cells are < 250 pt.
+        let pixelSize = isPointSize ? CGSize(width: targetSize.width * scale, height: targetSize.height * scale) : targetSize
         
         // Skip if we're already loading this exact asset
         if currentAssetID == assetID && (isLoading || image != nil) {
@@ -132,7 +134,7 @@ class ImageLoader: ObservableObject {
         }
 
         #if DEBUG
-        print("🖼️ Starting image load for asset: \(assetID), size: \(targetSize)")
+        print("📥 ImageLoader initiate two-step request asset=\(assetID.suffix(8)) pointSize=\(targetSize) pixelSize=\(pixelSize)")
         #endif
         
         // Cancel any existing request
@@ -143,57 +145,70 @@ class ImageLoader: ObservableObject {
         isLoading = true
         hasError = false
         
-        let options = PHImageRequestOptions()
-        options.isNetworkAccessAllowed = true
-        // Opportunistic gives progressive low->high. We prefer crisp final output; `.highQualityFormat`
-        // delivers the best available image in one go.
-        options.deliveryMode = .highQualityFormat
-        options.resizeMode = .exact
-        options.isSynchronous = false
-        
-        requestID = imageManager.requestImage(
-            for: asset,
-            targetSize: pixelSize,
-            contentMode: .aspectFill,
-            options: options
-        ) { [weak self] image, info in
-            guard let self = self else { return }
-            
-            DispatchQueue.main.async {
-                // Only process if this is still the current asset
-                guard self.currentAssetID == assetID else { return }
+        func request(_ mode: PHImageRequestOptionsDeliveryMode) {
+            let opts = PHImageRequestOptions()
+            opts.isNetworkAccessAllowed = true
+            opts.deliveryMode = mode
+            opts.resizeMode = mode == .fastFormat ? .fast : .exact
+            opts.isSynchronous = false
+
+            self.requestID = imageManager.requestImage(
+                for: asset,
+                targetSize: pixelSize,
+                contentMode: .aspectFill,
+                options: opts
+            ) { [weak self] image, info in
+                guard let self = self else { return }
                 
-                self.isLoading = false
+                DispatchQueue.main.async {
+                    // Only process if this is still the current asset
+                    guard self.currentAssetID == assetID else { return }
+                    
+                    self.isLoading = false
 
-                if let error = info?[PHImageErrorKey] as? NSError {
-                    print("❌ Image loading failed for asset: \(assetID) - Error: \(error.localizedDescription)")
+                    #if DEBUG
+                    let modeStr = mode == .fastFormat ? "FAST" : "HQ"
+                    let degraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
+                    print("📷 ImageLoader callback asset=\(assetID.suffix(8)) mode=\(modeStr) degraded=\(degraded) imgSize=\(image?.size ?? .zero)")
+                    #endif
 
-                    // Fallback for error 3303 / 3072 (resource not found / cancelled)
-                    if error.domain == PHPhotosErrorDomain && (error.code == 3072 || error.code == 3303) {
-                        self.retryWithImageData(asset: asset, targetSize: targetSize, assetID: assetID)
+                    if let error = info?[PHImageErrorKey] as? NSError {
+                        print("❌ Image loading failed for asset: \(assetID) - Error: \(error.localizedDescription)")
+
+                        // Fallback for error 3303 / 3072 (resource not found / cancelled)
+                        if error.domain == PHPhotosErrorDomain && (error.code == 3072 || error.code == 3303) {
+                            self.retryWithImageData(asset: asset, targetSize: targetSize, assetID: assetID)
+                            return
+                        }
+
+                        self.hasError = true
                         return
                     }
 
-                    self.hasError = true
-                    return
-                }
-
-                if let image = image {
-                    print("✅ Image loaded successfully for asset: \(assetID) - Size: \(image.size)")
-                    self.image = image
-                    // Store in cache with cost based on image size
-                    let cost = Int(image.size.width * image.size.height * 4)
-                    Self.thumbnailCache.setObject(image, forKey: cacheKey, cost: cost)
-                    self.hasError = false
-                } else {
-                    // Nil image without explicit error – retry once
-                    self.retryWithImageData(asset: asset, targetSize: targetSize, assetID: assetID)
+                    if let image = image {
+                        print("✅ Image loaded successfully for asset: \(assetID) - Size: \(image.size)")
+                        self.image = image
+                        // Store in cache with cost based on image size
+                        let cost = Int(image.size.width * image.size.height * 4)
+                        Self.thumbnailCache.setObject(image, forKey: cacheKey, cost: cost)
+                        self.hasError = false
+                    } else {
+                        // Nil image without explicit error – retry once
+                        self.retryWithImageData(asset: asset, targetSize: targetSize, assetID: assetID)
+                    }
                 }
             }
         }
-        
+
+        // Quick thumbnail first
+        request(.fastFormat)
+        // Swap to HQ after slight delay
+        DispatchQueue.global().asyncAfter(deadline: .now() + 0.05) {
+            request(.highQualityFormat)
+        }
+
         #if DEBUG
-        print("🖼️ Image request started with ID: \(requestID ?? -1)")
+        print("🖼️ Two-step image request (fast+HQ) started for asset: \(assetID)")
         #endif
     }
     

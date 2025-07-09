@@ -7,7 +7,7 @@ struct FullScreenPhotoView: View {
     let onDismiss: () -> Void
     
     // New properties for group navigation
-    let photoGroup: [Photo]
+    @State private var photoGroup: [Photo]
     let groupTitle: String?
     @State private var currentIndex: Int
     
@@ -43,7 +43,7 @@ struct FullScreenPhotoView: View {
     init(photo: Photo, photoManager: PhotoManager, photoGroup: [Photo] = [], groupTitle: String? = nil, onDismiss: @escaping () -> Void) {
         self.photo = photo
         self.photoManager = photoManager
-        self.photoGroup = photoGroup.isEmpty ? [photo] : photoGroup
+        self._photoGroup = State(initialValue: photoGroup.isEmpty ? [photo] : photoGroup)
         self.groupTitle = groupTitle
         self.onDismiss = onDismiss
         
@@ -54,6 +54,14 @@ struct FullScreenPhotoView: View {
     private var currentPhoto: Photo {
         guard currentIndex >= 0 && currentIndex < photoGroup.count else { return photo }
         return photoGroup[currentIndex]
+    }
+    
+    // Add this property to always get the latest photo from PhotoManager
+    private var syncedCurrentPhoto: Photo {
+        if let updated = photoManager.displayPhotos.first(where: { $0.asset.localIdentifier == currentPhoto.asset.localIdentifier }) {
+            return updated
+        }
+        return currentPhoto
     }
     
     private var canNavigatePrevious: Bool {
@@ -271,10 +279,7 @@ struct FullScreenPhotoView: View {
                     
                     Spacer()
                     
-                    // Favorite star icon
-                    favoriteStarButton
-                    
-                    // Close button
+                    // Close button (remains top right)
                     Button(action: {
                         print("❌ Close button pressed in full screen")
                         onDismiss()
@@ -295,6 +300,8 @@ struct FullScreenPhotoView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 10)
                 .opacity(1.0 - abs(dismissOffset.height) / 200.0) // Hide controls during dismiss
+
+                // Move the tip here, just below the top bar
                 
                 Spacer()
                 
@@ -319,34 +326,23 @@ struct FullScreenPhotoView: View {
                                 )
                         }
                     }
-                    
-                    if scale == 1.0 && !isLoading && !hasError {
-                        HStack {
-                            Spacer()
-                            VStack(spacing: 4) {
-                                Text("Потяните вниз для закрытия")
-                                    .font(.caption)
-                                    .foregroundColor(.white.opacity(0.7))
-                                
-                                if photoGroup.count > 1 {
-                                    Text("Смахивайте влево/вправо для навигации")
-                                        .font(.caption)
-                                        .foregroundColor(.white.opacity(0.7))
-                                }
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(
-                                Capsule()
-                                    .fill(Color.black.opacity(0.4))
-                            )
-                        }
-                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 40)
                 .opacity(1.0 - abs(dismissOffset.height) / 200.0) // Hide during dismiss
             }
+            // Add favorite button at the bottom center, floating above the image
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    favoriteStarButton
+                        .padding(.bottom, 40)
+                    Spacer()
+                }
+            }
+            .allowsHitTesting(!isLoading && !hasError)
+            .opacity(isLoading || hasError ? 0 : 1)
         }
         .background(Color.clear)
         .onAppear {
@@ -366,42 +362,10 @@ struct FullScreenPhotoView: View {
     // MARK: - Favorite Star Button
     
     private var favoriteStarButton: some View {
-        Button(action: {
-            toggleFavorite()
-        }) {
-            Image(systemName: currentPhoto.isFavorite ? "star.fill" : "star")
-                .font(.title2)
-                .fontWeight(.semibold)
-                .foregroundColor(currentPhoto.isFavorite ? .yellow : .white)
-                .scaleEffect(favoriteIconScale)
-                .rotationEffect(.degrees(favoriteIconRotation))
-                .background(
-                    Circle()
-                        .fill(Color.black.opacity(0.6))
-                        .frame(width: 44, height: 44)
-                        .background(
-                            Circle()
-                                .fill(.ultraThinMaterial)
-                                .frame(width: 44, height: 44)
-                        )
-                )
-                .overlay(
-                    // Glow effect for filled star
-                    Circle()
-                        .stroke(
-                            currentPhoto.isFavorite ? Color.yellow.opacity(0.3) : Color.clear,
-                            lineWidth: 2
-                        )
-                        .frame(width: 48, height: 48)
-                        .scaleEffect(showFavoriteAnimation ? 1.2 : 1.0)
-                        .opacity(showFavoriteAnimation ? 0.0 : (currentPhoto.isFavorite ? 1.0 : 0.0))
-                        .animation(.easeOut(duration: 0.6), value: showFavoriteAnimation)
-                )
-        }
-        .buttonStyle(PlainButtonStyle())
-        .animation(.spring(response: 0.4, dampingFraction: 0.6), value: favoriteIconScale)
-        .animation(.spring(response: 0.4, dampingFraction: 0.6), value: favoriteIconRotation)
-        .animation(.easeInOut(duration: 0.3), value: currentPhoto.isFavorite)
+        FavoriteStarButton(
+            isFavorite: syncedCurrentPhoto.isFavorite,
+            onToggle: { toggleFavorite() }
+        )
     }
     
     // MARK: - Favorite Toggle Functionality
@@ -421,15 +385,17 @@ struct FullScreenPhotoView: View {
         }
         
         // Show glow animation for adding to favorites
-        if !currentPhoto.isFavorite {
+        if !syncedCurrentPhoto.isFavorite {
             showFavoriteAnimation = true
             withAnimation(.easeOut(duration: 0.6)) {
                 showFavoriteAnimation = false
             }
         }
         
-        // Toggle favorite state
-        photoManager.setFavorite(currentPhoto, isFavorite: !currentPhoto.isFavorite)
+        // Toggle favorite state in PhotoManager
+        photoManager.setFavorite(syncedCurrentPhoto, isFavorite: !syncedCurrentPhoto.isFavorite)
+        // --- Remove local update of photoGroup[idx].isFavorite.toggle() ---
+        // --- End force local update ---
         
         // Reset scale after animation
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -438,7 +404,7 @@ struct FullScreenPhotoView: View {
             }
         }
         
-        print(currentPhoto.isFavorite ? "⭐ Added to favorites" : "💔 Removed from favorites")
+        print(syncedCurrentPhoto.isFavorite ? "⭐ Added to favorites" : "💔 Removed from favorites")
     }
     
     // MARK: - Drag Handling

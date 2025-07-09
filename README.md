@@ -317,6 +317,48 @@ SnapSnob now implements a sophisticated queue-based photo loading system that el
 - **Memory Stable**: <50MB additional memory usage
 - **Fast Startup**: Initial photo loads optimized for quick app launch
 
+## Enhanced Swipe Animations (vNext.3)
+
+### Tinder-Style Spring Physics
+SnapSnob now features completely redesigned swipe animations with smooth, physics-based transitions:
+
+**Key Improvements**:
+1. **Spring-Based Animations**: Using `interpolatingSpring` with carefully tuned stiffness and damping values
+   - Swipe animation: `stiffness: 300, damping: 25`
+   - Snap back: `stiffness: 500, damping: 30`
+   - Card entrance: `stiffness: 250, damping: 20`
+
+2. **Velocity-Aware Gestures**: Card throw distance and rotation now respond to swipe velocity
+   - Dynamic rotation based on swipe speed
+   - Throw distance multiplier for natural physics
+
+3. **Visual Feedback Enhancements**:
+   - Large swipe indicators (✓/✗) that scale with gesture
+   - Dynamic shadows that respond to card position
+   - Background cards for Tinder-style depth effect
+   - Smooth gradient backdrops for visual polish
+
+4. **Performance Optimizations**:
+   - Optimized image loader with selective caching
+   - Queue-based photo management prevents redundant loads
+   - Memory cleanup after every 10 swipes
+   - Eliminated double-loading and flicker issues
+
+### Story View Enhancements
+The same spring physics and optimizations have been applied to story series animations:
+- Smooth photo transitions with spring animations
+- Preloading of next 3 photos for instant navigation
+- Enhanced trash/keep animations with visual feedback
+- Responsive button animations that scale on interaction
+
+### Technical Details
+- **Smart Queue Management**: Photos are loaded from a shuffled queue with processed photo tracking
+- **Undo Support**: Full undo functionality with photo queue restoration
+- **Cache Optimization**: Selective cache clearing keeps essential images while freeing memory
+- **Type-Safe Implementation**: All animations use proper type inference to prevent compilation issues
+
+The result is a buttery-smooth swipe experience that feels natural and responsive, matching the polish of apps like Tinder while maintaining SnapSnob's unique visual identity.
+
 ## New Interactive Feedback & Gestures (vNext.1)
 
 SnapSnob now offers an even richer, more delightful experience:

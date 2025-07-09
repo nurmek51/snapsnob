@@ -1,4 +1,5 @@
 import SwiftUI
+import Photos
 
 // MARK: - Common UI Components
 /// This file contains reusable UI components used throughout the SnapSnob app.
@@ -31,6 +32,91 @@ struct TransparentCircleButtonStyle: ButtonStyle {
             .shadow(color: AppColors.primaryText(for: themeManager.isDarkMode).opacity(configuration.isPressed ? 0.4 : 0.0),
                     radius: configuration.isPressed ? 6 : 0)
             .animation(.interactiveSpring(response: 0.4, dampingFraction: 0.65, blendDuration: 0.25), value: configuration.isPressed)
+    }
+}
+
+// MARK: - Favorite Star Button (Reusable)
+
+struct FavoriteStarButton: View {
+    var isFavorite: Bool
+    var onToggle: () -> Void
+    // Animation states
+    @State private var iconScale: CGFloat = 1.0
+    @State private var iconRotation: Double = 0.0
+    @State private var showGlow: Bool = false
+    var body: some View {
+        Button(action: {
+            // Haptic feedback
+            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+            impactFeedback.impactOccurred()
+            // Sound feedback
+            SoundManager.playClick()
+            // Start animation
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                iconScale = 1.3
+                iconRotation += 360
+            }
+            // Show glow animation for adding to favorites
+            if !isFavorite {
+                showGlow = true
+                withAnimation(.easeOut(duration: 0.6)) {
+                    showGlow = false
+                }
+            }
+            // Toggle favorite state
+            onToggle()
+            // Reset scale after animation
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    iconScale = 1.0
+                }
+            }
+        }) {
+            ZStack {
+                if isFavorite {
+                    Image(systemName: "star.fill")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.yellow)
+                        .scaleEffect(iconScale)
+                        .rotationEffect(.degrees(iconRotation))
+                        .transition(.scale.combined(with: .opacity))
+                } else {
+                    Image(systemName: "star")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .scaleEffect(iconScale)
+                        .rotationEffect(.degrees(iconRotation))
+                        .transition(.scale.combined(with: .opacity))
+                }
+            }
+            .background(
+                Circle()
+                    .fill(Color.black.opacity(0.6))
+                    .frame(width: 44, height: 44)
+                    .background(
+                        Circle()
+                            .fill(.ultraThinMaterial)
+                            .frame(width: 44, height: 44)
+                    )
+            )
+            .overlay(
+                Circle()
+                    .stroke(
+                        isFavorite ? Color.yellow.opacity(0.3) : Color.clear,
+                        lineWidth: 2
+                    )
+                    .frame(width: 48, height: 48)
+                    .scaleEffect(showGlow ? 1.2 : 1.0)
+                    .opacity(showGlow ? 0.0 : (isFavorite ? 1.0 : 0.0))
+                    .animation(.easeOut(duration: 0.6), value: showGlow)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+        .animation(.spring(response: 0.4, dampingFraction: 0.6), value: iconScale)
+        .animation(.spring(response: 0.4, dampingFraction: 0.6), value: iconRotation)
+        .animation(.easeInOut(duration: 0.3), value: isFavorite)
     }
 }
 
@@ -108,19 +194,217 @@ struct StoryCircle: View {
 /// An optimized photo view that handles image loading and caching efficiently
 /// This is a wrapper around PhotoImageView with enhanced preloading support
 struct OptimizedPhotoView: View {
+    @EnvironmentObject var themeManager: ThemeManager
     let photo: Photo
-    let targetSize: CGSize
+    /// Desired logical size **in points** – will default to the view’s Geometry size if `nil`/zero.
+    let targetSize: CGSize?
+    @StateObject private var imageLoader = OptimizedImageLoader()
+    @State private var isImageLoaded = false
+    @State private var imageOpacity: Double = 0
+    @State private var lastRequestedSize: CGSize = .zero
     
     var body: some View {
-        PhotoImageView(
-            photo: photo,
-            targetSize: targetSize
-        )
-        // Trigger immediate loading for preloaded images
-        .onAppear {
-            // The PhotoImageView will handle the actual loading
-            // This ensures immediate loading when the view appears
+        GeometryReader { geo in
+            let logicalSize: CGSize = {
+                if let size = targetSize, size.width > 4 && size.height > 4 {
+                    return size
+                } else {
+                    return geo.size
+                }
+            }()
+            ZStack {
+                if !isImageLoaded {
+                    if let lastImage = imageLoader.image {
+                        // Show a blurred version of the last loaded image as a placeholder
+                        Image(uiImage: lastImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: logicalSize.width, height: logicalSize.height)
+                            .clipped()
+                            .blur(radius: 16)
+                            .opacity(0.5)
+                    } else {
+                        Rectangle()
+                            .fill(AppColors.secondaryBackground(for: themeManager.isDarkMode))
+                            .overlay(
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: AppColors.secondaryText(for: themeManager.isDarkMode)))
+                                    .scaleEffect(0.8)
+                            )
+                    }
+                }
+                if let image = imageLoader.image {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: logicalSize.width, height: logicalSize.height)
+                        .clipped()
+                        .opacity(imageOpacity)
+                }
+            }
+            .frame(width: logicalSize.width, height: logicalSize.height)
+            .onAppear {
+                requestImageIfNeeded(for: logicalSize)
+            }
+            // When loader publishes a new image, fade it in & mark as loaded
+            .onChange(of: imageLoader.image) { _, newImg in
+                guard newImg != nil else { return }
+                withAnimation(.easeOut(duration: 0.15)) {
+                    imageOpacity = 1
+                    isImageLoaded = true
+                }
+            }
+            .onChange(of: photo.id) { _, _ in
+                resetAndRequest(for: logicalSize)
+            }
+            .onChange(of: geo.size) { _, newSize in
+                requestImageIfNeeded(for: newSize)
+            }
+            .onDisappear {
+                imageLoader.cancelLoading()
+            }
         }
+    }
+    
+    private func resetAndRequest(for size: CGSize) {
+        imageOpacity = 0
+        isImageLoaded = false
+        lastRequestedSize = .zero // force reload
+        requestImageIfNeeded(for: size)
+    }
+    
+    private func requestImageIfNeeded(for size: CGSize) {
+        guard size.width > 4, size.height > 4 else { return } // wait for real layout
+        // Avoid duplicate requests for nearly identical sizes (allow 2-pt tolerance)
+        if abs(size.width - lastRequestedSize.width) < 2 && abs(size.height - lastRequestedSize.height) < 2 {
+            return
+        }
+        lastRequestedSize = size
+        imageLoader.loadImage(from: photo.asset, targetSize: size)
+    }
+}
+
+// MARK: - Optimized Image Loader with Better Caching
+class OptimizedImageLoader: ObservableObject {
+    private static let sharedCache: NSCache<NSString, UIImage> = {
+        let cache = NSCache<NSString, UIImage>()
+        cache.countLimit = 50 // More aggressive limit for swipe performance
+        cache.totalCostLimit = 100 * 1024 * 1024 // 100MB
+        return cache
+    }()
+    
+    @Published var image: UIImage?
+    private var requestID: PHImageRequestID?
+    private let imageManager = PHCachingImageManager()
+    private var currentAssetID: String?
+    private var cacheObserver: NSObjectProtocol?
+    
+    init() {
+        // Listen for cache clear notifications
+        cacheObserver = NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("ClearOldImageCache"),
+            object: nil,
+            queue: .main
+        ) { notification in
+            if let keepIds = notification.userInfo?["keepIds"] as? Set<String> {
+                Self.clearCacheSelectively(keepIds: keepIds)
+            }
+        }
+    }
+    
+    deinit {
+        cancelLoading()
+        if let observer = cacheObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+    }
+    
+    func loadImage(from asset: PHAsset, targetSize: CGSize) {
+        let assetID = asset.localIdentifier
+        
+        // Skip if already loading this asset
+        if currentAssetID == assetID && image != nil {
+            return
+        }
+        
+        currentAssetID = assetID
+        
+        // Check cache first
+        let scale = UIScreen.main.scale
+        let pixelSize = CGSize(width: targetSize.width * scale, height: targetSize.height * scale)
+        let cacheKey = NSString(string: "\(assetID)_\(Int(pixelSize.width))x\(Int(pixelSize.height))")
+        
+        if let cachedImage = Self.sharedCache.object(forKey: cacheKey) {
+            DispatchQueue.main.async {
+                self.image = cachedImage
+            }
+            return
+        }
+        
+        // Cancel any existing request
+        cancelLoading()
+        
+        // Two-step request: FAST thumbnail first, then crisp HQ.
+
+        func request(_ delivery: PHImageRequestOptionsDeliveryMode) {
+            let opts = PHImageRequestOptions()
+            opts.isNetworkAccessAllowed = true
+            opts.deliveryMode = delivery
+            opts.resizeMode = delivery == .fastFormat ? .fast : .exact
+            opts.isSynchronous = false
+            opts.version = .current
+            self.requestID = imageManager.requestImage(
+                for: asset,
+                targetSize: pixelSize,
+                contentMode: .aspectFill,
+                options: opts
+            ) { [weak self] image, info in
+                guard let self = self, self.currentAssetID == assetID else { return }
+                
+                let isDegraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
+
+                #if DEBUG
+                let modeStr = delivery == .fastFormat ? "FAST" : delivery == .opportunistic ? "OPPORTUNISTIC" : "HQ"
+                print("📥 OptimizedImageLoader asset=\(assetID.suffix(8)) mode=\(modeStr) degraded=\(isDegraded) size=\(pixelSize)")
+                #endif
+                
+                DispatchQueue.main.async {
+                    if let image = image {
+                        // Always show the image, even if degraded – the HQ version will overwrite later.
+                        self.image = image
+                        
+                        // Only cache high-quality images (non-degraded) to save memory.
+                        if !isDegraded {
+                            let cost = Int(image.size.width * image.size.height * 4)
+                            Self.sharedCache.setObject(image, forKey: cacheKey, cost: cost)
+                        }
+                    }
+                }
+            }
+        }
+        // Step 1: fast thumbnail
+        request(.fastFormat)
+        // Step 2: high-quality replacement (after slight delay to avoid duplicate burst on slow assets)
+        DispatchQueue.global().asyncAfter(deadline: .now() + 0.1) {
+            request(.highQualityFormat)
+        }
+    }
+    
+    func cancelLoading() {
+        if let requestID = requestID {
+            imageManager.cancelImageRequest(requestID)
+            self.requestID = nil
+        }
+    }
+    
+    static func clearCache() {
+        sharedCache.removeAllObjects()
+    }
+    
+    static func clearCacheSelectively(keepIds: Set<String>) {
+        // NSCache does not expose its keys, so we must track them ourselves or clear all and re-cache essentials.
+        // For now, safest is to clear all and rely on prefetch to re-cache needed images.
+        sharedCache.removeAllObjects()
     }
 }
 

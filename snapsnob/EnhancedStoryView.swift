@@ -26,9 +26,31 @@ struct EnhancedStoryView: View {
     @State private var photoOpacity: Double = 1.0
     @State private var swipeDirection: SwipeDirection = .none
     @State private var showCheckmark = false
+    @State private var showTrashOverlay = false // NEW: for trash action
+    @State private var trashOverlayScale: CGFloat = 1.0 // NEW: for trash action
     @State private var dismissOffset: CGSize = .zero
     
+    // MARK: - Enhanced Animation States
+    @State private var cardTransform: CGAffineTransform = .identity
+    @State private var actionAnimationScale: CGFloat = 1.0
+    @State private var nextPhotoOpacity: Double = 0
+    @State private var preloadedImages: [Int: UIImage] = [:]
+    @State private var isProcessingAction = false
+    
     private let storyDuration: Double = 4.0
+    
+    // MARK: - Spring Animation Configurations
+    private var photoTransitionAnimation: Animation {
+        .interpolatingSpring(stiffness: 400, damping: 30)
+    }
+    
+    private var actionAnimation: Animation {
+        .interpolatingSpring(stiffness: 350, damping: 25)
+    }
+    
+    private var dismissAnimation: Animation {
+        .interpolatingSpring(stiffness: 300, damping: 28)
+    }
     
     private enum SwipeDirection {
         case none, left, right
@@ -134,7 +156,20 @@ struct EnhancedStoryView: View {
                         ZStack {
                             if let photo = currentPhoto {
                                 ZStack {
-                                    PhotoImageView(
+                                    // Preload next photo underneath for smooth transitions
+                                    if currentPhotoIndex + 1 < photoSeries.photos.count {
+                                        let nextPhoto = photoSeries.photos[currentPhotoIndex + 1]
+                                        OptimizedPhotoView(
+                                            photo: nextPhoto,
+                                            targetSize: CGSize(width: geometry.size.width, height: geometry.size.height * 0.7)
+                                        )
+                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                        .clipped()
+                                        .opacity(nextPhotoOpacity)
+                                    }
+                                    
+                                    // Current photo with optimized loading
+                                    OptimizedPhotoView(
                                         photo: photo,
                                         targetSize: CGSize(width: geometry.size.width, height: geometry.size.height * 0.7)
                                     )
@@ -143,6 +178,7 @@ struct EnhancedStoryView: View {
                                     .scaleEffect(photoScale)
                                     .offset(dragOffset)
                                     .opacity(photoOpacity)
+                                    .transformEffect(cardTransform)
                                     .id(currentPhotoIndex) // Force UI update when index changes
                                     .onTapGesture(count: 2) {
                                         // Double tap for fullscreen
@@ -159,7 +195,23 @@ struct EnhancedStoryView: View {
                                             .frame(width: 120, height: 120)
                                             .foregroundColor(.white)
                                             .shadow(radius: 10)
-                                            .transition(.opacity)
+                                            .scaleEffect(actionAnimationScale)
+                                            .opacity(showCheckmark ? 1 : 0)
+                                            .animation(actionAnimation, value: showCheckmark)
+                                            .animation(actionAnimation, value: actionAnimationScale)
+                                    }
+                                    // Trash overlay for the trash animation
+                                    if showTrashOverlay {
+                                        Image(systemName: "trash.circle.fill")
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 120, height: 120)
+                                            .foregroundColor(.red)
+                                            .shadow(radius: 10)
+                                            .scaleEffect(trashOverlayScale)
+                                            .opacity(showTrashOverlay ? 1 : 0)
+                                            .animation(actionAnimation, value: showTrashOverlay)
+                                            .animation(actionAnimation, value: trashOverlayScale)
                                     }
                                 }
                             } else {
@@ -233,9 +285,15 @@ struct EnhancedStoryView: View {
                                 .padding(.vertical, 14)
                                 .background(
                                     Capsule()
-                                        .fill(AppColors.cardBackground(for: themeManager.isDarkMode).opacity(0.9))
+                                        .fill(AppColors.accent(for: themeManager.isDarkMode))
+                                        .shadow(color: .black.opacity(0.25), radius: 6, x: 0, y: 2)
+                                        .overlay(
+                                            Capsule().stroke(Color.white.opacity(0.18), lineWidth: 1)
+                                        )
                                 )
                             }
+                            .scaleEffect(isProcessingAction && swipeDirection == .left ? 1.15 : 1.0)
+                            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isProcessingAction)
                             
                             Button(action: {
                                 print("💚 Keep button pressed in story")
@@ -250,9 +308,15 @@ struct EnhancedStoryView: View {
                                 .padding(.vertical, 14)
                                 .background(
                                     Capsule()
-                                        .fill(AppColors.cardBackground(for: themeManager.isDarkMode).opacity(0.9))
+                                        .fill(AppColors.primaryText(for: themeManager.isDarkMode).opacity(0.95))
+                                        .shadow(color: .black.opacity(0.25), radius: 6, x: 0, y: 2)
+                                        .overlay(
+                                            Capsule().stroke(Color.white.opacity(0.18), lineWidth: 1)
+                                        )
                                 )
                             }
+                            .scaleEffect(isProcessingAction && swipeDirection == .right ? 1.15 : 1.0)
+                            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isProcessingAction)
                         }
                         .padding(.horizontal, 20)
                         .padding(.bottom, 40)
@@ -273,11 +337,11 @@ struct EnhancedStoryView: View {
                                 let threshold: CGFloat = 120
                                 let velocityThreshold: CGFloat = 800
                                 if abs(translation.height) > threshold || abs(velocity.height) > velocityThreshold {
-                                    // Trigger dismiss
-                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                    // Trigger dismiss with spring animation
+                                    withAnimation(dismissAnimation) {
                                         dismissOffset = CGSize(width: 0, height: translation.height > 0 ? 1000 : -1000)
                                     }
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                         if !isDismissing {
                                             isDismissing = true
                                             stopTimer()
@@ -286,7 +350,7 @@ struct EnhancedStoryView: View {
                                         }
                                     }
                                 } else {
-                                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                                    withAnimation(dismissAnimation) {
                                         dismissOffset = .zero
                                     }
                                 }
@@ -305,6 +369,7 @@ struct EnhancedStoryView: View {
                 print("⚠️ WARNING: Photo series has no photos!")
             } else {
                 print("📸 First photo asset: \(photoSeries.photos[0].asset.localIdentifier)")
+                preloadNextPhotos()
             }
             setupProgress()
             startTimer()
@@ -389,37 +454,31 @@ struct EnhancedStoryView: View {
         }
         
         if currentPhotoIndex < photoSeries.photos.count - 1 {
-            // Заполняем текущую полоску без анимации
+            // Fill current progress bar immediately
             if progress.indices.contains(currentPhotoIndex) {
                 progress[currentPhotoIndex] = 1.0
             }
             
-            currentPhotoIndex += 1
+            // INSTANT transition: no animation
+            isTransitioning = false
             swipeDirection = .left
-            
-            print("➡️ Advanced to photo \(currentPhotoIndex)")
-            
-            if let newPhoto = currentPhoto {
-                print("📸 New current photo: \(newPhoto.asset.localIdentifier)")
-            }
-            
-            // Обнуляем прогресс следующего кадра перед стартом таймера
+            photoOpacity = 1.0
+            cardTransform = .identity
+            currentPhotoIndex += 1
+            resetPhotoState()
+            preloadNextPhotos()
+            // Reset progress for new photo
             if progress.indices.contains(currentPhotoIndex) {
                 progress[currentPhotoIndex] = 0.0
             }
-
-            // No entrance animation – just reset state and restart timer
-            resetPhotoState()
             startTimer()
         } else {
             print("✅ Story completed - auto advancing to end")
             if !isDismissing {
                 isDismissing = true
-                stopTimer() // Stop timer before applying actions
+                stopTimer()
                 applyAllActions()
                 onDismiss()
-            } else {
-                print("⚠️ Already dismissing - ignoring duplicate call")
             }
         }
     }
@@ -431,32 +490,25 @@ struct EnhancedStoryView: View {
         }
         
         if currentPhotoIndex > 0 {
-            // Сбрасываем прогресс текущего кадра без анимации
+            // Reset current progress
             if progress.indices.contains(currentPhotoIndex) {
                 progress[currentPhotoIndex] = 0.0
             }
-
-            // No entrance animation – just reset state, index will be updated below
-            resetPhotoState()
-            
-            currentPhotoIndex -= 1
+            // INSTANT transition: no animation
+            isTransitioning = false
             swipeDirection = .right
-            
-            if let newPhoto = currentPhoto {
-                print("📸 New current photo: \(newPhoto.asset.localIdentifier)")
-            }
-            
-            // Сбрасываем прогресс после перехода назад
+            photoOpacity = 1.0
+            cardTransform = .identity
+            currentPhotoIndex -= 1
+            resetPhotoState()
+            // Reset progress for returned photo
             if progress.indices.contains(currentPhotoIndex) {
                 progress[currentPhotoIndex] = 0.0
             }
-            print("⬅️ Went back to photo \(currentPhotoIndex)")
             startTimer()
         } else {
             print("⬅️ Already at first photo")
-            // Still reset transition state even if we can't go back
             isTransitioning = false
-            resetPhotoState()
             startTimer()
         }
     }
@@ -466,30 +518,36 @@ struct EnhancedStoryView: View {
             print("❌ No current photo for trash action")
             return
         }
-        
         print("🗑️ MOVE TO TRASH - Photo ID: \(currentPhotoIndex), Asset: \(photo.asset.localIdentifier), Series: \(photoSeries.title)")
-        
         // Track the action
         photoActions[photo] = "trash"
         print("📊 Tracked trash action. Total actions: \(photoActions.count)")
-        
+        // Provide feedback
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         // Immediately apply the action for better UX
         photoManager.moveToTrash(photo)
         print("🗑️ Photo immediately moved to trash")
-        
-        // Auto advance to next photo with smooth animation
+        // Show trash overlay with spring pop
         stopTimer()
         swipeDirection = .left
-        
-        // New trash animation – photo shrinks and slides down as if "sucked" into trash
-        withAnimation(.easeInOut(duration: 0.5)) {
-            dragOffset = CGSize(width: 0, height: UIScreen.main.bounds.height)
-            photoScale = 0.1
-            photoOpacity = 0.0
+        isProcessingAction = true
+        trashOverlayScale = 0.5
+        showTrashOverlay = true
+        withAnimation(actionAnimation) {
+            trashOverlayScale = 1.2
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
-            self.resetPhotoState()
+        // Scale back to normal
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            withAnimation(self.actionAnimation) {
+                self.trashOverlayScale = 1.0
+            }
+        }
+        // Hide overlay and advance
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            withAnimation(.easeOut(duration: 0.2)) {
+                self.showTrashOverlay = false
+            }
+            self.isProcessingAction = false
             self.goToNextPhoto()
         }
     }
@@ -500,30 +558,46 @@ struct EnhancedStoryView: View {
             return
         }
         
-        print("💚 KEEP PHOTO - Photo ID: \(currentPhotoIndex), Asset: \(photo.asset.localIdentifier), Series: \(photoSeries.title)")
+        print("💚 KEEP - Photo ID: \(currentPhotoIndex), Asset: \(photo.asset.localIdentifier), Series: \(photoSeries.title)")
         
         // Track the action
         photoActions[photo] = "keep"
         print("📊 Tracked keep action. Total actions: \(photoActions.count)")
         
-        // Immediately mark as reviewed so it counts towards progress
+        // Provide feedback
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        
+        // Mark as reviewed but NOT as favorite (keep just means don't trash)
         photoManager.markReviewed(photo)
-        print("💚 Photo marked as kept / reviewed")
+        print("💚 Photo marked as reviewed (kept)")
         
-        // Auto advance to next photo with smooth animation
+        // Show checkmark animation with spring physics
         stopTimer()
-        swipeDirection = .left
+        swipeDirection = .right
+        isProcessingAction = true
         
-        // New keep animation – show checkmark overlay then advance
-        withAnimation(.easeInOut(duration: 0.2)) {
-            showCheckmark = true
+        // Reset scale first
+        actionAnimationScale = 0.5
+        showCheckmark = true
+        
+        // Animate checkmark appearance
+        withAnimation(actionAnimation) {
+            actionAnimationScale = 1.2
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            withAnimation(.easeInOut(duration: 0.2)) {
+        // Then scale back to normal
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            withAnimation(self.actionAnimation) {
+                self.actionAnimationScale = 1.0
+            }
+        }
+        
+        // Hide checkmark and advance
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            withAnimation(.easeOut(duration: 0.2)) {
                 self.showCheckmark = false
             }
-            self.resetPhotoState()
+            self.isProcessingAction = false
             self.goToNextPhoto()
         }
     }
@@ -600,8 +674,23 @@ struct EnhancedStoryView: View {
     private func resetPhotoState() {
         dragOffset = .zero
         photoScale = 1.0
-        photoOpacity = 1.0
         swipeDirection = .none
+    }
+    
+    // MARK: - Photo Preloading
+    private func preloadNextPhotos() {
+        // Preload next 3 photos for smooth transitions
+        let preloadCount = 3
+        let startIndex = currentPhotoIndex + 1
+        let endIndex = min(startIndex + preloadCount, photoSeries.photos.count)
+        
+        guard startIndex < endIndex else { return }
+        
+        let photosToPreload = Array(photoSeries.photos[startIndex..<endIndex])
+        let targetSize = CGSize(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height * 0.7)
+        
+        // Use PhotoManager's prefetch functionality
+        photoManager.prefetchThumbnails(for: photosToPreload, targetSize: targetSize)
     }
 }
 

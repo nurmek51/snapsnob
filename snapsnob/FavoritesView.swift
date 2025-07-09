@@ -107,10 +107,6 @@ struct FavoritesView: View {
                 VStack(spacing: 24) {
                     dashboardSection
                     
-                    if !superStarPhotos.isEmpty {
-                        bestOfBestSection
-                    }
-                    
                     // New Grouped Navigation Structure
                     groupedFavoritesSection
                 }
@@ -274,6 +270,64 @@ struct FavoritesView: View {
         }
         .buttonStyle(PlainButtonStyle())
     }
+    
+    // MARK: - Recent Favorites Conveyor
+    // private var recentFavoritesConveyor: some View {
+    //     // Show only if there are recent favorites
+    //     Group {
+    //         if !recentFavoritePhotos.isEmpty {
+    //             VStack(alignment: .leading, spacing: 12) {
+    //                 HStack(spacing: 8) {
+    //                     Image(systemName: "clock.arrow.circlepath")
+    //                         .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+    //                         .adaptiveFont(.title)
+    //                     Text("Недавние избранные")
+    //                         .adaptiveFont(.body)
+    //                         .fontWeight(.semibold)
+    //                         .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
+    //                     Spacer()
+    //                 }
+    //                 .adaptivePadding()
+    //                 .padding(.horizontal)
+                    
+    //                 // Horizontal conveyor
+    //                 ScrollView(.horizontal, showsIndicators: false) {
+    //                     HStack(spacing: DeviceInfo.shared.spacing(0.8)) {
+    //                         let thumbSide: CGFloat = {
+    //                             switch DeviceInfo.shared.screenSize {
+    //                             case .compact: return 90
+    //                             case .standard: return 100
+    //                             case .plus, .max: return 110
+    //                             case .iPad: return 140
+    //                             case .iPadPro: return 160
+    //                             }
+    //                         }()
+    //                         ForEach(recentFavoritePhotos) { photo in
+    //                             OptimizedPhotoView(
+    //                                 photo: photo,
+    //                                 targetSize: CGSize(width: thumbSide, height: thumbSide)
+    //                             )
+    //                             .frame(width: thumbSide, height: thumbSide)
+    //                             .clipped()
+    //                             .adaptiveCornerRadius()
+    //                             .onTapGesture {
+    //                                 print("🖼️ Conveyor tap: \(photo.asset.localIdentifier)")
+    //                                 withAnimation(AppAnimations.modal) {
+    //                                     selectedPhoto = photo
+    //                                     showingFullScreen = true
+    //                                 }
+    //                             }
+    //                         }
+    //                     }
+    //                     .adaptivePadding()
+    //                     .padding(.horizontal)
+    //                 }
+    //             }
+    //             .adaptivePadding()
+    //             .padding(.vertical)
+    //         }
+    //     }
+    // }
     
     // MARK: - Best of Best Section
     private var bestOfBestSection: some View {
