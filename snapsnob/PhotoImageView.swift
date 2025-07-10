@@ -15,7 +15,6 @@ struct PhotoImageView: View {
                     .aspectRatio(contentMode: .fill)
                     .frame(width: targetSize.width, height: targetSize.height)
                     .opacity(imageLoader.image == nil ? 0 : 1)
-                    .animation(.easeInOut(duration: 0.2), value: imageLoader.image != nil)
             } else if imageLoader.isLoading {
                 Rectangle()
                     .fill(AppColors.secondaryBackground(for: themeManager.isDarkMode))

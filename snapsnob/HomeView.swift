@@ -1,5 +1,6 @@
 import SwiftUI
 import Photos
+import FirebaseAnalytics
 
 // MARK: - Home View
 /// The main feed view showing single photos and story series
@@ -22,8 +23,9 @@ struct HomeView: View {
     @State private var isProcessingAction = false
     
     // Animation states
-    @State private var photoOpacity: Double = 0
-    @State private var photoScale: CGFloat = 0.8
+    // Start fully opaque & at full scale to avoid initial flash
+    @State private var photoOpacity: Double = 1.0
+    @State private var photoScale: CGFloat = 1.0
     // Idle bounce hint state
     @State private var idleOffset: CGFloat = 0
     @State private var idleBounceWorkItem: DispatchWorkItem?
@@ -106,7 +108,8 @@ struct HomeView: View {
     }
     
     private var cardEntranceAnimation: Animation {
-        .interpolatingSpring(stiffness: 250, damping: 20)
+        // Smoother entrance animation to prevent flashing
+        .interpolatingSpring(stiffness: 350, damping: 28)
     }
     
     @State private var hasInitialized = false // Prevents double-initialization
@@ -147,6 +150,12 @@ struct HomeView: View {
                 hasInitialized = true
                 loadInitialPhotos()
                 scheduleIdleBounce()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("PhotoRestoredFromTrash"))) { notification in
+            // Handle photo restored from trash - bring it to the top of the feed
+            if let photoId = notification.userInfo?["photoId"] as? UUID {
+                handlePhotoRestoredFromTrash(photoId: photoId)
             }
         }
         .onChange(of: photoManager.isLoading) { _, isLoading in
@@ -787,21 +796,20 @@ struct HomeView: View {
     // MARK: - Background Card View
     @ViewBuilder
     private func photoCardBackground(photo: Photo, index: Int) -> some View {
-        let scale = 0.96 // Slightly smaller than main card
-        let yOffset: CGFloat = 12 // Subtle offset
+        let scale = 0.98 // Very slightly smaller than main card to create subtle depth
+        // Remove yOffset to prevent position mismatch during transition
         ZStack {
             RoundedRectangle(cornerRadius: 24)
                 .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
-                .shadow(color: AppColors.shadow(for: themeManager.isDarkMode).opacity(0.08), 
-                        radius: 4, x: 0, y: 2)
+                .shadow(color: AppColors.shadow(for: themeManager.isDarkMode).opacity(0.05), 
+                        radius: 2, x: 0, y: 1)
             OptimizedPhotoView(photo: photo, targetSize: cardSize)
                 .clipShape(RoundedRectangle(cornerRadius: 24))
-                .opacity(0.95)
         }
         .frame(width: cardSize.width, height: cardSize.height)
         .scaleEffect(scale)
-        .offset(y: yOffset)
-        .opacity(0.85)
+        // Position background card exactly behind main card to prevent visual jump
+        .zIndex(-1)
     }
     
     // MARK: - Photo Loading Logic (Optimized for Zero-Lag Swipes)
@@ -815,19 +823,18 @@ struct HomeView: View {
 
         // Build photo queue excluding favorites and already processed
         rebuildPhotoQueue()
+        // Ensure background cards are up-to-date before display
+        updateBackgroundCards()
         
         // Load first two photos
         if let first = photoQueue.first {
             currentPhoto = first
             photoManager.prefetchThumbnails(for: [first], targetSize: cardSize)
             
-            // Animate entrance
-            photoOpacity = 0
-            photoScale = 0.85
-            withAnimation(cardEntranceAnimation) {
-                photoOpacity = 1.0
-                photoScale = 1.0
-            }
+            // Smooth entrance without any scale animation to prevent flashing
+            photoOpacity = 1.0 // Start fully opaque  
+            photoScale = 1.0 // Start at full size immediately
+            // No animation - instant appearance for smooth transitions
         }
         
         // Preload next photos for background cards and smooth transitions
@@ -841,11 +848,19 @@ struct HomeView: View {
         }
         // Shuffle for random order
         photoQueue = availablePhotos.shuffled()
-        // Prepare background cards (only one next card)
-        if photoQueue.count > 1 {
-            backgroundCards = Array(photoQueue.prefix(2).dropFirst())
-        } else {
-            backgroundCards = []
+        // Refresh background deck based on the new queue
+        updateBackgroundCards()
+    }
+    
+    /// Updates the `backgroundCards` array with a subtle scale animation only when the underlying data changes.
+    private func updateBackgroundCards() {
+        let desired = photoQueue.count > 1 ? Array(photoQueue.prefix(2).dropFirst()) : []
+
+        // Skip if nothing changed to avoid needless animations
+        if desired.map(\.id) != backgroundCards.map(\.id) {
+            withAnimation(AppAnimations.backgroundCardScale) {
+                backgroundCards = desired
+            }
         }
     }
     
@@ -863,46 +878,48 @@ struct HomeView: View {
     private func advanceToNextPhoto() {
         guard !isTransitioning else { return }
         isTransitioning = true
-        // Remove current photo from queue
-        if let current = currentPhoto {
-            processedPhotos.insert(current.id)
-            photoQueue.removeAll { $0.id == current.id }
-        }
-        // Get next photo from queue
-        if let next = photoQueue.first {
-            currentPhoto = next
-            // Update background cards (only one next card)
-            if photoQueue.count > 1 {
-                backgroundCards = Array(photoQueue.prefix(2).dropFirst())
-            } else {
-                backgroundCards = []
-            }
-            // Preload more photos
-            preloadNextPhotos()
-            // Animate entrance with spring physics
+
+        // 1️⃣ Fade out the current card (cross-fade & slight scale)
+        withAnimation(AppAnimations.cardTransition) {
             photoOpacity = 0
-            photoScale = 0.85
-            withAnimation(cardEntranceAnimation) {
+            photoScale = 0.95
+        }
+
+        // 2️⃣ After the fade-out completes, swap the data & prepare next card
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            // Remove the processed photo
+            if let current = currentPhoto {
+                processedPhotos.insert(current.id)
+                photoQueue.removeAll { $0.id == current.id }
+            }
+
+            // Determine the next photo
+            if let next = photoQueue.first {
+                currentPhoto = next
+            } else {
+                // Rebuild queue if empty
+                rebuildPhotoQueue()
+                currentPhoto = photoQueue.first
+            }
+
+            // Sync background deck
+            updateBackgroundCards()
+            preloadNextPhotos()
+
+            // Memory housekeeping
+            swipeCount += 1
+            if swipeCount % 10 == 0 { cleanupMemory() }
+
+            // 3️⃣ Fade the new card in smoothly
+            withAnimation(AppAnimations.smoothEntrance) {
                 photoOpacity = 1.0
                 photoScale = 1.0
             }
+
+            // Finish transition & re-enable interactions
             scheduleIdleBounce()
-        } else {
-            // No more photos - rebuild queue or show empty state
-            rebuildPhotoQueue()
-            if photoQueue.isEmpty {
-                currentPhoto = nil
-            } else {
-                // Recursive call to load from fresh queue
-                advanceToNextPhoto()
-            }
+            isTransitioning = false
         }
-        // Clean up memory periodically
-        swipeCount += 1
-        if swipeCount % 10 == 0 {
-            cleanupMemory()
-        }
-        isTransitioning = false
     }
     
     private func cleanupMemory() {
@@ -951,6 +968,8 @@ struct HomeView: View {
                 currentPhoto = updated
                 photoQueue = photoQueue.map { $0.asset.localIdentifier == updated.asset.localIdentifier ? updated : $0 }
                 backgroundCards = backgroundCards.map { $0.asset.localIdentifier == updated.asset.localIdentifier ? updated : $0 }
+                // Keep background deck in sync & animated
+                updateBackgroundCards()
             }
             animateActionAndAdvance(direction: .down)
         case .keep:
@@ -986,24 +1005,17 @@ struct HomeView: View {
         processedPhotos.remove(undoAction.photo.id)
         // Swap current photo with undone photo
         currentPhoto = undoAction.photo
-        // Update background cards (only one next card)
-        if photoQueue.count > 1 {
-            backgroundCards = Array(photoQueue.prefix(2).dropFirst())
-        } else {
-            backgroundCards = []
-        }
+        // Animated background deck refresh
+        updateBackgroundCards()
         // Clear the last action
         lastAction = nil
         // Provide feedback
         SoundManager.playClick()
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        // Animate the card appearing
-        photoOpacity = 0
-        photoScale = 0.85
-        withAnimation(cardEntranceAnimation) {
-            photoOpacity = 1.0
-            photoScale = 1.0
-        }
+        // Smooth entrance without any scale animation to prevent flashing
+        photoOpacity = 1.0 // Start fully opaque
+        photoScale = 1.0 // Start at full size immediately
+        // No animation - instant appearance for smooth transitions
         // Show confirmation
         showActionBanner(text: "Undone!", icon: "arrow.uturn.left", direction: .right)
         print("✅ Undo completed successfully")
@@ -1132,8 +1144,8 @@ struct HomeView: View {
         photoOpacity = 0
         photoScale = 0.8
         
-        // Advance to next photo with shorter delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+        // Advance to next photo with precisely timed delay to prevent flash
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             // Reset all states
             self.cardAnimation = nil
             self.dragOffset = .zero
@@ -1193,6 +1205,8 @@ struct HomeView: View {
             currentPhoto = updated
             photoQueue = photoQueue.map { $0.asset.localIdentifier == updated.asset.localIdentifier ? updated : $0 }
             backgroundCards = backgroundCards.map { $0.asset.localIdentifier == updated.asset.localIdentifier ? updated : $0 }
+            // Animate any deck changes
+            updateBackgroundCards()
         }
         // Reset scale after animation
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -1201,6 +1215,57 @@ struct HomeView: View {
             }
         }
         print((photo.isFavorite ? "⭐ Added to favorites" : "💔 Removed from favorites"))
+    }
+    
+    // Handle photo restored from trash - bring it to the top of the feed
+    private func handlePhotoRestoredFromTrash(photoId: UUID) {
+        print("🔄 Handling photo restored from trash: \(photoId)")
+        
+        // Find the restored photo in the available photos
+        if let restoredPhoto = photoManager.nonSeriesPhotos.first(where: { $0.id == photoId }) {
+            // Remove it from processed photos set if it exists
+            processedPhotos.remove(restoredPhoto.id)
+            
+            // Add it to the top of the photo queue
+            photoQueue.removeAll { $0.id == restoredPhoto.id } // Remove duplicates
+            photoQueue.insert(restoredPhoto, at: 0)
+            
+            // Make it the current photo so it appears immediately
+            currentPhoto = restoredPhoto
+            
+            // Animated background deck refresh
+            updateBackgroundCards()
+            
+            // Prefetch thumbnail for immediate display
+            photoManager.prefetchThumbnails(for: [restoredPhoto], targetSize: cardSize)
+            
+            // Smooth entrance without any scale animation to prevent flashing
+            photoOpacity = 1.0 // Start fully opaque
+            photoScale = 1.0 // Start at full size immediately
+            // No animation - instant appearance for smooth transitions
+            
+            // Provide feedback
+            SoundManager.playClick()
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            
+            // Show confirmation banner
+            showActionBanner(text: "Restored!", icon: "arrow.clockwise", direction: .right)
+            
+            // Schedule idle bounce
+            scheduleIdleBounce()
+            
+            print("✅ Photo restored to top of feed successfully")
+        } else {
+            print("⚠️ Could not find restored photo in available feed")
+        }
+    }
+
+    private func handleSwipe(photoID: String) {
+        print("[Analytics] photo_swiped event sent for photoID: \(photoID)")
+        Analytics.logEvent("photo_swiped", parameters: [
+            "timestamp": Date().timeIntervalSince1970,
+            "photo_id": photoID
+        ])
     }
 }
 

@@ -1,8 +1,9 @@
 import SwiftUI
+import FirebaseAnalytics
 
 @main
-struct SnapSnobApp: App {
-    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+struct SnapsnobApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var photoManager = PhotoManager()
     @StateObject private var aiAnalysisManager: AIAnalysisManager
     @StateObject private var fullScreenPhotoManager = FullScreenPhotoManager()
@@ -17,16 +18,24 @@ struct SnapSnobApp: App {
     
     var body: some Scene {
         WindowGroup {
-            AppCoordinator()
-                .environmentObject(photoManager)
-                .environmentObject(aiAnalysisManager)
-                .environmentObject(fullScreenPhotoManager)
-                .environmentObject(themeManager)
-                .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
-                    // Clear caches when system is low on memory
-                    print("⚠️ Memory warning received - clearing image caches")
-                    photoManager.clearImageCaches()
-                }
+            NavigationView {
+                ContentView()
+                    .onAppear {
+                        print("[Analytics] custom_app_open event sent")
+                        Analytics.logEvent("custom_app_open", parameters: [
+                            "timestamp": Date().timeIntervalSince1970
+                        ])
+                    }
+                    .environmentObject(photoManager)
+                    .environmentObject(aiAnalysisManager)
+                    .environmentObject(fullScreenPhotoManager)
+                    .environmentObject(themeManager)
+                    .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
+                        // Clear caches when system is low on memory
+                        print("⚠️ Memory warning received - clearing image caches")
+                        photoManager.clearImageCaches()
+                    }
+            }
         }
     }
 }

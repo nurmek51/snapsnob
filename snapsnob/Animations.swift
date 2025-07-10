@@ -16,4 +16,13 @@ struct AppAnimations {
 
     /// Bounce animation for small UI elements (e.g., trash icon highlight)
     static let iconBounce: Animation = .spring(response: 0.35, dampingFraction: 0.7)
+
+    /// Smooth card-to-card transition (crossfade + slight scale) used when advancing to next photo
+    static let cardTransition: Animation = .easeInOut(duration: 0.4)
+
+    /// Quick fade-in for freshly loaded content (prevents flashing on first render)
+    static let smoothEntrance: Animation = .easeOut(duration: 0.3)
+
+    /// Subtle scaling applied to background cards for depth effect
+    static let backgroundCardScale: Animation = .easeInOut(duration: 0.2)
 } 

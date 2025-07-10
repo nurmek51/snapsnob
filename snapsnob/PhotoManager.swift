@@ -2,6 +2,7 @@ import SwiftUI
 import Photos
 import PhotosUI
 import Foundation
+import FirebaseAnalytics
 
 // MARK: - Photo Model
 struct Photo: Identifiable, Hashable {
@@ -420,6 +421,25 @@ class PhotoManager: ObservableObject {
             allPhotos[index].dateMovedToTrash = nil // Clear trash timestamp when restored
             trashedPhotoIDs.remove(photo.asset.localIdentifier)
             persistFlags()
+            
+            // Update display photos synchronously to ensure immediate availability
+            let newDisplay = self.allPhotos.filter { !$0.isTrashed && !$0.isReviewed }
+            let newTrash = self.allPhotos.filter { $0.isTrashed }
+            
+            DispatchQueue.main.async {
+                // Update arrays immediately
+                self.displayPhotos = newDisplay.sorted { $0.creationDate > $1.creationDate }
+                self.trashedPhotos = newTrash.sorted { ($0.dateMovedToTrash ?? Date.distantPast) > ($1.dateMovedToTrash ?? Date.distantPast) }
+                
+                // Post notification after displayPhotos is updated
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("PhotoRestoredFromTrash"), 
+                    object: nil, 
+                    userInfo: ["photoId": photo.id]
+                )
+            }
+            
+            // Update series detection in background
             updateDisplayPhotos()
         }
     }
@@ -767,5 +787,13 @@ class PhotoManager: ObservableObject {
     private func persistFlags() {
         defaults.set(Array(reviewedPhotoIDs), forKey: reviewedKey)
         defaults.set(Array(trashedPhotoIDs), forKey: trashedKey)
+    }
+
+    func downloadPhoto(with id: String) {
+        print("[Analytics] content_downloaded event sent for id: \(id)")
+        Analytics.logEvent("content_downloaded", parameters: [
+            "timestamp": Date().timeIntervalSince1970,
+            "content_id": id
+        ])
     }
 }

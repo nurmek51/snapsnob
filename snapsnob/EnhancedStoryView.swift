@@ -23,7 +23,7 @@ struct EnhancedStoryView: View {
     @State private var isDismissing = false // Prevent multiple dismiss calls
     @State private var isTransitioning = false
     @State private var photoScale: CGFloat = 1.0
-    @State private var photoOpacity: Double = 1.0
+    // Removed standalone photoOpacity; we now use card opacities
     @State private var swipeDirection: SwipeDirection = .none
     @State private var showCheckmark = false
     @State private var showTrashOverlay = false // NEW: for trash action
@@ -37,12 +37,26 @@ struct EnhancedStoryView: View {
     @State private var preloadedImages: [Int: UIImage] = [:]
     @State private var isProcessingAction = false
     
+    // NEW: Smooth transition states
+    @State private var currentCardOpacity: Double = 1.0
+    @State private var nextCardOpacity: Double = 0.0
+    @State private var currentCardScale: CGFloat = 1.0
+    @State private var nextCardScale: CGFloat = 0.95
+    @State private var currentCardOffset: CGSize = .zero
+    @State private var nextCardOffset: CGSize = CGSize(width: 0, height: 20)
+    @State private var buttonsOpacity: Double = 1.0
+    @State private var cardDragOffset: CGSize = .zero
+    @State private var isDragging = false
+    
     private let storyDuration: Double = 4.0
     
     // MARK: - Spring Animation Configurations
     private var photoTransitionAnimation: Animation {
         .interpolatingSpring(stiffness: 400, damping: 30)
     }
+    
+    // Use global app animations for consistency
+    private var smoothTransitionAnimation: Animation { AppAnimations.cardTransition }
     
     private var actionAnimation: Animation {
         .interpolatingSpring(stiffness: 350, damping: 25)
@@ -62,323 +76,340 @@ struct EnhancedStoryView: View {
         return photoSeries.photos[currentPhotoIndex]
     }
     
+    // Next photo computed property
+    private var nextPhoto: Photo? {
+        guard currentPhotoIndex + 1 < photoSeries.photos.count else { return nil }
+        return photoSeries.photos[currentPhotoIndex + 1]
+    }
+    
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Dynamic overlay fade – fully transparent after ~200pt drag
-                Color.black.opacity(1.0 - min(abs(dismissOffset.height) / 200.0, 1.0)).ignoresSafeArea()
+                // Background overlay
+                backgroundOverlay
                 
                 if photoSeries.photos.isEmpty {
-                    // Empty state
-                    VStack(spacing: 20) {
-                        Image(systemName: "photo.on.rectangle")
-                            .font(.system(size: 60))
-                            .foregroundColor(.white.opacity(0.6))
-                        
-                        Text("Нет фото в серии")
-                            .foregroundColor(.white)
-                            .font(.headline)
-                        
-                        Button("Закрыть") {
-                            print("❌ Closing empty story view")
-                            onDismiss()
-                        }
-                        .foregroundColor(.blue)
-                        .font(.headline)
-                    }
-                    .onAppear {
-                        print("⚠️ Story view showing empty state - no photos in series")
-                    }
+                    emptyStateView
                 } else {
-                    VStack(spacing: 0) {
-                        // Progress bars - at the very top
-                        HStack(spacing: 4) {
-                            ForEach(0..<photoSeries.photos.count, id: \.self) { index in
-                                ProgressView(value: progress[safe: index] ?? 0.0, total: 1.0)
-                                    .progressViewStyle(LinearProgressViewStyle(tint: .white))
-                                    .frame(height: 3)
-                                    .background(Color.white.opacity(0.3))
-                                    .clipShape(Capsule())
-                                    .animation(index == currentPhotoIndex ? .linear(duration: 0.1) : .none, value: progress[safe: index] ?? 0.0)
-                            }
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.top, 8)
-                        
-                        // Header - close and title
-                        HStack {
-                            Button(action: {
-                                print("❌ Story dismissed by X button")
-                                if !isDismissing {
-                                    isDismissing = true
-                                    stopTimer()
-                                    applyAllActions()
-                                    onDismiss()
-                                }
-                            }) {
-                                Image(systemName: "xmark")
-                                    .foregroundColor(.white)
-                                    .font(.title2)
-                                    .frame(width: 44, height: 44)
-                            }
-                            
-                            Spacer()
-                            
-                            Text(photoSeries.title)
-                                .foregroundColor(.white)
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                            
-                            Spacer()
-                            
-                            if currentPhotoIndex == photoSeries.photos.count - 1 {
-                                Button("Готово") {
-                                    print("✅ Story completed - Done button pressed")
-                                    if !isDismissing {
-                                        isDismissing = true
-                                        stopTimer()
-                                        applyAllActions()
-                                        onDismiss()
-                                    }
-                                }
-                                .foregroundColor(.white)
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                                .frame(width: 60)
-                            } else {
-                                Color.clear.frame(width: 60)
-                            }
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        
-                        // Photo container - takes most of the space
-                        ZStack {
-                            if let photo = currentPhoto {
-                                ZStack {
-                                    // Preload next photo underneath for smooth transitions
-                                    if currentPhotoIndex + 1 < photoSeries.photos.count {
-                                        let nextPhoto = photoSeries.photos[currentPhotoIndex + 1]
-                                        OptimizedPhotoView(
-                                            photo: nextPhoto,
-                                            targetSize: CGSize(width: geometry.size.width, height: geometry.size.height * 0.7)
-                                        )
-                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                        .clipped()
-                                        .opacity(nextPhotoOpacity)
-                                    }
-                                    
-                                    // Current photo with optimized loading
-                                    OptimizedPhotoView(
-                                        photo: photo,
-                                        targetSize: CGSize(width: geometry.size.width, height: geometry.size.height * 0.7)
-                                    )
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                    .clipped()
-                                    .scaleEffect(photoScale)
-                                    .offset(dragOffset)
-                                    .opacity(photoOpacity)
-                                    .transformEffect(cardTransform)
-                                    .id(currentPhotoIndex) // Force UI update when index changes
-                                    .onTapGesture(count: 2) {
-                                        // Double tap for fullscreen
-                                        print("🖼️ Double tap - opening fullscreen")
-                                        pauseTimer()
-                                        showingFullScreen = true
-                                    }
-
-                                    // Checkmark overlay for the keep animation
-                                    if showCheckmark {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(width: 120, height: 120)
-                                            .foregroundColor(.white)
-                                            .shadow(radius: 10)
-                                            .scaleEffect(actionAnimationScale)
-                                            .opacity(showCheckmark ? 1 : 0)
-                                            .animation(actionAnimation, value: showCheckmark)
-                                            .animation(actionAnimation, value: actionAnimationScale)
-                                    }
-                                    // Trash overlay for the trash animation
-                                    if showTrashOverlay {
-                                        Image(systemName: "trash.circle.fill")
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(width: 120, height: 120)
-                                            .foregroundColor(.red)
-                                            .shadow(radius: 10)
-                                            .scaleEffect(trashOverlayScale)
-                                            .opacity(showTrashOverlay ? 1 : 0)
-                                            .animation(actionAnimation, value: showTrashOverlay)
-                                            .animation(actionAnimation, value: trashOverlayScale)
-                                    }
-                                }
-                            } else {
-                                // Fallback for invalid index
-                                Rectangle()
-                                    .fill(Color.red.opacity(0.3))
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                    .overlay(
-                                        VStack {
-                                            Text("Ошибка загрузки фото")
-                                                .foregroundColor(.white)
-                                                .font(.headline)
-                                            Text("Индекс: \(currentPhotoIndex) из \(photoSeries.photos.count)")
-                                                .foregroundColor(.white)
-                                                .font(.caption)
-                                        }
-                                    )
-                                    .onAppear {
-                                        print("❌ Invalid photo index in story: \(currentPhotoIndex) of \(photoSeries.photos.count)")
-                                    }
-                            }
-                            
-                            // Edge tap areas for navigation (invisible overlay)
-                            HStack(spacing: 0) {
-                                // Left edge - previous
-                                Rectangle()
-                                    .fill(Color.clear)
-                                    .frame(width: geometry.size.width * 0.3)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        print("⬅️ Left edge tapped - previous photo")
-                                        if !isTransitioning {
-                                            stopTimer()
-                                            goToPreviousPhoto()
-                                        }
-                                    }
-                                
-                                Spacer()
-                                
-                                // Right edge - next
-                                Rectangle()
-                                    .fill(Color.clear)
-                                    .frame(width: geometry.size.width * 0.3)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        print("➡️ Right edge tapped - next photo")
-                                        if !isTransitioning {
-                                            stopTimer()
-                                            goToNextPhoto()
-                                        }
-                                    }
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .layoutPriority(1) // Give photo area priority
-                        
-                        Spacer(minLength: 20)
-                        
-                        // Action buttons - at the bottom
-                        HStack(spacing: 40) {
-                            Button(action: {
-                                print("🗑️ Trash button pressed in story")
-                                moveToTrash()
-                            }) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "trash.fill")
-                                    Text("В корзину")
-                                }
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 24)
-                                .padding(.vertical, 14)
-                                .background(
-                                    Capsule()
-                                        .fill(AppColors.accent(for: themeManager.isDarkMode))
-                                        .shadow(color: .black.opacity(0.25), radius: 6, x: 0, y: 2)
-                                        .overlay(
-                                            Capsule().stroke(Color.white.opacity(0.18), lineWidth: 1)
-                                        )
-                                )
-                            }
-                            .scaleEffect(isProcessingAction && swipeDirection == .left ? 1.15 : 1.0)
-                            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isProcessingAction)
-                            
-                            Button(action: {
-                                print("💚 Keep button pressed in story")
-                                keepPhoto()
-                            }) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "heart.fill")
-                                    Text("Оставить")
-                                }
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 24)
-                                .padding(.vertical, 14)
-                                .background(
-                                    Capsule()
-                                        .fill(AppColors.primaryText(for: themeManager.isDarkMode).opacity(0.95))
-                                        .shadow(color: .black.opacity(0.25), radius: 6, x: 0, y: 2)
-                                        .overlay(
-                                            Capsule().stroke(Color.white.opacity(0.18), lineWidth: 1)
-                                        )
-                                )
-                            }
-                            .scaleEffect(isProcessingAction && swipeDirection == .right ? 1.15 : 1.0)
-                            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isProcessingAction)
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 40)
-                    }
-                    .offset(y: dismissOffset.height)
-                    .opacity(1.0 - min(abs(dismissOffset.height) / 300.0, 1.0))
-                    .gesture(
-                        DragGesture()
-                            .onChanged { value in
-                                // Only consider vertical drags
-                                if abs(value.translation.height) > abs(value.translation.width) {
-                                    dismissOffset = value.translation
-                                }
-                            }
-                            .onEnded { value in
-                                let translation = value.translation
-                                let velocity = value.velocity // reuse existing extension
-                                let threshold: CGFloat = 120
-                                let velocityThreshold: CGFloat = 800
-                                if abs(translation.height) > threshold || abs(velocity.height) > velocityThreshold {
-                                    // Trigger dismiss with spring animation
-                                    withAnimation(dismissAnimation) {
-                                        dismissOffset = CGSize(width: 0, height: translation.height > 0 ? 1000 : -1000)
-                                    }
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                        if !isDismissing {
-                                            isDismissing = true
-                                            stopTimer()
-                                            applyAllActions()
-                                            onDismiss()
-                                        }
-                                    }
-                                } else {
-                                    withAnimation(dismissAnimation) {
-                                        dismissOffset = .zero
-                                    }
-                                }
-                            }
-                    )
+                    mainContentView(geometry: geometry)
                 }
             }
         }
         .navigationBarHidden(true)
         .statusBarHidden()
-        .background(Color.clear) // transparent root
-        .onAppear {
-            print("📱 Enhanced Story view appeared: \(photoSeries.title) with \(photoSeries.photos.count) photos")
-            print("📊 Photo series data: ID=\(photoSeries.id), isViewed=\(photoSeries.isViewed)")
-            if photoSeries.photos.isEmpty {
-                print("⚠️ WARNING: Photo series has no photos!")
-            } else {
-                print("📸 First photo asset: \(photoSeries.photos[0].asset.localIdentifier)")
-                preloadNextPhotos()
-            }
-            setupProgress()
-            startTimer()
-        }
+        .background(Color.clear)
+        .onAppear(perform: onAppearAction)
         .onDisappear {
             print("📱 Enhanced Story view disappeared")
             stopTimer()
         }
         .fullScreenCover(isPresented: $showingFullScreen) {
+            fullScreenPhotoView
+        }
+    }
+    
+    // MARK: - View Components
+    
+    private var backgroundOverlay: some View {
+        Color.black.opacity(1.0 - min(abs(dismissOffset.height) / 200.0, 1.0))
+            .ignoresSafeArea()
+    }
+    
+    private var emptyStateView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "photo.on.rectangle")
+                .font(.system(size: 60))
+                .foregroundColor(.white.opacity(0.6))
+            
+            Text("Нет фото в серии")
+                .foregroundColor(.white)
+                .font(.headline)
+            
+            Button("Закрыть") {
+                print("❌ Closing empty story view")
+                onDismiss()
+            }
+            .foregroundColor(.blue)
+            .font(.headline)
+        }
+        .onAppear {
+            print("⚠️ Story view showing empty state - no photos in series")
+        }
+    }
+    
+    @ViewBuilder
+    private func mainContentView(geometry: GeometryProxy) -> some View {
+        VStack(spacing: 0) {
+            // Progress bars
+            progressBarsView
+            
+            // Header
+            headerView
+            
+            // Photo container
+            photoContainerView(geometry: geometry)
+            
+            Spacer(minLength: 20)
+            
+            // Action buttons
+            actionButtonsView
+        }
+        .offset(y: dismissOffset.height)
+        .opacity(1.0 - min(abs(dismissOffset.height) / 300.0, 1.0))
+        .gesture(dismissGesture)
+    }
+    
+    private var progressBarsView: some View {
+        HStack(spacing: 4) {
+            ForEach(0..<photoSeries.photos.count, id: \.self) { index in
+                ProgressView(value: progress[safe: index] ?? 0.0, total: 1.0)
+                    .progressViewStyle(LinearProgressViewStyle(tint: .white))
+                    .frame(height: 3)
+                    .background(Color.white.opacity(0.3))
+                    .clipShape(Capsule())
+                    .animation(.none, value: progress[safe: index] ?? 0.0)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+    }
+    
+    private var headerView: some View {
+        HStack {
+            Button(action: {
+                print("❌ Story dismissed by X button")
+                if !isDismissing {
+                    isDismissing = true
+                    stopTimer()
+                    applyAllActions()
+                    onDismiss()
+                }
+            }) {
+                Image(systemName: "xmark")
+                    .foregroundColor(.white)
+                    .font(.title2)
+                    .frame(width: 44, height: 44)
+            }
+            
+            Spacer()
+            
+            Text(photoSeries.title)
+                .foregroundColor(.white)
+                .font(.headline)
+                .fontWeight(.semibold)
+            
+            Spacer()
+            
+            if currentPhotoIndex == photoSeries.photos.count - 1 {
+                Button("Готово") {
+                    print("✅ Story completed - Done button pressed")
+                    if !isDismissing {
+                        isDismissing = true
+                        stopTimer()
+                        applyAllActions()
+                        onDismiss()
+                    }
+                }
+                .foregroundColor(.white)
+                .font(.headline)
+                .fontWeight(.semibold)
+                .frame(width: 60)
+            } else {
+                Color.clear.frame(width: 60)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+    }
+    
+    @ViewBuilder
+    private func photoContainerView(geometry: GeometryProxy) -> some View {
+        ZStack {
+            // Next photo card (underneath)
+            if let next = nextPhoto {
+                photoCard(
+                    photo: next,
+                    geometry: geometry,
+                    opacity: nextCardOpacity,
+                    scale: nextCardScale,
+                    offset: nextCardOffset,
+                    showButtons: false,
+                    isInteractive: false
+                )
+            }
+            
+            // Current photo card (on top)
+            if let current = currentPhoto {
+                photoCard(
+                    photo: current,
+                    geometry: geometry,
+                    opacity: currentCardOpacity,
+                    scale: currentCardScale,
+                    offset: currentCardOffset,
+                    showButtons: true,
+                    isInteractive: true
+                )
+                .offset(x: cardDragOffset.width + dragOffset.width, y: cardDragOffset.height + dragOffset.height)
+                .scaleEffect(photoScale)
+                .rotationEffect(.degrees(Double(cardDragOffset.width / 10)), anchor: .bottom)
+                .gesture(swipeGesture)
+            }
+            
+            // Swipe indicators
+            if isDragging {
+                swipeIndicatorsView
+            }
+            
+            // Edge tap areas
+            edgeTapAreasView(geometry: geometry)
+        }
+        .frame(maxWidth: .infinity)
+        .layoutPriority(1)
+    }
+    
+    private var swipeIndicatorsView: some View {
+        HStack {
+            // Left swipe - Trash indicator
+            if cardDragOffset.width < -20 {
+                swipeIndicator(
+                    icon: "trash.fill",
+                    text: "В корзину",
+                    color: .red,
+                    offset: cardDragOffset.width
+                )
+            }
+            
+            Spacer()
+            
+            // Right swipe - Keep indicator
+            if cardDragOffset.width > 20 {
+                swipeIndicator(
+                    icon: "heart.fill",
+                    text: "Оставить",
+                    color: .green,
+                    offset: cardDragOffset.width
+                )
+            }
+        }
+        .padding(.horizontal, 40)
+    }
+    
+    @ViewBuilder
+    private func swipeIndicator(icon: String, text: String, color: Color, offset: CGFloat) -> some View {
+        VStack {
+            Image(systemName: icon)
+                .font(.system(size: 60))
+                .foregroundColor(color)
+            Text(text)
+                .font(.headline)
+                .foregroundColor(color)
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(color.opacity(0.2))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(color, lineWidth: 3)
+                )
+        )
+        .opacity(min(Double(abs(offset) / 100), 1.0))
+        .scaleEffect(min(Double(abs(offset) / 150) + 0.8, 1.2))
+    }
+    
+    private func edgeTapAreasView(geometry: GeometryProxy) -> some View {
+        HStack(spacing: 0) {
+            // Left edge - previous
+            Rectangle()
+                .fill(Color.clear)
+                .frame(width: geometry.size.width * 0.3)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    print("⬅️ Left edge tapped - previous photo")
+                    if !isTransitioning {
+                        stopTimer()
+                        goToPreviousPhoto()
+                    }
+                }
+            
+            Spacer()
+            
+            // Right edge - next
+            Rectangle()
+                .fill(Color.clear)
+                .frame(width: geometry.size.width * 0.3)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    print("➡️ Right edge tapped - next photo")
+                    if !isTransitioning {
+                        stopTimer()
+                        goToNextPhoto()
+                    }
+                }
+        }
+    }
+    
+    private var actionButtonsView: some View {
+        HStack(spacing: 40) {
+            Button(action: {
+                print("🗑️ Trash button pressed in story")
+                moveToTrash()
+            }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "trash.fill")
+                    Text("В корзину")
+                }
+                .foregroundColor(themeManager.isDarkMode ? .black : .white)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 14)
+                .background(
+                    themeManager.isDarkMode ?
+                        AnyView(Capsule().fill(Color.white)) :
+                        AnyView(actionButtonBackground(for: .left))
+                )
+            }
+            .scaleEffect(isProcessingAction && swipeDirection == .left ? 1.15 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isProcessingAction)
+            
+            Button(action: {
+                print("💚 Keep button pressed in story")
+                keepPhoto()
+            }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "heart.fill")
+                    Text("Оставить")
+                }
+                .foregroundColor(themeManager.isDarkMode ? .black : .white)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 14)
+                .background(
+                    themeManager.isDarkMode ?
+                        AnyView(Capsule().fill(Color.white)) :
+                        AnyView(actionButtonBackground(for: .right))
+                )
+            }
+            .scaleEffect(isProcessingAction && swipeDirection == .right ? 1.15 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isProcessingAction)
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 40)
+        .opacity(buttonsOpacity)
+    }
+    
+    @ViewBuilder
+    private func actionButtonBackground(for direction: SwipeDirection) -> some View {
+        Capsule()
+            .fill(direction == .left ? 
+                AppColors.accent(for: themeManager.isDarkMode) : 
+                AppColors.primaryText(for: themeManager.isDarkMode).opacity(0.95))
+            .shadow(color: .black.opacity(0.25), radius: 6, x: 0, y: 2)
+            .overlay(
+                Capsule().stroke(Color.white.opacity(0.18), lineWidth: 1)
+            )
+    }
+    
+    private var fullScreenPhotoView: some View {
+        Group {
             if let photo = currentPhoto {
                 FullScreenPhotoView(photo: photo, photoManager: photoManager) {
                     print("🖼️ Returning from fullscreen to story")
@@ -389,13 +420,148 @@ struct EnhancedStoryView: View {
                     print("🖼️ Opening fullscreen from story for photo: \(photo.asset.localIdentifier)")
                 }
             } else {
-                // Fallback for nil photo
                 Text("Ошибка загрузки фото")
                     .foregroundColor(.white)
                     .onAppear {
                         print("❌ Current photo is nil in story fullscreen - Index: \(currentPhotoIndex)")
                         showingFullScreen = false
                     }
+            }
+        }
+    }
+    
+    // MARK: - Gestures
+    
+    private var swipeGesture: some Gesture {
+        DragGesture()
+            .onChanged { value in
+                if !isTransitioning && !isProcessingAction {
+                    cardDragOffset = value.translation
+                    isDragging = true
+                    
+                    // Update opacity based on drag distance
+                    let dragAmount = abs(value.translation.width)
+                    withAnimation(.easeOut(duration: 0.1)) {
+                        currentCardOpacity = 1.0 - min(dragAmount / 200, 0.5)
+                    }
+                }
+            }
+            .onEnded { value in
+                if !isTransitioning && !isProcessingAction {
+                    handleSwipe(value: value)
+                }
+            }
+    }
+    
+    private var dismissGesture: some Gesture {
+        DragGesture()
+            .onChanged { value in
+                // Only consider vertical drags
+                if abs(value.translation.height) > abs(value.translation.width) {
+                    dismissOffset = value.translation
+                }
+            }
+            .onEnded { value in
+                let translation = value.translation
+                let velocity = value.velocity
+                let threshold: CGFloat = 120
+                let velocityThreshold: CGFloat = 800
+                if abs(translation.height) > threshold || abs(velocity.height) > velocityThreshold {
+                    // Trigger dismiss with spring animation
+                    withAnimation(dismissAnimation) {
+                        dismissOffset = CGSize(width: 0, height: translation.height > 0 ? 1000 : -1000)
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        if !isDismissing {
+                            isDismissing = true
+                            stopTimer()
+                            applyAllActions()
+                            onDismiss()
+                        }
+                    }
+                } else {
+                    withAnimation(dismissAnimation) {
+                        dismissOffset = .zero
+                    }
+                }
+            }
+    }
+    
+    // MARK: - Actions
+    
+    private func onAppearAction() {
+        print("📱 Enhanced Story view appeared: \(photoSeries.title) with \(photoSeries.photos.count) photos")
+        print("📊 Photo series data: ID=\(photoSeries.id), isViewed=\(photoSeries.isViewed)")
+        if photoSeries.photos.isEmpty {
+            print("⚠️ WARNING: Photo series has no photos!")
+        } else {
+            print("📸 First photo asset: \(photoSeries.photos[0].asset.localIdentifier)")
+            preloadNextPhotos()
+            prepareNextCard()
+        }
+        setupProgress()
+        startTimer()
+    }
+    
+    // MARK: - Photo Card View
+    @ViewBuilder
+    private func photoCard(
+        photo: Photo,
+        geometry: GeometryProxy,
+        opacity: Double,
+        scale: CGFloat,
+        offset: CGSize,
+        showButtons: Bool,
+        isInteractive: Bool
+    ) -> some View {
+        ZStack {
+            // Photo
+            OptimizedPhotoView(
+                photo: photo,
+                targetSize: CGSize(width: geometry.size.width, height: geometry.size.height * 0.7)
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipped()
+            .scaleEffect(scale)
+            .offset(offset)
+            .opacity(opacity)
+            .allowsHitTesting(isInteractive)
+            .onTapGesture(count: 2) {
+                if isInteractive {
+                    print("🖼️ Double tap - opening fullscreen")
+                    pauseTimer()
+                    showingFullScreen = true
+                }
+            }
+            
+            // Overlay animations (only on current card)
+            if isInteractive {
+                // Checkmark overlay for the keep animation
+                if showCheckmark {
+                    Image(systemName: "checkmark.circle.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 120, height: 120)
+                        .foregroundColor(.white)
+                        .shadow(radius: 10)
+                        .scaleEffect(actionAnimationScale)
+                        .opacity(showCheckmark ? 1 : 0)
+                        .animation(actionAnimation, value: showCheckmark)
+                        .animation(actionAnimation, value: actionAnimationScale)
+                }
+                // Trash overlay for the trash animation
+                if showTrashOverlay {
+                    Image(systemName: "trash.circle.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 120, height: 120)
+                        .foregroundColor(.red)
+                        .shadow(radius: 10)
+                        .scaleEffect(trashOverlayScale)
+                        .opacity(showTrashOverlay ? 1 : 0)
+                        .animation(actionAnimation, value: showTrashOverlay)
+                        .animation(actionAnimation, value: trashOverlayScale)
+                }
             }
         }
     }
@@ -447,70 +613,115 @@ struct EnhancedStoryView: View {
         print("▶️ Timer resumed")
     }
     
-    private func goToNextPhoto() {
-        print("➡️ Going to next photo - current: \(currentPhotoIndex), total: \(photoSeries.photos.count)")
-        if let currentPhoto = currentPhoto {
-            print("📸 Current photo before change: \(currentPhoto.asset.localIdentifier)")
+    // MARK: - Swipe Handling
+    private func handleSwipe(value: DragGesture.Value) {
+        let threshold: CGFloat = 100
+        let velocity = value.velocity
+        let translation = value.translation
+        
+        // Check if swipe is strong enough
+        if abs(translation.width) > threshold || abs(velocity.width) > 500 {
+            if translation.width < 0 {
+                // Swipe left – instantly trash and advance
+                self.isDragging = true // keep true to skip overlay animations
+                self.cardDragOffset = .zero
+                self.currentCardOpacity = 1.0
+                self.moveToTrash()
+                // Reset dragging state immediately after action
+                self.isDragging = false
+            } else {
+                // Swipe right – instantly keep and advance
+                self.isDragging = true
+                self.cardDragOffset = .zero
+                self.currentCardOpacity = 1.0
+                self.keepPhoto()
+                // Reset dragging state immediately after action
+                self.isDragging = false
+            }
+        } else {
+            // Return to center with no additional animation
+            cardDragOffset = .zero
+            currentCardOpacity = 1.0
+            isDragging = false
+        }
+    }
+    
+    private func animateCardExit(direction: SwipeDirection, completion: @escaping () -> Void) {
+        let exitOffset: CGFloat = direction == .left ? -UIScreen.main.bounds.width * 1.5 : UIScreen.main.bounds.width * 1.5
+        
+        withAnimation(.easeOut(duration: 0.3)) {
+            cardDragOffset = CGSize(width: exitOffset, height: 100)
+            currentCardOpacity = 0
         }
         
-        if currentPhotoIndex < photoSeries.photos.count - 1 {
-            // Fill current progress bar immediately
-            if progress.indices.contains(currentPhotoIndex) {
-                progress[currentPhotoIndex] = 1.0
-            }
-            
-            // INSTANT transition: no animation
-            isTransitioning = false
-            swipeDirection = .left
-            photoOpacity = 1.0
-            cardTransform = .identity
-            currentPhotoIndex += 1
-            resetPhotoState()
-            preloadNextPhotos()
-            // Reset progress for new photo
-            if progress.indices.contains(currentPhotoIndex) {
-                progress[currentPhotoIndex] = 0.0
-            }
-            startTimer()
-        } else {
-            print("✅ Story completed - auto advancing to end")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            self.cardDragOffset = .zero
+            self.isDragging = false
+            completion()
+        }
+    }
+    
+    private func goToNextPhoto() {
+        guard currentPhotoIndex < photoSeries.photos.count - 1 else {
+            print("✅ Story completed - reached end")
             if !isDismissing {
                 isDismissing = true
                 stopTimer()
                 applyAllActions()
                 onDismiss()
             }
+            return
         }
+        
+        // Complete progress for current slide instantly
+        if progress.indices.contains(currentPhotoIndex) {
+            progress[currentPhotoIndex] = 1.0
+        }
+
+        isTransitioning = true
+        
+        // Advance index instantly
+        currentPhotoIndex += 1
+        resetPhotoState()
+        prepareNextCard()
+        
+        // Reset progress for new slide
+        if progress.indices.contains(currentPhotoIndex) {
+            progress[currentPhotoIndex] = 0.0
+        }
+        
+        preloadNextPhotos()
+        startTimer()
+        isTransitioning = false
     }
     
     private func goToPreviousPhoto() {
-        print("⬅️ Going to previous photo - current: \(currentPhotoIndex)")
-        if let currentPhoto = currentPhoto {
-            print("📸 Current photo before change: \(currentPhoto.asset.localIdentifier)")
+        guard currentPhotoIndex > 0 else {
+            print("⬅️ Already at first photo")
+            startTimer()
+            return
         }
         
-        if currentPhotoIndex > 0 {
-            // Reset current progress
-            if progress.indices.contains(currentPhotoIndex) {
-                progress[currentPhotoIndex] = 0.0
-            }
-            // INSTANT transition: no animation
-            isTransitioning = false
-            swipeDirection = .right
-            photoOpacity = 1.0
-            cardTransform = .identity
-            currentPhotoIndex -= 1
-            resetPhotoState()
-            // Reset progress for returned photo
-            if progress.indices.contains(currentPhotoIndex) {
-                progress[currentPhotoIndex] = 0.0
-            }
-            startTimer()
-        } else {
-            print("⬅️ Already at first photo")
-            isTransitioning = false
-            startTimer()
+        // Reset progress for current slide
+        if progress.indices.contains(currentPhotoIndex) {
+            progress[currentPhotoIndex] = 0.0
         }
+
+        isTransitioning = true
+        
+        // Move index back instantly
+        currentPhotoIndex -= 1
+        resetPhotoState()
+        prepareNextCard()
+        
+        // Ensure progress for new slide starts at 0
+        if progress.indices.contains(currentPhotoIndex) {
+            progress[currentPhotoIndex] = 0.0
+        }
+        
+        preloadNextPhotos()
+        startTimer()
+        isTransitioning = false
     }
     
     private func moveToTrash() {
@@ -527,26 +738,34 @@ struct EnhancedStoryView: View {
         // Immediately apply the action for better UX
         photoManager.moveToTrash(photo)
         print("🗑️ Photo immediately moved to trash")
-        // Show trash overlay with spring pop
-        stopTimer()
-        swipeDirection = .left
-        isProcessingAction = true
-        trashOverlayScale = 0.5
-        showTrashOverlay = true
-        withAnimation(actionAnimation) {
-            trashOverlayScale = 1.2
-        }
-        // Scale back to normal
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            withAnimation(self.actionAnimation) {
-                self.trashOverlayScale = 1.0
+        
+        // If not already animating (from swipe), show overlay
+        if !isDragging {
+            // Show trash overlay with spring pop
+            stopTimer()
+            swipeDirection = .left
+            isProcessingAction = true
+            trashOverlayScale = 0.5
+            showTrashOverlay = true
+            withAnimation(actionAnimation) {
+                trashOverlayScale = 1.2
             }
-        }
-        // Hide overlay and advance
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            withAnimation(.easeOut(duration: 0.2)) {
-                self.showTrashOverlay = false
+            // Scale back to normal
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                withAnimation(self.actionAnimation) {
+                    self.trashOverlayScale = 1.0
+                }
             }
+            // Hide overlay and advance
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                withAnimation(.easeOut(duration: 0.2)) {
+                    self.showTrashOverlay = false
+                }
+                self.isProcessingAction = false
+                self.goToNextPhoto()
+            }
+        } else {
+            // Called from swipe - just advance
             self.isProcessingAction = false
             self.goToNextPhoto()
         }
@@ -571,32 +790,39 @@ struct EnhancedStoryView: View {
         photoManager.markReviewed(photo)
         print("💚 Photo marked as reviewed (kept)")
         
-        // Show checkmark animation with spring physics
-        stopTimer()
-        swipeDirection = .right
-        isProcessingAction = true
-        
-        // Reset scale first
-        actionAnimationScale = 0.5
-        showCheckmark = true
-        
-        // Animate checkmark appearance
-        withAnimation(actionAnimation) {
-            actionAnimationScale = 1.2
-        }
-        
-        // Then scale back to normal
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            withAnimation(self.actionAnimation) {
-                self.actionAnimationScale = 1.0
+        // If not already animating (from swipe), show overlay
+        if !isDragging {
+            // Show checkmark animation with spring physics
+            stopTimer()
+            swipeDirection = .right
+            isProcessingAction = true
+            
+            // Reset scale first
+            actionAnimationScale = 0.5
+            showCheckmark = true
+            
+            // Animate checkmark appearance
+            withAnimation(actionAnimation) {
+                actionAnimationScale = 1.2
             }
-        }
-        
-        // Hide checkmark and advance
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            withAnimation(.easeOut(duration: 0.2)) {
-                self.showCheckmark = false
+            
+            // Then scale back to normal
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                withAnimation(self.actionAnimation) {
+                    self.actionAnimationScale = 1.0
+                }
             }
+            
+            // Hide checkmark and advance
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                withAnimation(.easeOut(duration: 0.2)) {
+                    self.showCheckmark = false
+                }
+                self.isProcessingAction = false
+                self.goToNextPhoto()
+            }
+        } else {
+            // Called from swipe - just advance
             self.isProcessingAction = false
             self.goToNextPhoto()
         }
@@ -639,7 +865,7 @@ struct EnhancedStoryView: View {
         withAnimation(.spring(response: 0.5, dampingFraction: 0.8, blendDuration: 0)) {
             dragOffset = CGSize(width: exitOffset, height: 0)
             photoScale = 0.9
-            photoOpacity = 0.0
+            // Removed photoOpacity = 0.0
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
@@ -691,6 +917,17 @@ struct EnhancedStoryView: View {
         
         // Use PhotoManager's prefetch functionality
         photoManager.prefetchThumbnails(for: photosToPreload, targetSize: targetSize)
+    }
+    
+    // NEW: Prepare next card for smooth transition
+    private func prepareNextCard() {
+        if nextPhoto != nil && currentPhotoIndex + 1 < photoSeries.photos.count {
+            nextCardOpacity = 0.8 // Static underlay appearance
+            nextCardScale = 0.95
+            nextCardOffset = CGSize(width: 0, height: 10)
+        } else {
+            nextCardOpacity = 0.0
+        }
     }
 }
 
