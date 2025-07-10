@@ -302,7 +302,7 @@ struct HomeView: View {
             // Header is pinned at the top
             headerSection
                 // Position header just below the status bar / Dynamic Island for all devices
-                .padding(.top, topSafePadding * 0.6)
+                .padding(.top, topSafePadding * 0.6 + DeviceInfo.shared.screenSize.topSectionPadding) // Extra top padding for Pro Max only
                 .background(AppColors.background(for: themeManager.isDarkMode))
                 .zIndex(10)
             
@@ -312,51 +312,48 @@ struct HomeView: View {
                 .padding(.top, 4) // minimal gap after header
         }
         // Bottom padding scaled per device to ensure card clears the tab bar
-        .padding(.bottom, DeviceInfo.shared.screenSize.horizontalPadding * 2)
+        .padding(.bottom, DeviceInfo.shared.screenSize.bottomSectionPadding) // Extra bottom padding for Pro Max only
         .constrainedToDevice(usePadding: false)
     }
     
     @ViewBuilder
     private var headerSection: some View {
-        VStack(spacing: 0) {
-            // Title
-            HStack {
-                Text("Серии фото")
-                    .adaptiveFont(.title)
-                    .fontWeight(.bold)
-                    .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
-                Spacer()
-            }
-            // Align title flush to the safe horizontal edge instead of the large adaptive padding
-            .padding(.horizontal, DeviceInfo.shared.screenSize.horizontalPadding)
-            // Restore to original spacing (no extra gap)
-            .padding(.bottom, DeviceInfo.shared.spacing(2.0))
-            
-            // Stories row with a static trash icon at the trailing edge.
-            HStack(alignment: .top, spacing: DeviceInfo.shared.screenSize.horizontalPadding) {
-                // Horizontal stories conveyor – width automatically adjusts and stops before the trash icon.
+        // --- Refactored for pixel-perfect, adaptive, and symmetric layout ---
+        VStack(alignment: .leading, spacing: 0) {
+            // Title with consistent top padding from status bar
+            Text("Серии фото")
+                .adaptiveFont(.title)
+                .fontWeight(.bold)
+                .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
+                .adaptivePadding(1.0)
+                .verticalSectionSpacing(0.5) // Consistent gap below title
+
+            // Story row: avatar, timestamp, progress bar, trash icon
+            HStack(alignment: .center, spacing: DeviceInfo.shared.screenSize.horizontalPadding) {
+                // Stories conveyor (avatar row)
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: DeviceInfo.shared.screenSize.gridSpacing) {
                         ForEach(Array(photoManager.photoSeries.enumerated()), id: \.offset) { _, series in
-                            StoryCircle(
-                                series: series,
-                                photoManager: photoManager,
-                                isViewed: series.isViewed,
-                                onTap: {
-                                    print("📱 Story tapped: \(series.title)")
-                                    withAnimation(AppAnimations.modal) {
-                                        fullScreenPhotoManager.selectedSeries = series
+                            VStack(spacing: DeviceInfo.shared.spacing(0.3)) {
+                                StoryCircle(
+                                    series: series,
+                                    photoManager: photoManager,
+                                    isViewed: series.isViewed,
+                                    onTap: {
+                                        print("📱 Story tapped: \(series.title)")
+                                        withAnimation(AppAnimations.modal) {
+                                            fullScreenPhotoManager.selectedSeries = series
+                                        }
                                     }
-                                }
-                            )
+                                )
+                            }
                         }
                     }
-                    // Add top padding so the full circle (including border/shadow) is visible
-                    .padding(.top, UIDevice.current.userInterfaceIdiom == .pad ? 8 : 6)
-                    .padding(.horizontal, DeviceInfo.shared.screenSize.horizontalPadding)
+                    .padding(.leading, DeviceInfo.shared.screenSize.horizontalPadding)
+                    .padding(.vertical, DeviceInfo.shared.spacing(0.2))
                 }
-                // Static trash icon area – sits on the same layer as stories conveyor, no overlapping.
-                VStack(spacing: 6) {
+                // Trash icon and label, vertically centered with story row
+                VStack(spacing: DeviceInfo.shared.spacing(0.3)) {
                     Button(action: {
                         print("🗑️ Trash button pressed")
                         showingTrash = true
@@ -394,14 +391,14 @@ struct HomeView: View {
                         .lineLimit(1)
                         .frame(width: DeviceInfo.shared.screenSize.horizontalPadding * 3.5)
                 }
+                .padding(.trailing, DeviceInfo.shared.screenSize.horizontalPadding)
             }
-            // Ensure trash icon does not touch the screen edge
-            .padding(.trailing, DeviceInfo.shared.screenSize.horizontalPadding)
+            .verticalSectionSpacing(0.5) // Consistent gap below story row
 
-            // Progress Counter (processed / total)
+            // Progress Counter (processed / total) with progress bar
             let processed = photoManager.processedPhotosCount
             let total = photoManager.allPhotos.count
-            VStack(spacing: 4) {
+            VStack(spacing: DeviceInfo.shared.spacing(0.2)) {
                 HStack {
                     Text("\(processed)/\(total) фото обработано")
                         .adaptiveFont(.caption)
@@ -412,10 +409,13 @@ struct HomeView: View {
                     .accentColor(AppColors.accent(for: themeManager.isDarkMode))
                     .frame(height: DeviceInfo.shared.spacing(0.4))
             }
-            .adaptivePadding(2.0)
-            .padding(.top, DeviceInfo.shared.spacing(0.5))
+            .adaptivePadding(1.0)
+            .verticalSectionSpacing(0.2)
         }
-        .padding(.bottom, 10)
+        // Ensure the header has equal left/right padding and background
+        .background(AppColors.background(for: themeManager.isDarkMode))
+        // Add bottom padding to separate from cards
+        .padding(.bottom, DeviceInfo.shared.spacing(0.5))
     }
     
     @ViewBuilder

@@ -20,13 +20,35 @@ struct DeviceInfo {
                 return 16
             case .standard:
                 return 20
-            case .plus, .max:
-                // Align Plus/Max phones with Standard phones for consistent layout across iPhone models
+            case .plus:
                 return 20
+            case .max:
+                // Slightly increase horizontal padding for Pro Max to improve header and story row layout
+                return 26 // was 20, now 26 for Pro Max only
             case .iPad:
                 return 30
             case .iPadPro:
                 return 40
+            }
+        }
+        
+        /// Custom top section padding for Pro Max (others use default)
+        var topSectionPadding: CGFloat {
+            switch self {
+            case .max:
+                return 6 // Add extra top padding for Pro Max
+            default:
+                return 0
+            }
+        }
+        
+        /// Custom bottom section padding for Pro Max (others use default)
+        var bottomSectionPadding: CGFloat {
+            switch self {
+            case .max:
+                return 50 // Increased: Extra bottom padding for Pro Max to clear the tab bar (was 44)
+            default:
+                return self.horizontalPadding * 2
             }
         }
         
@@ -264,10 +286,15 @@ extension DeviceInfo {
         let cardHeight: CGFloat
         
         switch screenSize {
-        case .compact, .standard, .plus, .max:
+        case .compact, .standard, .plus:
             // Unify phone sizing: full safe width, 1.5 : 1 aspect ratio (matches Plus style)
             cardWidth = availableWidth
             cardHeight = cardWidth * 1.45
+        case .max:
+            // Pro Max: make card a bit higher for better vertical balance
+            cardWidth = availableWidth
+            cardHeight = cardWidth * 1.5 // was 1.45, now 1.6 for Pro Max only, 1.6 is 1.45 + 0.15
+        
         case .iPad:
             // iPad - more compact relative to screen
             cardWidth = min(availableWidth * 0.7, 500)
@@ -279,5 +306,22 @@ extension DeviceInfo {
         }
         
         return CGSize(width: cardWidth, height: cardHeight)
+    }
+} 
+
+// MARK: - Vertical Section Spacing Modifier
+/// A reusable modifier for consistent vertical spacing between sections
+struct VerticalSectionSpacing: ViewModifier {
+    let multiplier: CGFloat
+    func body(content: Content) -> some View {
+        content
+            .padding(.vertical, DeviceInfo.shared.spacing(multiplier))
+    }
+}
+
+extension View {
+    /// Applies consistent vertical spacing between sections
+    func verticalSectionSpacing(_ multiplier: CGFloat = 1.0) -> some View {
+        self.modifier(VerticalSectionSpacing(multiplier: multiplier))
     }
 } 
