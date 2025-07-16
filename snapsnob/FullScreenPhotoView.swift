@@ -106,7 +106,7 @@ struct FullScreenPhotoView: View {
                     ProgressView()
                         .tint(.white)
                         .scaleEffect(1.5)
-                    Text("Загрузка изображения...")
+                    Text("photo.loadingImage".localized)
                         .foregroundColor(.white)
                         .font(.headline)
                 }
@@ -120,15 +120,15 @@ struct FullScreenPhotoView: View {
                         .font(.system(size: 60))
                         .foregroundColor(.white.opacity(0.6))
                     
-                    Text("Не удалось загрузить изображение")
+                    Text("photo.failedToLoadImage".localized)
                         .foregroundColor(.white.opacity(0.8))
                         .font(.headline)
                     
-                    Text("Проверьте подключение к интернету")
+                    Text("photo.checkConnection".localized)
                         .foregroundColor(.white.opacity(0.6))
                         .font(.body)
                     
-                    Button("Попробовать снова") {
+                    Button("photo.tryAgain".localized) {
                         print("🔄 Retry loading fullscreen image")
                         loadFullSizeImage()
                     }
@@ -227,7 +227,7 @@ struct FullScreenPhotoView: View {
                         .font(.system(size: 60))
                         .foregroundColor(.white.opacity(0.6))
                     
-                    Text("Неизвестная ошибка")
+                    Text("photo.unknownError".localized)
                         .foregroundColor(.white.opacity(0.8))
                         .font(.headline)
                     
@@ -235,7 +235,7 @@ struct FullScreenPhotoView: View {
                         .foregroundColor(.white.opacity(0.6))
                         .font(.caption)
                     
-                    Button("Закрыть") {
+                    Button("action.close".localized) {
                         print("❌ Closing due to unknown error")
                         onDismiss()
                     }

@@ -4,6 +4,7 @@ struct ContentView: View {
     @EnvironmentObject var fullScreenPhotoManager: FullScreenPhotoManager
     @EnvironmentObject var photoManager: PhotoManager
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var onboardingManager: OnboardingManager
 
     var body: some View {
         ZStack {
@@ -11,27 +12,57 @@ struct ContentView: View {
             AppColors.background(for: themeManager.isDarkMode)
                 .ignoresSafeArea()
 
-            TabView {
-                HomeView()
-                    .tabItem {
-                        Image(systemName: "house.fill")
-                        Text("Дом")
+            Group {
+                if DeviceInfo.shared.isIPad {
+                    // Centered, width-limited container for iPad
+                    HStack {
+                        Spacer(minLength: 0)
+                        TabView {
+                            HomeView()
+                                .tabItem {
+                                    Image(systemName: "house.fill")
+                                    Text("navigation.home".localized)
+                                }
+                            CategoriesView()
+                                .tabItem {
+                                    Image(systemName: "square.grid.2x2")
+                                    Text("navigation.categories".localized)
+                                }
+                            FavoritesView()
+                                .tabItem {
+                                    Image(systemName: "heart.fill")
+                                    Text("navigation.favorites".localized)
+                                }
+                        }
+                        .frame(maxWidth: 700) // You can adjust maxWidth for iPad look
+                        .padding(.horizontal, 32)
+                        .accentColor(AppColors.accent(for: themeManager.isDarkMode))
+                        .preferredColorScheme(themeManager.isDarkMode ? .dark : .light)
+                        Spacer(minLength: 0)
                     }
-
-                CategoriesView()
-                    .tabItem {
-                        Image(systemName: "square.grid.2x2")
-                        Text("Категории")
+                } else {
+                    // iPhone: original layout
+                    TabView {
+                        HomeView()
+                            .tabItem {
+                                Image(systemName: "house.fill")
+                                Text("navigation.home".localized)
+                            }
+                        CategoriesView()
+                            .tabItem {
+                                Image(systemName: "square.grid.2x2")
+                                Text("navigation.categories".localized)
+                            }
+                        FavoritesView()
+                            .tabItem {
+                                Image(systemName: "heart.fill")
+                                Text("navigation.favorites".localized)
+                            }
                     }
-
-                FavoritesView()
-                    .tabItem {
-                        Image(systemName: "heart.fill")
-                        Text("Избранные")
-                    }
+                    .accentColor(AppColors.accent(for: themeManager.isDarkMode))
+                    .preferredColorScheme(themeManager.isDarkMode ? .dark : .light)
+                }
             }
-            .accentColor(AppColors.accent(for: themeManager.isDarkMode))
-            .preferredColorScheme(themeManager.isDarkMode ? .dark : .light)
         }
         // Present single photo in a fullscreen cover so that it sits above the TabView (hiding the tab bar)
         .fullScreenCover(
@@ -63,6 +94,8 @@ struct ContentView: View {
                 .zIndex(1000)
             }
         }
+        // Onboarding overlay (appears above everything else)
+        // (Удалено, теперь онбординг показывается в App.swift)
     }
 }
 

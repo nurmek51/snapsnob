@@ -21,12 +21,12 @@ struct TrashView: View {
                             .font(.system(size: UIDevice.current.userInterfaceIdiom == .pad ? 80 : 60))
                             .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                         
-                        Text("Корзина пуста")
+                        Text("trash.empty".localized)
                             .font(UIDevice.current.userInterfaceIdiom == .pad ? .title : .title2)
                             .fontWeight(.semibold)
                             .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                         
-                        Text("Удаленные фото будут появляться здесь")
+                        Text("trash.emptyDescription".localized)
                             .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .body)
                             .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                             .multilineTextAlignment(.center)
@@ -50,14 +50,14 @@ struct TrashView: View {
                     .constrainedToDevice(usePadding: false)
                 }
             }
-            .navigationTitle("Корзина (\(photoManager.trashedPhotos.count))")
+            .navigationTitle("trash.titleWithCount".localized(with: photoManager.trashedPhotos.count))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: { dismiss() }) {
                         HStack(spacing: 4) {
                             Image(systemName: "chevron.left")
-                            Text("Отмена")
+                            Text("action.cancel".localized)
                         }
                         .adaptiveFont(.body)
                     }
@@ -67,7 +67,7 @@ struct TrashView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showingClearAlert = true }) {
                         HStack(spacing: 4) {
-                            Text("Очистить")
+                            Text("trash.clear".localized)
                             Image(systemName: "trash")
                         }
                         .adaptiveFont(.body)
@@ -76,15 +76,15 @@ struct TrashView: View {
                     .disabled(photoManager.trashedPhotos.isEmpty)
                 }
             }
-            .alert("Очистить корзину", isPresented: $showingClearAlert) {
-                Button("Отмена", role: .cancel) { }
-                Button("Удалить все", role: .destructive) {
+            .alert("trash.clearTrashConfirm".localized, isPresented: $showingClearAlert) {
+                Button("action.cancel".localized, role: .cancel) { }
+                Button("trash.deleteAll".localized, role: .destructive) {
                     withAnimation(.spring()) { 
                         photoManager.clearAllTrash() 
                     }
                 }
             } message: {
-                Text("Вы уверены, что хотите удалить все фото из корзины? Это действие нельзя отменить.")
+                Text("trash.confirmPermanentDelete".localized)
             }
             .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
         }

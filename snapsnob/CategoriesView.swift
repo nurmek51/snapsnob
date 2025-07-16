@@ -60,340 +60,365 @@ struct CategoriesView: View {
         return "\(Int(average * 100))%"
     }
     
+    // MARK: - Header Section (static)
+    private var headerSection: some View {
+        HStack(alignment: .center, spacing: DeviceInfo.shared.spacing(0.8)) {
+            Image(systemName: shouldShowAlbums ? 
+                  (themeManager.isDarkMode ? "rectangle.stack.fill" : "rectangle.stack") : 
+                  (themeManager.isDarkMode ? "square.grid.2x2.fill" : "square.grid.2x2"))
+                .font(.system(size: DeviceInfo.shared.screenSize.fontSize.title, weight: .semibold))
+                .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+                .frame(width: DeviceInfo.shared.spacing(2.2), height: DeviceInfo.shared.spacing(2.2))
+            
+            Text(shouldShowAlbums ? "category.albums".localized : "navigation.categories".localized)
+                .adaptiveFont(.title)
+                .fontWeight(.bold)
+                .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
+            
+            Spacer()
+            
+            Text(shouldShowAlbums ? "\(albums.count)" : "\(categories.count)")
+                .adaptiveFont(.caption)
+                .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                .padding(.horizontal, DeviceInfo.shared.spacing(0.8))
+                .padding(.vertical, DeviceInfo.shared.spacing(0.4))
+                .background(AppColors.secondaryBackground(for: themeManager.isDarkMode))
+                .clipShape(Capsule())
+        }
+        .frame(maxWidth: .infinity, minHeight: DeviceInfo.shared.spacing(4.5), alignment: .center)
+        .alignmentGuide(.firstTextBaseline) { d in d[.firstTextBaseline] }
+        .padding(.horizontal, DeviceInfo.shared.spacing(1.2))
+        .padding(.vertical, DeviceInfo.shared.spacing(0.8))
+        .background(
+            RoundedRectangle(cornerRadius: Constants.Layout.standardCornerRadius)
+                .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
+                .shadow(color: AppColors.shadow(for: themeManager.isDarkMode).opacity(0.5), radius: 4, x: 0, y: -1) // Top shadow (reduced)
+                .shadow(color: AppColors.shadow(for: themeManager.isDarkMode).opacity(0.5), radius: 4, x: 0, y: 1) // Bottom shadow (reduced)
+        )
+        .adaptivePadding(1.2)
+    }
+    
+    // MARK: - Stats Section (separate from header)
+    private var statsSection: some View {
+        VStack(spacing: DeviceInfo.shared.spacing(0.6)) {
+            HStack(spacing: DeviceInfo.shared.spacing(0.6)) {
+                StatCard(title: "common.totalPhotos".localized, value: "\(totalPhotosCount)", color: AppColors.accent(for: themeManager.isDarkMode))
+                StatCard(title: "common.categorized".localized, value: "\(categorizedPhotosCount)", color: AppColors.secondaryText(for: themeManager.isDarkMode))
+            }
+            
+            StatCard(title: "common.averageConfidence".localized, value: averageConfidence, color: AppColors.accent(for: themeManager.isDarkMode))
+        }
+        .adaptivePadding(1.2)
+    }
+
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: DeviceInfo.shared.spacing(1.2)) {
-                    // Адаптивный красивый хедер
-                    HStack(spacing: DeviceInfo.shared.spacing(0.8)) {
-                        Image(systemName: shouldShowAlbums ? "rectangle.stack" : "square.grid.2x2")
-                            .adaptiveFont(.title)
-                            .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
-                        Text(shouldShowAlbums ? "Альбомы" : "Категории")
-                            .adaptiveFont(.title)
-                            .fontWeight(.bold)
-                            .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
-                        Spacer()
-                        // Счетчик
-                        Text(shouldShowAlbums ? "\(albums.count)" : "\(categories.count)")
-                            .adaptiveFont(.caption)
-                            .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                            .padding(.horizontal, DeviceInfo.shared.spacing(0.6))
-                            .padding(.vertical, DeviceInfo.shared.spacing(0.3))
-                            .background(AppColors.secondaryBackground(for: themeManager.isDarkMode))
-                            .clipShape(Capsule())
-                    }
-                    .adaptivePadding()
-                    .padding(.top, DeviceInfo.shared.spacing(0.5))
-                    .background(
-                        RoundedRectangle(cornerRadius: DeviceInfo.shared.screenSize.cornerRadius)
-                            .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
-                            .shadow(color: AppColors.shadow(for: themeManager.isDarkMode), radius: 8, x: 0, y: 2)
-                    )
-                    .padding(.horizontal, DeviceInfo.shared.screenSize.horizontalPadding * 0.2)
-                    
-                    // Statistics Section
-                    VStack(spacing: DeviceInfo.shared.spacing(0.6)) {
-                        HStack(spacing: DeviceInfo.shared.spacing(0.6)) {
-                            StatCard(title: "Всего фото", value: "\(totalPhotosCount)", color: AppColors.accent(for: themeManager.isDarkMode))
-                            StatCard(title: "Категоризировано", value: "\(categorizedPhotosCount)", color: AppColors.secondaryText(for: themeManager.isDarkMode))
+        Group {
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(spacing: DeviceInfo.shared.spacing(1.2)) {
+                        headerSection // <- moved inside ScrollView
+                        statsSection // <- separated stats section
+                        
+                        // AI Analysis Button - Only show if not currently analyzing
+                        if !aiAnalysisManager.isAnalyzing {
+                            Button(action: {
+                                print("👁️ Apple Vision Analysis button tapped")
+                                showingAIAnalysis = true
+                            }) {
+                                HStack(spacing: DeviceInfo.shared.spacing(0.8)) {
+                                    // Leading icon
+                                    Image(systemName: "brain.head.profile")
+                                        .adaptiveFont(.title)
+                                        .foregroundColor(.white)
+
+                                    // Title & subtitle – exactly one row each
+                                    VStack(alignment: .leading, spacing: DeviceInfo.shared.spacing(0.2)) {
+                                        Text("ai.analyzePhotos".localized)
+                                            .adaptiveFont(.body)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(.white)
+                                            .lineLimit(2)
+                                            .multilineTextAlignment(.leading)
+                                            .fixedSize(horizontal: false, vertical: true)
+
+                                        Text("ai.maximumAccuracy".localized)
+                                            .adaptiveFont(.caption)
+                                            .foregroundColor(.white.opacity(0.85))
+                                            .lineLimit(2)
+                                            .multilineTextAlignment(.leading)
+                                            .fixedSize(horizontal: false, vertical: true)
+
+                                    }
+                                    .layoutPriority(1)
+
+                                    Spacer()
+
+                                    // Chevron
+                                    Image(systemName: "chevron.right")
+                                        .adaptiveFont(.body)
+                                        .foregroundColor(.white.opacity(0.8))
+                                }
+                                .adaptivePadding(1.0)
+                                .padding(.vertical, DeviceInfo.shared.spacing(0.4))
+                                .background(
+                                    LinearGradient(
+                                        colors: [.black, .gray],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .adaptiveCornerRadius()
+                                .shadow(color: .black.opacity(0.15), radius: 6, x: 0, y: 3)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .adaptivePadding(1.2)
+                            // Ensure this button stays on top of any overlapping views
+                            .zIndex(1)
                         }
                         
-                        StatCard(title: "Средняя уверенность Vision", value: averageConfidence, color: AppColors.accent(for: themeManager.isDarkMode))
-                    }
-                    .adaptivePadding(1.2)
-                    
-                    // AI Analysis Button - Only show if not currently analyzing
-                    if !aiAnalysisManager.isAnalyzing {
-                        Button(action: {
-                            print("👁️ Apple Vision Analysis button tapped")
-                            showingAIAnalysis = true
-                        }) {
-                            HStack(spacing: DeviceInfo.shared.spacing(0.8)) {
-                                // Leading icon
-                                Image(systemName: "brain.head.profile")
-                                    .adaptiveFont(.title)
-                                    .foregroundColor(.white)
-
-                                // Title & subtitle – exactly one row each
-                                VStack(alignment: .leading, spacing: DeviceInfo.shared.spacing(0.2)) {
-                                    Text("Анализировать фотографии с Apple Vision")
-                                        .adaptiveFont(.body)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(.white)
-                                        .lineLimit(2)
-                                        .multilineTextAlignment(.leading)
-                                        .fixedSize(horizontal: false, vertical: true)
-
-                                    Text("Максимальная точность и качество")
-                                        .adaptiveFont(.caption)
-                                        .foregroundColor(.white.opacity(0.85))
-                                        .lineLimit(2)
-                                        .multilineTextAlignment(.leading)
-                                        .fixedSize(horizontal: false, vertical: true)
-
+                        // Show completed analysis info if categorized photos exist and not analyzing
+                        if !shouldShowAlbums && !aiAnalysisManager.isAnalyzing {
+                            VStack(spacing: DeviceInfo.shared.spacing(0.4)) {
+                                HStack(spacing: DeviceInfo.shared.spacing(0.6)) {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(.green)
+                                        .adaptiveFont(.title)
+                                    
+                                    VStack(alignment: .leading, spacing: DeviceInfo.shared.spacing(0.2)) {
+                                        Text("common.analysisComplete".localized)
+                                            .adaptiveFont(.body)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
+                                        
+                                        Text("common.photosCategorizationComplete".localized)
+                                            .adaptiveFont(.caption)
+                                            .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                                    }
+                                    
+                                    Spacer()
                                 }
-                                .layoutPriority(1)
-
-                                Spacer()
-
-                                // Chevron
-                                Image(systemName: "chevron.right")
-                                    .adaptiveFont(.body)
-                                    .foregroundColor(.white.opacity(0.8))
                             }
                             .adaptivePadding(1.0)
-                            .padding(.vertical, DeviceInfo.shared.spacing(0.4))
+                            .padding(.vertical, DeviceInfo.shared.spacing(0.6))
                             .background(
-                                LinearGradient(
-                                    colors: [.black, .gray],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
+                                RoundedRectangle(cornerRadius: DeviceInfo.shared.screenSize.cornerRadius)
+                                    .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
+                                    .stroke(Color.green.opacity(0.3), lineWidth: 1)
                             )
-                            .adaptiveCornerRadius()
-                            .shadow(color: .black.opacity(0.15), radius: 6, x: 0, y: 3)
+                            .adaptivePadding(1.2)
                         }
-                        .buttonStyle(PlainButtonStyle())
-                        .adaptivePadding(1.2)
-                        // Ensure this button stays on top of any overlapping views
-                        .zIndex(1)
-                    }
-                    
-                    // Show completed analysis info if categorized photos exist and not analyzing
-                    if !shouldShowAlbums && !aiAnalysisManager.isAnalyzing {
-                        VStack(spacing: DeviceInfo.shared.spacing(0.4)) {
-                            HStack(spacing: DeviceInfo.shared.spacing(0.6)) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.green)
+                        
+                        // Categories Section
+                        VStack(alignment: .leading, spacing: DeviceInfo.shared.spacing(0.8)) {
+                            HStack {
+                                Text(shouldShowAlbums ? "category.albums".localized : "navigation.categories".localized)
                                     .adaptiveFont(.title)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
+                                Spacer()
                                 
-                                VStack(alignment: .leading, spacing: DeviceInfo.shared.spacing(0.2)) {
-                                    Text("Анализ завершен")
-                                        .adaptiveFont(.body)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
-                                    
-                                    Text("Фотографии категоризированы с помощью Apple Vision")
+                                // Show count of items
+                                if shouldShowAlbums {
+                                    Text("\(albums.count)")
                                         .adaptiveFont(.caption)
                                         .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                                        .padding(.horizontal, DeviceInfo.shared.spacing(0.6))
+                                        .padding(.vertical, DeviceInfo.shared.spacing(0.3))
+                                        .background(AppColors.secondaryBackground(for: themeManager.isDarkMode))
+                                        .clipShape(Capsule())
+                                } else {
+                                    Text("\(categories.count)")
+                                        .adaptiveFont(.caption)
+                                        .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                                        .padding(.horizontal, DeviceInfo.shared.spacing(0.6))
+                                        .padding(.vertical, DeviceInfo.shared.spacing(0.3))
+                                        .background(AppColors.secondaryBackground(for: themeManager.isDarkMode))
+                                        .clipShape(Capsule())
                                 }
-                                
-                                Spacer()
                             }
-                        }
-                        .adaptivePadding(1.0)
-                        .padding(.vertical, DeviceInfo.shared.spacing(0.6))
-                        .background(
-                            RoundedRectangle(cornerRadius: DeviceInfo.shared.screenSize.cornerRadius)
-                                .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
-                                .stroke(Color.green.opacity(0.3), lineWidth: 1)
-                        )
-                        .adaptivePadding(1.2)
-                    }
-                    
-                    // Categories Section
-                    VStack(alignment: .leading, spacing: DeviceInfo.shared.spacing(0.8)) {
-                        HStack {
-                            Text(shouldShowAlbums ? "Альбомы" : "Категории")
-                                .adaptiveFont(.title)
-                                .fontWeight(.bold)
-                                .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
-                            Spacer()
+                            .adaptivePadding(1.2)
                             
-                            // Show count of items
-                            if shouldShowAlbums {
-                                Text("\(albums.count)")
-                                    .adaptiveFont(.caption)
-                                    .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                                    .padding(.horizontal, DeviceInfo.shared.spacing(0.6))
-                                    .padding(.vertical, DeviceInfo.shared.spacing(0.3))
-                                    .background(AppColors.secondaryBackground(for: themeManager.isDarkMode))
-                                    .clipShape(Capsule())
-                            } else {
-                                Text("\(categories.count)")
-                                    .adaptiveFont(.caption)
-                                    .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                                    .padding(.horizontal, DeviceInfo.shared.spacing(0.6))
-                                    .padding(.vertical, DeviceInfo.shared.spacing(0.3))
-                                    .background(AppColors.secondaryBackground(for: themeManager.isDarkMode))
-                                    .clipShape(Capsule())
-                            }
-                        }
-                        .adaptivePadding(1.2)
-                        
-                        // Unified grid configuration. When displaying **albums** we cap the
-                        // number of columns to the *album count* (so one album → one column,
-                        // two albums → two columns, etc.) while preserving the standard card
-                        // width used for categories. This prevents a single-album grid from
-                        // stretching to full-screen width on iPhones.
-                        let gridColumns: [GridItem] = {
-                            // Determine the desired column count with separate logic for albums so they remain readable.
-                            let device = DeviceInfo.shared.screenSize
-                            if shouldShowAlbums {
-                                // Wider album cards: fewer columns on phones, more on tablets.
-                                let albumColumnLimit: Int
-                                switch device {
-                                case .compact, .standard:
-                                    albumColumnLimit = 2
-                                // Keep Plus/Max phones at 2 columns to match Standard layout
-                                case .plus, .max:
-                                    albumColumnLimit = 2
-                                case .iPad:
-                                    albumColumnLimit = 4
-                                case .iPadPro:
-                                    albumColumnLimit = 5
+                            // Unified grid configuration. When displaying **albums** we cap the
+                            // number of columns to the *album count* (so one album → one column,
+                            // two albums → two columns, etc.) while preserving the standard card
+                            // width used for categories. This prevents a single-album grid from
+                            // stretching to full-screen width on iPhones.
+                            let gridColumns: [GridItem] = {
+                                // Determine the desired column count with separate logic for albums so they remain readable.
+                                let device = DeviceInfo.shared.screenSize
+                                if shouldShowAlbums {
+                                    // Wider album cards: fewer columns on phones, more on tablets.
+                                    let albumColumnLimit: Int
+                                    switch device {
+                                    case .compact, .standard:
+                                        albumColumnLimit = 2
+                                    // Keep Plus/Max phones at 2 columns to match Standard layout
+                                    case .plus, .max:
+                                        albumColumnLimit = 2
+                                    case .iPad:
+                                        albumColumnLimit = 4
+                                    case .iPadPro:
+                                        albumColumnLimit = 5
+                                    }
+                                    let columns = max(1, min(albums.count, albumColumnLimit))
+                                    return Array(
+                                        repeating: GridItem(
+                                            .flexible(),
+                                            spacing: DeviceInfo.shared.screenSize.gridSpacing
+                                        ),
+                                        count: columns
+                                    )
+                                } else {
+                                    // Tighter column limits so cards remain readable on wider phones/tablets
+                                    let categoryColumnLimit: Int
+                                    switch device {
+                                    case .compact, .standard:
+                                        categoryColumnLimit = 2
+                                    // Use two columns on Plus/Max for the same look as Standard
+                                    case .plus, .max:
+                                        categoryColumnLimit = 2
+                                    case .iPad:
+                                        categoryColumnLimit = 4
+                                    case .iPadPro:
+                                        categoryColumnLimit = 5
+                                    }
+                                    let columns = max(1, min(categories.count, categoryColumnLimit))
+                                    return Array(
+                                        repeating: GridItem(
+                                            .flexible(),
+                                            spacing: DeviceInfo.shared.screenSize.gridSpacing
+                                        ),
+                                        count: columns
+                                    )
                                 }
-                                let columns = max(1, min(albums.count, albumColumnLimit))
-                                return Array(
-                                    repeating: GridItem(
-                                        .flexible(),
-                                        spacing: DeviceInfo.shared.screenSize.gridSpacing
-                                    ),
-                                    count: columns
-                                )
-                            } else {
-                                // Tighter column limits so cards remain readable on wider phones/tablets
-                                let categoryColumnLimit: Int
-                                switch device {
-                                case .compact, .standard:
-                                    categoryColumnLimit = 2
-                                // Use two columns on Plus/Max for the same look as Standard
-                                case .plus, .max:
-                                    categoryColumnLimit = 2
-                                case .iPad:
-                                    categoryColumnLimit = 4
-                                case .iPadPro:
-                                    categoryColumnLimit = 5
-                                }
-                                let columns = max(1, min(categories.count, categoryColumnLimit))
-                                return Array(
-                                    repeating: GridItem(
-                                        .flexible(),
-                                        spacing: DeviceInfo.shared.screenSize.gridSpacing
-                                    ),
-                                    count: columns
-                                )
-                            }
-                        }()
+                            }()
 
-                        LazyVGrid(columns: gridColumns, spacing: DeviceInfo.shared.screenSize.gridSpacing) {
-                            if shouldShowAlbums {
-                                ForEach(albums) { album in
-                                    AlbumCard(album: album) {
-                                        print("📂 Album selected from grid: \(album.title)")
-                                        withAnimation(AppAnimations.modal) {
-                                            selectedAlbum = album
+                            LazyVGrid(columns: gridColumns, spacing: DeviceInfo.shared.screenSize.gridSpacing) {
+                                if shouldShowAlbums {
+                                    ForEach(albums) { album in
+                                        AlbumCard(album: album) {
+                                            print("📂 Album selected from grid: \(album.title)")
+                                            withAnimation(AppAnimations.modal) {
+                                                selectedAlbum = album
+                                            }
                                         }
+                                        .id(album.id) // Ensure proper identity for SwiftUI
                                     }
-                                    .id(album.id) // Ensure proper identity for SwiftUI
-                                }
-                            } else {
-                                ForEach(categories) { category in
-                                    RoundedCategoryCard(category: category, photoManager: photoManager) {
-                                        print("📊 Category selected from grid: \(category.name)")
-                                        withAnimation(AppAnimations.modal) {
-                                            selectedCategory = category.photoCategory
+                                } else {
+                                    ForEach(categories) { category in
+                                        RoundedCategoryCard(category: category, photoManager: photoManager) {
+                                            print("📊 Category selected from grid: \(category.name)")
+                                            withAnimation(AppAnimations.modal) {
+                                                selectedCategory = category.photoCategory
+                                            }
                                         }
+                                        .id(category.id) // Ensure proper identity for SwiftUI
                                     }
-                                    .id(category.id) // Ensure proper identity for SwiftUI
                                 }
                             }
-                        }
-                        .padding(.horizontal, DeviceInfo.shared.screenSize.horizontalPadding) // Add horizontal padding to prevent edge issues
-                        .padding(.vertical, DeviceInfo.shared.spacing(0.5)) // Small vertical padding
-                        
-                        // Empty state for albums
-                        if shouldShowAlbums && albums.isEmpty {
-                            VStack(spacing: DeviceInfo.shared.spacing(1.0)) {
-                                Image(systemName: "photo.on.rectangle.angled")
-                                    .font(.system(size: DeviceInfo.shared.screenSize.fontSize.title * 2.5))
-                                    .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                                
-                                Text("Альбомы не найдены")
-                                    .adaptiveFont(.title)
-                                    .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
-                                
-                                Text("Начните анализ для автоматической категоризации фотографий")
-                                    .adaptiveFont(.body)
-                                    .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                                    .multilineTextAlignment(.center)
+                            .padding(.horizontal, DeviceInfo.shared.screenSize.horizontalPadding) // Add horizontal padding to prevent edge issues
+                            .padding(.vertical, DeviceInfo.shared.spacing(0.5)) // Small vertical padding
+                            
+                            // Empty state for albums
+                            if shouldShowAlbums && albums.isEmpty {
+                                VStack(spacing: DeviceInfo.shared.spacing(1.0)) {
+                                    Image(systemName: "photo.on.rectangle.angled")
+                                        .font(.system(size: DeviceInfo.shared.screenSize.fontSize.title * 2.5))
+                                        .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                                    
+                                    Text("common.albumsNotFound".localized)
+                                        .adaptiveFont(.title)
+                                        .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
+                                    
+                                    Text("common.startAnalysisPrompt".localized)
+                                        .adaptiveFont(.body)
+                                        .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                                        .multilineTextAlignment(.center)
+                                }
+                                .padding(.vertical, DeviceInfo.shared.spacing(2.0))
+                                .adaptivePadding(1.2)
+                                .frame(maxWidth: .infinity)
                             }
-                            .padding(.vertical, DeviceInfo.shared.spacing(2.0))
-                            .adaptivePadding(1.2)
-                            .frame(maxWidth: .infinity)
-                        }
-                        
-                        // Empty state for categories
-                        if !shouldShowAlbums && categories.isEmpty && !aiAnalysisManager.isAnalyzing {
-                            VStack(spacing: DeviceInfo.shared.spacing(1.0)) {
-                                Image(systemName: "brain.head.profile")
-                                    .font(.system(size: DeviceInfo.shared.screenSize.fontSize.title * 2.5))
-                                    .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                                
-                                Text("Категории не найдены")
-                                    .adaptiveFont(.title)
-                                    .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
-                                
-                                Text("Попробуйте повторить анализ или проверьте настройки")
-                                    .adaptiveFont(.body)
-                                    .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                                    .multilineTextAlignment(.center)
+                            
+                            // Empty state for categories
+                            if !shouldShowAlbums && categories.isEmpty && !aiAnalysisManager.isAnalyzing {
+                                VStack(spacing: DeviceInfo.shared.spacing(1.0)) {
+                                    Image(systemName: "brain.head.profile")
+                                        .font(.system(size: DeviceInfo.shared.screenSize.fontSize.title * 2.5))
+                                        .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                                    
+                                    Text("category.categoriesNotFound".localized)
+                                        .adaptiveFont(.title)
+                                        .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
+                                    
+                                    Text("category.tryAnalysisAgain".localized)
+                                        .adaptiveFont(.body)
+                                        .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                                        .multilineTextAlignment(.center)
+                                }
+                                .padding(.vertical, DeviceInfo.shared.spacing(2.0))
+                                .adaptivePadding(1.2)
                             }
-                            .padding(.vertical, DeviceInfo.shared.spacing(2.0))
-                            .adaptivePadding(1.2)
                         }
                     }
+                    .padding(.top, {
+                        let multiplier: CGFloat
+                        switch DeviceInfo.shared.screenSize {
+                        case .max:   multiplier = 0.2
+                        case .plus:  multiplier = 0.3
+                        default:     multiplier = 0.4
+                        }
+                        return DeviceInfo.SafeAreaHelper.headerTopPadding * multiplier
+                    }())
+                    .padding(.bottom, DeviceInfo.shared.spacing(1.6))
                 }
-                .padding(.top, DeviceInfo.shared.spacing(0.4))
-                .padding(.bottom, DeviceInfo.shared.spacing(1.6))
-            }
-            .sheet(item: $selectedCategory) { category in
-                NavigationStack {
-                    CategoryDetailView(category: category, aiAnalysisManager: aiAnalysisManager)
-                        .environmentObject(photoManager)
-                        .environmentObject(fullScreenPhotoManager)
+                .sheet(item: $selectedCategory) { category in
+                    NavigationStack {
+                        CategoryDetailView(category: category, aiAnalysisManager: aiAnalysisManager)
+                            .environmentObject(photoManager)
+                            .environmentObject(fullScreenPhotoManager)
+                    }
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
+                    .interactiveDismissDisabled()
                 }
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-                .interactiveDismissDisabled()
-            }
-            .sheet(item: $selectedAlbum) { album in
-                NavigationStack {
-                    AlbumDetailView(album: album)
-                        .environmentObject(photoManager)
-                        .environmentObject(fullScreenPhotoManager)
+                .sheet(item: $selectedAlbum) { album in
+                    NavigationStack {
+                        AlbumDetailView(album: album)
+                            .environmentObject(photoManager)
+                            .environmentObject(fullScreenPhotoManager)
+                    }
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
                 }
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
+                .fullScreenCover(isPresented: $showingAIAnalysis) {
+                    AIAnalysisView {
+                        showingAIAnalysis = false
+                    }
+                }
+                .onReceive(photoManager.$categorizedPhotos) { _ in
+                    dataVersion += 1
+                }
+                .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
             }
-            .fullScreenCover(isPresented: $showingAIAnalysis) {
-                AIAnalysisView {
-                    showingAIAnalysis = false
+            .constrainedToDevice(usePadding: false)
+            .navigationTitle("navigation.categories".localized)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        print("🔄 Refresh button tapped")
+                        refreshCategories()
+                    }) {
+                        Image(systemName: themeManager.isDarkMode ? "arrow.clockwise.circle.fill" : "arrow.clockwise")
+                            .font(.system(size: DeviceInfo.shared.screenSize.fontSize.body, weight: .medium))
+                            .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+                            .rotationEffect(.degrees(isRefreshing ? 360 : 0))
+                            .animation(.linear(duration: 1).repeatCount(isRefreshing ? 10 : 0), value: isRefreshing)
+                    }
                 }
             }
-            .onReceive(photoManager.$categorizedPhotos) { _ in
-                dataVersion += 1
-            }
-            .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
         }
-        .navigationTitle("Категории")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: {
-                    print("🔄 Refresh button tapped")
-                    refreshCategories()
-                }) {
-                    Image(systemName: "arrow.clockwise")
-                        .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
-                        .rotationEffect(.degrees(isRefreshing ? 360 : 0))
-                        .animation(.linear(duration: 1).repeatCount(isRefreshing ? 10 : 0), value: isRefreshing)
-                }
-            }
-        }
-        .navigationViewStyle(.stack)
-        .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
     }
     
     private func refreshCategories() {
@@ -523,7 +548,7 @@ struct RoundedCategoryCard: View {
                                 .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                                 .lineLimit(2)
                             
-                            Text("\(category.count) фото")
+                            Text("common.photosCount".localized(with: category.count))
                                 .font(.system(size: DeviceInfo.shared.screenSize.fontSize.caption * 0.9))
                                 .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                         }

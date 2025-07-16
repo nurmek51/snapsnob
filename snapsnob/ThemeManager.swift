@@ -120,11 +120,11 @@ enum AppTheme: String, CaseIterable {
     var displayName: String {
         switch self {
         case .system:
-            return "Системная"
+            return "theme.system".localized
         case .light:
-            return "Светлая"
+            return "theme.light".localized
         case .dark:
-            return "Темная"
+            return "theme.dark".localized
         }
     }
     

@@ -48,6 +48,12 @@ struct HomeView: View {
     @State private var actionBannerColor: Color = .black
     @State private var actionDirection: SwipeDirection = .right
     
+    // Onboarding states
+    @StateObject private var onboardingManager = OnboardingManager.shared
+    @State private var onboardingDidSwipeRight = false
+    @State private var onboardingDidSwipeLeft = false
+    @State private var onboardingDidDoubleTap = false
+    
     // Heart pop-up animation for double-tap favourite
     @State private var showHeartOverlay: Bool = false
     @State private var heartOverlayScale: CGFloat = 0.8
@@ -67,16 +73,6 @@ struct HomeView: View {
     
     // MARK: - Permission Tracking State
     @State private var hasShownPermissionPrompt = false
-    
-    // Safe-area top padding helper
-    private var topSafePadding: CGFloat {
-        let keyWindow = UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .flatMap { $0.windows }
-            .first { $0.isKeyWindow }
-        // Align header just below the Dynamic Island / status bar.
-        return keyWindow?.safeAreaInsets.top ?? 44
-    }
     
     // MARK: - Card Size Helper
     /// Slightly larger than the default adaptive size, but still clamped to the screen width so it remains responsive.
@@ -119,33 +115,50 @@ struct HomeView: View {
     @State private var favoriteIconRotation: Double = 0.0
     @State private var showFavoriteAnimation = false
     
+    // MARK: - Card Corner Radius (iPad only)
+    private var cardCornerRadius: CGFloat {
+        DeviceInfo.shared.isIPad ? 40 : 24
+    }
+    
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Check authorization status separately for better type checking
-                let isAccessDenied = photoManager.authorizationStatus == .denied || photoManager.authorizationStatus == .restricted
-                
-                if isAccessDenied {
-                    // Photo Access Denied View
-                    photoAccessDeniedView
-                } else if photoManager.isLoading {
-                    // Loading View
-                    loadingView
-                } else {
-                    // Main Content (shows placeholder when feed is empty)
-                    mainContentView
+        Group {
+            if DeviceInfo.shared.isIPad {
+                // iPad: No NavigationView, show main content directly
+                VStack(spacing: 0) {
+                    let isAccessDenied = photoManager.authorizationStatus == .denied || photoManager.authorizationStatus == .restricted
+                    if isAccessDenied {
+                        photoAccessDeniedView
+                    } else if photoManager.isLoading {
+                        loadingView
+                    } else {
+                        mainContentView
+                    }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(AppColors.background(for: themeManager.isDarkMode))
+            } else {
+                // iPhone: Use NavigationView
+                NavigationView {
+                    VStack(spacing: 0) {
+                        let isAccessDenied = photoManager.authorizationStatus == .denied || photoManager.authorizationStatus == .restricted
+                        if isAccessDenied {
+                            photoAccessDeniedView
+                        } else if photoManager.isLoading {
+                            loadingView
+                        } else {
+                            mainContentView
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(AppColors.background(for: themeManager.isDarkMode))
+                }
+                .navigationBarHidden(true)
+                .navigationViewStyle(.stack)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .background(AppColors.background(for: themeManager.isDarkMode))
-        .ignoresSafeArea()
-        .navigationBarHidden(true)
-        // Force single-column behaviour on iPad to match the iPhone UX.
-        .navigationViewStyle(.stack)
+        // All the rest of your view modifiers (onAppear, onReceive, etc.) remain outside the Group
         .onAppear {
             print("📱 HomeView appeared")
-            // Only initialize if not loading and not already initialized
             if !photoManager.isLoading && !hasInitialized && !photoManager.nonSeriesPhotos.isEmpty {
                 hasInitialized = true
                 loadInitialPhotos()
@@ -153,13 +166,11 @@ struct HomeView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("PhotoRestoredFromTrash"))) { notification in
-            // Handle photo restored from trash - bring it to the top of the feed
             if let photoId = notification.userInfo?["photoId"] as? UUID {
                 handlePhotoRestoredFromTrash(photoId: photoId)
             }
         }
         .onChange(of: photoManager.isLoading) { _, isLoading in
-            // When loading finishes, initialize if not already done
             if !isLoading && !hasInitialized && !photoManager.nonSeriesPhotos.isEmpty {
                 hasInitialized = true
                 loadInitialPhotos()
@@ -167,7 +178,6 @@ struct HomeView: View {
             }
         }
         .onChange(of: photoManager.nonSeriesPhotos) { _, newPhotos in
-            // When photos update, initialize if not already done
             if !photoManager.isLoading && !hasInitialized && !newPhotos.isEmpty {
                 hasInitialized = true
                 loadInitialPhotos()
@@ -184,10 +194,8 @@ struct HomeView: View {
                 scheduleIdleBounce()
                 return
             }
-
             let stillValid = photoManager.nonSeriesPhotos.contains { $0.id == current.id }
             guard !stillValid else { return }
-
             if photoManager.nonSeriesPhotos.isEmpty {
                 currentPhoto = nil
                 nextPhoto = nil
@@ -205,13 +213,22 @@ struct HomeView: View {
         .sheet(isPresented: $showingTrash) {
             TrashView(photoManager: photoManager)
         }
-        // Overlays for full-screen photo and story presentation are now handled globally by ContentView.
         .fullScreenCover(isPresented: $showingAIAnalysis) {
             AIAnalysisView {
                 showingAIAnalysis = false
             }
             .environmentObject(photoManager)
             .environmentObject(aiAnalysisManager)
+        }
+        // Onboarding overlay
+        .overlay {
+            HomeViewOnboarding(
+                didSwipeRight: $onboardingDidSwipeRight,
+                didSwipeLeft: $onboardingDidSwipeLeft,
+                didDoubleTap: $onboardingDidDoubleTap
+            )
+            .environmentObject(themeManager)
+            .zIndex(100) // Ensure it's above photo cards
         }
         // Undo button overlay
         // (global banner overlay removed – banner now lives on the card)
@@ -238,12 +255,12 @@ struct HomeView: View {
                 .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
             
             VStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 12 : 8) {
-                Text("Доступ к фото запрещен")
+                Text("photo.accessDenied".localized)
                     .font(UIDevice.current.userInterfaceIdiom == .pad ? .largeTitle : .title2)
                     .fontWeight(.semibold)
                     .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                 
-                Text("Для работы приложения необходим доступ к фото. Разрешите доступ в настройках системы.")
+                Text("photo.accessRequiredMessage".localized)
                     .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .body)
                     .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                     .multilineTextAlignment(.center)
@@ -264,7 +281,7 @@ struct HomeView: View {
                 HStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 12 : 8) {
                     Image(systemName: "gear")
                         .font(.system(size: UIDevice.current.userInterfaceIdiom == .pad ? 18 : 16, weight: .semibold))
-                    Text("Открыть настройки")
+                    Text("action.openSettings".localized)
                         .font(.system(size: UIDevice.current.userInterfaceIdiom == .pad ? 18 : 16, weight: .semibold))
                 }
                 .foregroundColor(.white)
@@ -295,7 +312,7 @@ struct HomeView: View {
         VStack(spacing: 20) {
             ProgressView()
                 .scaleEffect(1.5)
-            Text("Загрузка фотографий...")
+                            Text("photo.loading".localized)
                 .font(.body)
                 .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
         }
@@ -310,8 +327,8 @@ struct HomeView: View {
         VStack(spacing: 0) {
             // Header is pinned at the top
             headerSection
-                // Position header just below the status bar / Dynamic Island for all devices
-                .padding(.top, topSafePadding * 0.6 + DeviceInfo.shared.screenSize.topSectionPadding) // Extra top padding for Pro Max only
+                // Use reliable safe area helper for consistent positioning across all devices
+                .safeAreaHeader()
                 .background(AppColors.background(for: themeManager.isDarkMode))
                 .zIndex(10)
             
@@ -321,7 +338,7 @@ struct HomeView: View {
                 .padding(.top, 4) // minimal gap after header
         }
         // Bottom padding scaled per device to ensure card clears the tab bar
-        .padding(.bottom, DeviceInfo.shared.screenSize.bottomSectionPadding) // Extra bottom padding for Pro Max only
+        .padding(.bottom, DeviceInfo.shared.screenSize.bottomSectionPadding)
         .constrainedToDevice(usePadding: false)
     }
     
@@ -330,7 +347,7 @@ struct HomeView: View {
         // --- Refactored for pixel-perfect, adaptive, and symmetric layout ---
         VStack(alignment: .leading, spacing: 0) {
             // Title with consistent top padding from status bar
-            Text("Серии фото")
+            Text(Constants.Strings.photoSeries)
                 .adaptiveFont(.title)
                 .fontWeight(.bold)
                 .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
@@ -394,7 +411,7 @@ struct HomeView: View {
                             }
                         }
                     }
-                    Text("Корзина")
+                    Text(Constants.Strings.trash)
                         .adaptiveFont(.caption)
                         .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                         .lineLimit(1)
@@ -409,7 +426,7 @@ struct HomeView: View {
             let total = photoManager.allPhotos.count
             VStack(spacing: DeviceInfo.shared.spacing(0.2)) {
                 HStack {
-                    Text("\(processed)/\(total) фото обработано")
+                    Text("home.photosProcessed".localized(with: processed, total))
                         .adaptiveFont(.caption)
                         .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                     Spacer()
@@ -438,17 +455,17 @@ struct HomeView: View {
 
                     // Show a different message when the entire feed is empty vs. when the user has simply reached the end.
                     if photoManager.nonSeriesPhotos.isEmpty {
-                        Text("Нет одиночных фотографий")
+                        Text(Constants.Strings.noSinglePhotos)
                             .font(.title2)
                             .fontWeight(.semibold)
                             .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
 
-                        Text("Все ваши фото являются частью серий")
+                        Text(Constants.Strings.allPhotosInSeries)
                             .font(.body)
                             .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                             .multilineTextAlignment(.center)
                     } else {
-                        Text("Больше нет фото")
+                        Text("common.noMorePhotos".localized)
                             .font(.title2)
                             .fontWeight(.semibold)
                             .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
@@ -497,13 +514,13 @@ struct HomeView: View {
         ZStack {
             // Gradient backdrop
             gradientBackdrop
-            
+                .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius))
             // Card with shadow
             cardWithShadow
-            
+                .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius))
             // Photo
             OptimizedPhotoView(photo: photo, targetSize: cardSize)
-                .clipShape(RoundedRectangle(cornerRadius: 24))
+                .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius))
                 .transition(.opacity.combined(with: .scale))
             
             // Swipe indicators
@@ -527,7 +544,7 @@ struct HomeView: View {
     
     @ViewBuilder
     private var gradientBackdrop: some View {
-        RoundedRectangle(cornerRadius: 24)
+        RoundedRectangle(cornerRadius: cardCornerRadius)
             .fill(
                 LinearGradient(
                     colors: [Color.white.opacity(0.1), Color.black.opacity(0.4)],
@@ -539,7 +556,7 @@ struct HomeView: View {
     
     @ViewBuilder
     private var cardWithShadow: some View {
-        RoundedRectangle(cornerRadius: 24)
+        RoundedRectangle(cornerRadius: cardCornerRadius)
             .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
             .shadow(
                 color: AppColors.shadow(for: themeManager.isDarkMode).opacity(0.3),
@@ -548,7 +565,7 @@ struct HomeView: View {
                 y: shadowY
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 24)
+                RoundedRectangle(cornerRadius: cardCornerRadius)
                     .stroke(AppColors.border(for: themeManager.isDarkMode), lineWidth: 2)
             )
     }
@@ -693,6 +710,10 @@ struct HomeView: View {
     private var doubleTapGesture: some Gesture {
         TapGesture(count: 2)
             .onEnded {
+                // Trigger onboarding if in double tap step
+                if onboardingManager.currentStep == .doubleTap {
+                    onboardingDidDoubleTap = true
+                }
                 animateHeartPop()
                 toggleFavoriteHome()
             }
@@ -1102,8 +1123,16 @@ struct HomeView: View {
         if abs(translation.width) > horizontalThreshold || abs(velocity.width) > velocityThreshold {
             // Determine direction
             if translation.width < 0 || velocity.width < -velocityThreshold {
+                // Trigger onboarding if in left swipe step
+                if onboardingManager.currentStep == .leftSwipe {
+                    onboardingDidSwipeLeft = true
+                }
                 handleAction(.trash)
             } else {
+                // Trigger onboarding if in right swipe step
+                if onboardingManager.currentStep == .rightSwipe {
+                    onboardingDidSwipeRight = true
+                }
                 handleAction(.keep)
             }
         } else {
@@ -1200,14 +1229,7 @@ struct HomeView: View {
         }
         // Toggle favorite state in PhotoManager
         photoManager.setFavorite(photo, isFavorite: !photo.isFavorite)
-        // Update currentPhoto, photoQueue, and backgroundCards with the latest Photo
-        if let updated = photoManager.displayPhotos.first(where: { $0.asset.localIdentifier == photo.asset.localIdentifier }) {
-            currentPhoto = updated
-            photoQueue = photoQueue.map { $0.asset.localIdentifier == updated.asset.localIdentifier ? updated : $0 }
-            backgroundCards = backgroundCards.map { $0.asset.localIdentifier == updated.asset.localIdentifier ? updated : $0 }
-            // Animate any deck changes
-            updateBackgroundCards()
-        }
+        // --- Removed manual update of currentPhoto, photoQueue, and backgroundCards ---
         // Reset scale after animation
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {

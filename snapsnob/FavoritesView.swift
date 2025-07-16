@@ -31,6 +31,7 @@ struct FavoritesView: View {
     @EnvironmentObject var photoManager: PhotoManager
     @EnvironmentObject var aiManager: AIAnalysisManager
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var localizationManager: LocalizationManager
     @State private var isRefreshing = false
     @State private var selectedPhoto: Photo?
     @State private var showingFullScreen = false
@@ -68,7 +69,7 @@ struct FavoritesView: View {
     private var favouritesByMonth: [(month: String, photos: [Photo])] {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM yyyy"
-        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.locale = Locale.current // Use current system locale instead of hardcoded Russian
 
         let fourteenDaysAgo = Calendar.current.date(byAdding: .day, value: -14, to: Date()) ?? Date()
         
@@ -101,36 +102,102 @@ struct FavoritesView: View {
         return result
     }
     
+    // MARK: - Header Section (static)
+    private var headerSection: some View {
+        HStack(alignment: .center, spacing: DeviceInfo.shared.spacing(0.8)) {
+            Image(systemName: themeManager.isDarkMode ? "heart.fill" : "heart")
+                .font(.system(size: DeviceInfo.shared.screenSize.fontSize.title, weight: .semibold))
+                .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+                .frame(width: DeviceInfo.shared.spacing(2.2), height: DeviceInfo.shared.spacing(2.2))
+            
+            Text("navigation.favorites".localized)
+                .adaptiveFont(.title)
+                .fontWeight(.bold)
+                .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
+            
+            Spacer()
+            
+            // Theme switcher button
+            Button(action: { toggleTheme() }) {
+                Image(systemName: themeIcon)
+                    .font(.system(size: DeviceInfo.shared.screenSize.fontSize.body, weight: .medium))
+                    .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+                    .frame(width: DeviceInfo.shared.spacing(2.0), height: DeviceInfo.shared.spacing(2.0))
+                    .background(
+                        Circle()
+                            .fill(AppColors.secondaryBackground(for: themeManager.isDarkMode))
+                    )
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            Text("\(photoManager.favoritePhotosCount)")
+                .adaptiveFont(.caption)
+                .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                .padding(.horizontal, DeviceInfo.shared.spacing(0.8))
+                .padding(.vertical, DeviceInfo.shared.spacing(0.4))
+                .background(AppColors.secondaryBackground(for: themeManager.isDarkMode))
+                .clipShape(Capsule())
+        }
+        .frame(maxWidth: .infinity, minHeight: DeviceInfo.shared.spacing(4.5), alignment: .center)
+        .alignmentGuide(.firstTextBaseline) { d in d[.firstTextBaseline] }
+        .padding(.horizontal, DeviceInfo.shared.spacing(1.2))
+        .padding(.vertical, DeviceInfo.shared.spacing(0.8))
+        .background(
+            RoundedRectangle(cornerRadius: Constants.Layout.standardCornerRadius)
+                .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
+                .shadow(color: AppColors.shadow(for: themeManager.isDarkMode).opacity(0.5), radius: 4, x: 0, y: -1) // Top shadow (reduced)
+                .shadow(color: AppColors.shadow(for: themeManager.isDarkMode).opacity(0.5), radius: 4, x: 0, y: 1) // Bottom shadow (reduced)
+        )
+        .adaptivePadding(1.2)
+    }
+    
+    // MARK: - Stats Section (separate from header)
+    private var statsSection: some View {
+        VStack(spacing: DeviceInfo.shared.spacing(0.6)) {
+            HStack(spacing: DeviceInfo.shared.spacing(0.6)) {
+                StatCard(title: "favorites.totalPhotos".localized, value: "\(photoManager.totalPhotosCount)", color: AppColors.accent(for: themeManager.isDarkMode))
+                StatCard(title: "favorites.favoritesCount".localized, value: "\(photoManager.favoritePhotosCount)", color: AppColors.secondaryText(for: themeManager.isDarkMode))
+            }
+            
+            HStack(spacing: DeviceInfo.shared.spacing(0.6)) {
+                StatCard(title: "favorites.thisWeek".localized, value: "+\(photoManager.photosLastWeek)", color: AppColors.accent(for: themeManager.isDarkMode))
+                StatCard(title: "favorites.bestPhotos".localized, value: "\(photoManager.superStarPhotosCount)", color: .yellow)
+            }
+        }
+        .adaptivePadding(1.2)
+    }
+    
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: 24) {
-                    dashboardSection
-                    
-                    // New Grouped Navigation Structure
-                    groupedFavoritesSection
+        Group {
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(spacing: DeviceInfo.shared.spacing(1.2)) {
+                        headerSection // <- moved inside ScrollView
+                        statsSection // <- separated stats section
+                        swipeModeSection // <- renamed for clarity
+                        // New Grouped Navigation Structure
+                        groupedFavoritesSection
+                    }
+                    .padding(.top, {
+                        let multiplier: CGFloat
+                        switch DeviceInfo.shared.screenSize {
+                        case .max:   multiplier = 0.2
+                        case .plus:  multiplier = 0.3
+                        default:     multiplier = 0.4
+                        }
+                        return DeviceInfo.SafeAreaHelper.headerTopPadding * multiplier
+                    }())
+                    .padding(.bottom, DeviceInfo.shared.spacing(1.6))
                 }
-                .padding(.top, 8)
-                .padding(.bottom, 32)
             }
             .constrainedToDevice(usePadding: false)
-            .navigationTitle("Избранное")
+            .navigationTitle("navigation.favorites".localized)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: {
-                        toggleTheme()
-                    }) {
-                        Image(systemName: themeIcon)
-                            .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
-                    }
-                }
-                
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        refreshData()
-                    }) {
-                        Image(systemName: "arrow.clockwise")
+                    Button(action: { refreshData() }) {
+                        Image(systemName: themeManager.isDarkMode ? "arrow.clockwise.circle.fill" : "arrow.clockwise")
+                            .font(.system(size: DeviceInfo.shared.screenSize.fontSize.body, weight: .medium))
                             .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
                             .rotationEffect(.degrees(isRefreshing ? 360 : 0))
                             .animation(.linear(duration: 1).repeatCount(isRefreshing ? 10 : 0), value: isRefreshing)
@@ -148,11 +215,9 @@ struct FavoritesView: View {
                     }
                 })
             ) { photo in
-                // Determine which group this photo belongs to and create appropriate navigation context
                 let (photoGroup, groupTitle) = getPhotoGroupForFullScreen(photo: photo)
-                
                 FullScreenPhotoView(
-                    photo: photo, 
+                    photo: photo,
                     photoManager: photoManager,
                     photoGroup: photoGroup,
                     groupTitle: groupTitle
@@ -166,31 +231,7 @@ struct FavoritesView: View {
             }
             .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
         }
-        .navigationTitle("Избранное")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button(action: {
-                    toggleTheme()
-                }) {
-                    Image(systemName: themeIcon)
-                        .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
-                }
-            }
-            
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: {
-                    refreshData()
-                }) {
-                    Image(systemName: "arrow.clockwise")
-                        .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
-                        .rotationEffect(.degrees(isRefreshing ? 360 : 0))
-                        .animation(.linear(duration: 1).repeatCount(isRefreshing ? 10 : 0), value: isRefreshing)
-                }
-            }
-        }
-        .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
-        .navigationViewStyle(.stack)
+        // Removed duplicate navigationTitle / background modifiers to avoid side-effects.
         .overlay(
             // Selection Toolbar
             selectionToolbar,
@@ -198,22 +239,10 @@ struct FavoritesView: View {
         )
     }
     
-    // MARK: - Dashboard Section
-    private var dashboardSection: some View {
-        VStack(spacing: 16) {
-            HStack {
-                StatCard(title: "Всего фото", value: "\(photoManager.totalPhotosCount)", color: AppColors.accent(for: themeManager.isDarkMode))
-                StatCard(title: "Избранные", value: "\(photoManager.favoritePhotosCount)", color: AppColors.secondaryText(for: themeManager.isDarkMode))
-            }
-            
-            HStack {
-                StatCard(title: "За неделю", value: "+\(photoManager.photosLastWeek)", color: AppColors.accent(for: themeManager.isDarkMode))
-                StatCard(title: "Лучшие", value: "\(photoManager.superStarPhotosCount)", color: .yellow)
-            }
-            
-            swipeModeToggle
-        }
-        .adaptivePadding()
+    // MARK: - Swipe Mode Section
+    private var swipeModeSection: some View {
+        swipeModeToggle
+            .adaptivePadding()
     }
     
     // MARK: - Swipe Mode Toggle
@@ -228,7 +257,7 @@ struct FavoritesView: View {
                     .adaptiveFont(.title)
                     .foregroundColor(isSwipeMode ? .white : AppColors.accent(for: themeManager.isDarkMode))
                 
-                Text(isSwipeMode ? "Обычный режим" : "Режим свайпа")
+                Text(isSwipeMode ? "favorites.normalMode".localized : "favorites.swipeMode".localized)
                     .adaptiveFont(.body)
                     .fontWeight(.medium)
                     .foregroundColor(isSwipeMode ? .white : AppColors.primaryText(for: themeManager.isDarkMode))
@@ -241,13 +270,13 @@ struct FavoritesView: View {
                             Image(systemName: "arrow.left")
                                 .adaptiveFont(.caption)
                                 .foregroundColor(.white.opacity(0.8))
-                            Text("Убрать")
+                            Text("favorites.swipeLeft".localized)
                                 .adaptiveFont(.caption)
                                 .foregroundColor(.white.opacity(0.8))
                         }
                         
                         HStack(spacing: 4) {
-                            Text("Лучшие")
+                            Text("favorites.swipeRight".localized)
                                 .adaptiveFont(.caption)
                                 .foregroundColor(.white.opacity(0.8))
                             Image(systemName: "arrow.right")
@@ -338,7 +367,7 @@ struct FavoritesView: View {
                         .foregroundColor(.yellow)
                         .adaptiveFont(.title)
                     
-                    Text("Лучшие из лучших")
+                    Text("favorites.bestOfBest".localized)
                         .adaptiveFont(.body)
                         .fontWeight(.semibold)
                         .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
@@ -394,8 +423,8 @@ struct FavoritesView: View {
             // Recent Favorites Group (if any)
             if !recentFavoritePhotos.isEmpty {
                 FavoriteGroupSection(
-                    title: "Недавние избранные",
-                    subtitle: "Последние 14 дней",
+                    title: "favorites.recentFavorites".localized,
+                    subtitle: "favorites.recentSubtitle".localized,
                     count: recentFavoritePhotos.count,
                     icon: "clock.fill",
                     photos: recentFavoritePhotos,
@@ -454,12 +483,12 @@ struct FavoritesView: View {
                         .font(.system(size: DeviceInfo.shared.screenSize.fontSize.title * 2))
                         .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                     
-                    Text("Нет избранных фотографий")
+                    Text("favorites.noFavoritesTitle".localized)
                         .adaptiveFont(.title)
                         .fontWeight(.semibold)
                         .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                     
-                    Text("Избранные фото будут появляться здесь")
+                    Text("favorites.noFavoritesMessage".localized)
                         .adaptiveFont(.body)
                         .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                         .multilineTextAlignment(.center)
@@ -482,11 +511,11 @@ struct FavoritesView: View {
     private var themeIcon: String {
         switch themeManager.currentTheme {
         case .light:
-            return "sun.max"
+            return themeManager.isDarkMode ? "sun.max.fill" : "sun.max"
         case .dark:
-            return "moon"
+            return themeManager.isDarkMode ? "moon.fill" : "moon"
         case .system:
-            return "moon" // default icon for system
+            return themeManager.isDarkMode ? "moon.fill" : "moon" // default icon for system
         }
     }
     
@@ -506,7 +535,7 @@ struct FavoritesView: View {
     private func getPhotoGroupForFullScreen(photo: Photo) -> ([Photo], String?) {
         // Check if photo is in recent favorites
         if recentFavoritePhotos.contains(where: { $0.id == photo.id }) {
-            return (recentFavoritePhotos, "Недавние избранные")
+            return (recentFavoritePhotos, "favorites.recentFavorites".localized)
         }
         
         // Check monthly groups
@@ -518,7 +547,7 @@ struct FavoritesView: View {
         
         // Check super stars
         if superStarPhotos.contains(where: { $0.id == photo.id }) {
-            return (superStarPhotos, "Лучшие из лучших")
+            return (superStarPhotos, "favorites.bestOfBest".localized)
         }
         
         // Fallback to single photo
@@ -542,7 +571,7 @@ struct FavoritesView: View {
                             HStack(spacing: 8) {
                                 Image(systemName: "checkmark")
                                     .adaptiveFont(.body)
-                                Text("Готово")
+                                Text("action.done".localized)
                                     .adaptiveFont(.body)
                                     .fontWeight(.medium)
                             }
@@ -568,7 +597,7 @@ struct FavoritesView: View {
                             HStack(spacing: 8) {
                                 Image(systemName: "star.fill")
                                     .foregroundColor(.yellow)
-                                Text("Лучшие")
+                                Text("favorites.bestPhotos".localized)
                                     .adaptiveFont(.body)
                                     .fontWeight(.medium)
                                     .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
@@ -594,7 +623,7 @@ struct FavoritesView: View {
                             HStack(spacing: 8) {
                                 Image(systemName: "heart.slash.fill")
                                     .foregroundColor(.red)
-                                Text("Удалить")
+                                Text("favorites.removeFromFavorites".localized)
                                     .adaptiveFont(.body)
                                     .fontWeight(.medium)
                                     .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
@@ -628,6 +657,7 @@ struct FavoritesView: View {
 
 struct FavoriteGroupSection: View {
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var localizationManager: LocalizationManager
     let title: String
     let subtitle: String?
     let count: Int
@@ -733,6 +763,7 @@ struct FavoriteGroupSection: View {
 
 struct MonthlyPhotoSection: View {
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var localizationManager: LocalizationManager
     let month: String
     let photos: [Photo]
     let photoManager: PhotoManager
@@ -761,7 +792,7 @@ struct MonthlyPhotoSection: View {
                             .fontWeight(.semibold)
                             .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                         
-                        Text("\(photos.count) фото")
+                        Text(String(format: "favorites.photosCount".localized, photos.count))
                             .adaptiveFont(.body)
                             .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                     }

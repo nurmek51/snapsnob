@@ -159,11 +159,11 @@ struct AIAnalysisView: View {
                 .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
                 .adaptiveFont(.title)
             VStack(alignment: .leading, spacing: DeviceInfo.shared.spacing(0.2)) {
-                Text("Анализ фотографий")
+                Text("analysis.title".localized)
                     .adaptiveFont(.body)
                     .fontWeight(.semibold)
                     .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
-                Text("Используется Apple Vision для категоризации")
+                Text("analysis.usingVision".localized)
                     .adaptiveFont(.caption)
                     .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
             }
@@ -177,7 +177,7 @@ struct AIAnalysisView: View {
                 .progressViewStyle(LinearProgressViewStyle(tint: AppColors.accent(for: themeManager.isDarkMode)))
                 .scaleEffect(y: 2)
             HStack {
-                Text("\(Int(aiAnalysisManager.analysisProgress * 100))% завершено")
+                Text("analysis.percentComplete".localized(with: Int(aiAnalysisManager.analysisProgress * 100)))
                     .adaptiveFont(.caption)
                     .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                 Spacer()
@@ -194,11 +194,11 @@ struct AIAnalysisView: View {
                 .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
                 .adaptiveFont(.title)
             VStack(alignment: .leading, spacing: DeviceInfo.shared.spacing(0.2)) {
-                Text("Готов к анализу")
+                Text("analysis.readyToAnalyze".localized)
                     .adaptiveFont(.body)
                     .fontWeight(.semibold)
                     .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
-                Text("\(photoManager.allPhotos.count) фотографий в галерее")
+                Text("analysis.photosInGallery".localized(with: photoManager.allPhotos.count))
                     .adaptiveFont(.caption)
                     .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
             }
@@ -210,7 +210,7 @@ struct AIAnalysisView: View {
         Button(action: { aiAnalysisManager.analyzeAllPhotos() }) {
             HStack {
                 Image(systemName: "play.fill")
-                Text("Начать анализ")
+                Text("analysis.startAnalysis".localized)
             }
             .adaptiveFont(.body)
             .fontWeight(.semibold)
@@ -230,7 +230,7 @@ struct AIAnalysisView: View {
 
     private var categoryHeader: some View {
         HStack {
-            Text("Найденные категории")
+                            Text("category.foundCategories".localized)
                 .adaptiveFont(.title)
                 .fontWeight(.bold)
                 .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
@@ -303,7 +303,7 @@ struct AIAnalysisView: View {
                 }
                 .padding(.bottom, DeviceInfo.shared.spacing(2.0))
             }
-            .navigationTitle("Анализ Apple Vision")
+            .navigationTitle("analysis.visionTitle".localized)
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarBackButtonHidden(true)
             .toolbar {
@@ -512,7 +512,7 @@ struct VisionCategoriesView: View {
                             .font(.system(size: 40))
                             .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                         
-                        Text("Категории не найдены")
+                        Text("category.categoriesNotFound".localized)
                             .font(.title3)
                             .fontWeight(.medium)
                         
@@ -606,11 +606,11 @@ struct VisionDuplicatesView: View {
                             .font(.system(size: 40))
                             .foregroundColor(themeManager.isDarkMode ? .white : .green)
                         
-                        Text("Дубликаты не найдены")
+                        Text("analysis.noDuplicatesFound2".localized)
                             .font(.title3)
                             .fontWeight(.medium)
                         
-                        Text("У вас нет дублирующихся фотографий")
+                        Text("analysis.noDuplicatesMessage".localized)
                             .font(.body)
                             .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                     }
@@ -620,7 +620,7 @@ struct VisionDuplicatesView: View {
                     Button(action: onDeleteDuplicates) {
                         HStack {
                             Image(systemName: "trash")
-                            Text("Удалить все дубликаты")
+                            Text("analysis.deleteAllDuplicates2".localized)
                         }
                         .foregroundColor(.white)
                         .padding()
@@ -657,7 +657,7 @@ struct VisionDuplicateGroupCard: View {
                 
                 Spacer()
                 
-                Text("\(group.count) фото")
+                Text("analysis.photosInGroup".localized(with: group.count))
                     .font(.caption)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
@@ -724,7 +724,7 @@ struct VisionCategoryPhotosView: View {
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItemGroup(placement: .navigationBarTrailing) {
-                Button("Готово") {
+                Button("action.done".localized) {
                     onDismiss()
                 }
             }

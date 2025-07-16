@@ -60,13 +60,13 @@ struct NewDuplicatesView: View {
         }
         .constrainedToDevice(usePadding: false)
         .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
-        .alert("Удалить дубликаты?", isPresented: $showingDeleteAlert) {
-            Button("Отмена", role: .cancel) { }
-            Button("Удалить", role: .destructive) {
+        .alert("duplicates.confirmDelete".localized, isPresented: $showingDeleteAlert) {
+            Button("action.cancel".localized, role: .cancel) { }
+            Button("action.delete".localized, role: .destructive) {
                 deleteSelectedDuplicates()
             }
         } message: {
-            Text("Будет удалено \(totalDuplicates) дубликатов. Освободится \(storageToFree) места. Оригиналы будут сохранены.")
+            Text("duplicates.deleteMessage".localized(with: totalDuplicates, storageToFree))
         }
         .sheet(isPresented: $showingDeleteProgress) {
             deletionProgressSheet
@@ -88,21 +88,21 @@ struct NewDuplicatesView: View {
                 // Statistics
                 HStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 24 : 16) {
                     StatBadge(
-                        title: "Групп дубликатов",
+                        title: "duplicates.groups".localized,
                         value: "\(duplicateGroups.count)",
                         icon: "doc.on.doc",
                         color: .blue
                     )
                     
                     StatBadge(
-                        title: "Можно удалить",
+                        title: "duplicates.canDelete".localized,
                         value: "\(totalDuplicates)",
                         icon: "trash",
                         color: .red
                     )
                     
                     StatBadge(
-                        title: "Освободится",
+                        title: "duplicates.willFree".localized,
                         value: storageToFree,
                         icon: "internaldrive",
                         color: .green
@@ -130,12 +130,12 @@ struct NewDuplicatesView: View {
                     .foregroundColor(.white)
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Удалить все дубликаты")
+                    Text("duplicates.deleteAll".localized)
                         .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .headline)
                         .fontWeight(.semibold)
                         .foregroundColor(.white)
                     
-                    Text("Освободить \(storageToFree) места")
+                    Text("duplicates.freeSpace".localized(with: storageToFree))
                         .font(UIDevice.current.userInterfaceIdiom == .pad ? .body : .caption)
                         .foregroundColor(.white.opacity(0.9))
                 }
@@ -171,12 +171,12 @@ struct NewDuplicatesView: View {
                 .foregroundColor(.green)
             
             VStack(spacing: 12) {
-                Text("Дубликатов не найдено")
+                                    Text("duplicates.noDuplicatesFound".localized)
                     .font(UIDevice.current.userInterfaceIdiom == .pad ? .largeTitle : .title2)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
                 
-                Text("Отличная работа! В вашей библиотеке нет дубликатов фотографий.")
+                Text("duplicates.excellentWork".localized)
                     .font(UIDevice.current.userInterfaceIdiom == .pad ? .title3 : .body)
                     .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                     .multilineTextAlignment(.center)
@@ -213,7 +213,7 @@ struct NewDuplicatesView: View {
                     .font(.system(size: 60))
                     .foregroundColor(.red)
                 
-                Text("Удаление дубликатов...")
+                                    Text("duplicates.deletingDuplicates".localized)
                     .font(.title2)
                     .fontWeight(.semibold)
                 
@@ -221,7 +221,7 @@ struct NewDuplicatesView: View {
                     .progressViewStyle(LinearProgressViewStyle(tint: .red))
                     .frame(height: 8)
                 
-                Text("\(Int(deletionProgress * 100))% завершено")
+                                    Text("duplicates.percentComplete".localized(with: Int(deletionProgress * 100)))
                     .font(.body)
                     .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
             }
@@ -232,11 +232,11 @@ struct NewDuplicatesView: View {
                         .font(.system(size: 40))
                         .foregroundColor(.green)
                     
-                    Text("Дубликаты удалены успешно!")
+                    Text("duplicates.deletedSuccessfully".localized)
                         .font(.headline)
                         .foregroundColor(.green)
                     
-                    Button("Готово") {
+                    Button("action.done".localized) {
                         showingDeleteProgress = false
                         deletionCompleted = false
                     }

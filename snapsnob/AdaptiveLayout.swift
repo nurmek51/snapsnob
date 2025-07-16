@@ -5,6 +5,40 @@ import SwiftUI
 struct DeviceInfo {
     static let shared = DeviceInfo()
     
+    // MARK: - Safe Area Helper
+    /// Reliable safe area calculation for consistent header positioning
+    struct SafeAreaHelper {
+        /// Get the top safe area inset reliably across all devices
+        static var topInset: CGFloat {
+            guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                  let window = windowScene.windows.first(where: { $0.isKeyWindow }) else {
+                // Fallback values for different device types
+                return UIDevice.current.userInterfaceIdiom == .pad ? 24 : 47
+            }
+            return window.safeAreaInsets.top
+        }
+        
+        /// Get the bottom safe area inset reliably across all devices
+        static var bottomInset: CGFloat {
+            guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                  let window = windowScene.windows.first(where: { $0.isKeyWindow }) else {
+                // Fallback values for different device types
+                return UIDevice.current.userInterfaceIdiom == .pad ? 20 : 34
+            }
+            return window.safeAreaInsets.bottom
+        }
+        
+        /// Calculate appropriate header top padding that works on all devices
+        /// This restores the original logic: (safeArea * 0.6) + deviceSpecificPadding
+        static var headerTopPadding: CGFloat {
+            let baseSafeArea = topInset
+            let deviceInfo = DeviceInfo.shared
+            
+            // Use the original formula: reduce safe area by 0.6 factor and add device-specific padding
+            return (baseSafeArea * 0.6) + deviceInfo.screenSize.topSectionPadding
+        }
+    }
+
     /// Device screen size categories
     enum ScreenSize {
         case compact      // iPhone SE, iPhone 12 mini
@@ -265,6 +299,18 @@ extension View {
     func constrainedToDevice(usePadding: Bool = true) -> some View {
         self.adaptiveLayout(usePadding: usePadding, useCornerRadius: false)
     }
+    
+    /// Applies safe area aware header positioning
+    func safeAreaHeader() -> some View {
+        self.padding(.top, DeviceInfo.SafeAreaHelper.headerTopPadding)
+    }
+    
+    /// Ensures consistent safe area handling for headers
+    func headerSafeArea() -> some View {
+        self
+            .padding(.top, DeviceInfo.SafeAreaHelper.topInset)
+            .ignoresSafeArea(.container, edges: .top)
+    }
 }
 
 // MARK: - Helper Functions
@@ -294,15 +340,14 @@ extension DeviceInfo {
             // Pro Max: make card a bit higher for better vertical balance
             cardWidth = availableWidth
             cardHeight = cardWidth * 1.5 // was 1.45, now 1.6 for Pro Max only, 1.6 is 1.45 + 0.15
-        
         case .iPad:
-            // iPad - more compact relative to screen
-            cardWidth = min(availableWidth * 0.7, 500)
-            cardHeight = cardWidth * 1.25 // 1.25:1 aspect ratio
+            // iPad - make card much larger
+            cardWidth = min(availableWidth * 0.9, 700) // was 0.7, 500
+            cardHeight = cardWidth * 1.1 // was 1.25
         case .iPadPro:
-            // iPad Pro - take advantage of large screen
-            cardWidth = min(availableWidth * 0.6, 600)
-            cardHeight = cardWidth * 1.2 // 1.2:1 aspect ratio
+            // iPad Pro - make card much larger
+            cardWidth = min(availableWidth * 0.8, 900) // was 0.6, 600
+            cardHeight = cardWidth * 1.05 // was 1.2
         }
         
         return CGSize(width: cardWidth, height: cardHeight)

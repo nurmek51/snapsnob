@@ -23,7 +23,7 @@ struct PhotoImageView: View {
                         VStack(spacing: 8) {
                             ProgressView()
                                 .progressViewStyle(CircularProgressViewStyle(tint: AppColors.secondaryText(for: themeManager.isDarkMode)))
-                            Text("Загрузка...")
+                            Text("photo.loading2".localized)
                                 .font(.caption)
                                 .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                         }
@@ -37,10 +37,10 @@ struct PhotoImageView: View {
                             Image(systemName: "photo")
                                 .font(.title2)
                                 .foregroundColor(.red)
-                            Text("Ошибка загрузки")
+                            Text("photo.errorLoading".localized)
                                 .font(.caption)
                                 .foregroundColor(.red)
-                            Button("Повторить") {
+                            Button("action.retry".localized) {
                                 imageLoader.loadImage(from: photo.asset, targetSize: targetSize)
                             }
                             .font(.caption2)
@@ -56,7 +56,7 @@ struct PhotoImageView: View {
                             Image(systemName: "photo")
                                 .font(.title2)
                                 .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                            Text("Фото недоступно")
+                            Text("photo.unavailable".localized)
                                 .font(.caption)
                                 .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                         }

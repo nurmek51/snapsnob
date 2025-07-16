@@ -1,0 +1,229 @@
+/* Navigation */
+"navigation.home" = "Дом";
+"navigation.categories" = "Категории";
+"navigation.favorites" = "Избранные";
+"navigation.trash" = "Корзина";
+
+/* Home Screen */
+"home.photoSeries" = "Серии фото";
+"home.photosProcessed" = "%d/%d фото обработано";
+"home.noSinglePhotos" = "Нет одиночных фотографий";
+"home.allPhotosInSeries" = "Все ваши фото являются частью серий";
+"home.noMorePhotos" = "Больше нет фото";
+
+/* Actions */
+"action.keep" = "Оставить";
+"action.delete" = "Удалить";
+"action.restore" = "Восстановить";
+"action.cancel" = "Отмена";
+"action.close" = "Закрыть";
+"action.done" = "Готово";
+"action.openSettings" = "Открыть настройки";
+"action.retry" = "Повторить";
+
+/* Photo Access */
+"photo.accessDenied" = "Доступ к фото запрещен";
+"photo.allowAccess" = "Разрешите доступ к фото в настройках";
+"photo.loading" = "Загрузка фотографий...";
+"photo.errorLoading" = "Ошибка загрузки";
+"photo.unavailable" = "Фото недоступно";
+"photo.accessRequiredMessage" = "Для работы приложения необходим доступ к фото. Разрешите доступ в настройках системы.";
+"photo.loadingImage" = "Загрузка изображения...";
+"photo.failedToLoadImage" = "Не удалось загрузить изображение";
+"photo.checkConnection" = "Проверьте подключение к интернету";
+"photo.tryAgain" = "Попробовать снова";
+"photo.unknownError" = "Неизвестная ошибка";
+"photo.loading2" = "Загрузка...";
+
+/* AI Analysis */
+"ai.visionAnalysis" = "Анализ Apple Vision";
+"ai.analyzing" = "Анализируем...";
+"ai.analyzingPhotos" = "Анализируем %d фото...";
+"ai.categoriesVision" = "Категории Vision";
+"ai.duplicates" = "Дубликаты";
+"ai.noDuplicatesFound" = "Дубликаты не найдены";
+"ai.noDuplicatingPhotos" = "У вас нет дублирующихся фотографий";
+"ai.analyzePhotos" = "Анализировать фотографии с Apple Vision";
+"ai.maximumAccuracy" = "Максимальная точность и качество";
+
+/* Duplicates */
+"duplicates.title" = "Duplicate Photos";
+"duplicates.groups" = "Групп дубликатов";
+"duplicates.canDelete" = "Можно удалить";
+"duplicates.willFree" = "Освободится";
+"duplicates.deleteAll" = "Удалить все дубликаты";
+"duplicates.freeSpace" = "Освободить %@ места";
+"duplicates.confirmDelete" = "Удалить дубликаты?";
+"duplicates.deleteMessage" = "Будет удалено %d дубликатов. Освободится %@ места. Оригиналы будут сохранены.";
+"duplicates.downloadedDuplicates" = "Скачанные дубликаты";
+"duplicates.burstDuplicates" = "Серийные дубликаты";
+"duplicates.similarPhotos" = "Похожие фото";
+"duplicates.deletionProgress" = "Удаление дубликатов...";
+"duplicates.deletionComplete" = "Удаление завершено";
+"duplicates.noDuplicatesFound" = "Дубликатов не найдено";
+"duplicates.excellentWork" = "Отличная работа! В вашей библиотеке нет дубликатов фотографий.";
+"duplicates.deletingDuplicates" = "Удаление дубликатов...";
+"duplicates.percentComplete" = "%d%% завершено";
+"duplicates.deletedSuccessfully" = "Дубликаты удалены успешно!";
+"duplicates.freeUp" = "Освободить";
+
+/* Themes */
+"theme.system" = "Системная";
+"theme.light" = "Светлая";
+"theme.dark" = "Темная";
+"theme.choose" = "Выберите тему";
+"theme.description" = "Тема будет применена ко всему приложению";
+"theme.systemDescription" = "Следует системным настройкам";
+"theme.lightDescription" = "Всегда светлая тема";
+"theme.darkDescription" = "Всегда темная тема";
+
+/* Categories */
+"category.allPhotos" = "Все фото";
+"category.viewMode" = "Режим просмотра";
+"category.swipeMode" = "Режим свайпа";
+"category.normalMode" = "Обычный режим";
+"category.albums" = "Альбомы";
+"category.categoriesNotFound" = "Категории не найдены";
+"category.foundCategories" = "Найденные категории";
+"category.tryAnalysisAgain" = "Попробуйте повторить анализ или проверьте настройки";
+
+/* Trash */
+"trash.empty" = "Корзина пуста";
+"trash.emptyDescription" = "Удаленные фото будут появляться здесь";
+"trash.clearAll" = "Очистить все";
+"trash.clearAllConfirm" = "Очистить корзину?";
+"trash.clearAllMessage" = "Все фото в корзине будут удалены навсегда. Это действие нельзя отменить.";
+"trash.titleWithCount" = "Корзина (%d)";
+"trash.clear" = "Очистить";
+"trash.deleteAll" = "Удалить все";
+"trash.clearTrashConfirm" = "Очистить корзину";
+"trash.confirmPermanentDelete" = "Вы уверены, что хотите удалить все фото из корзины? Это действие нельзя отменить.";
+
+/* Favorites */
+"favorites.title" = "Избранные";
+"favorites.empty" = "Нет избранных";
+"favorites.emptyDescription" = "Фото, которые вы отметите как избранные, появятся здесь";
+
+/* Album Detail */
+"album.select" = "Выбрать";
+"album.selectAll" = "Выбрать все";
+
+/* Settings */
+"settings.title" = "Настройки";
+"settings.language" = "Язык";
+"settings.theme" = "Тема";
+"settings.about" = "О программе";
+"settings.version" = "Версия";
+
+/* Language Settings */
+"language.title" = "Язык";
+"language.system" = "Системный язык";
+"language.current" = "Текущий: %@";
+"language.developerOverride" = "Переопределение разработчика";
+"language.clearOverride" = "Очистить переопределение";
+"language.resetToSystem" = "Сбросить на системный";
+
+/* General */
+"general.loading" = "Загрузка...";
+"general.error" = "Ошибка";
+"general.success" = "Успешно";
+"general.warning" = "Предупреждение";
+"general.info" = "Информация";
+
+/* Photo Categories */
+"photoCategory.people" = "Люди";
+"photoCategory.animals" = "Животные";
+"photoCategory.nature" = "Природа";
+"photoCategory.food" = "Еда";
+"photoCategory.vehicles" = "Транспорт";
+"photoCategory.buildings" = "Здания";
+"photoCategory.objects" = "Объекты";
+"photoCategory.documents" = "Документы";
+"photoCategory.screenshots" = "Скриншоты";
+"photoCategory.selfies" = "Селфи";
+"photoCategory.landscapes" = "Пейзажи";
+"photoCategory.other" = "Другое";
+
+/* Analysis Progress */
+"analysis.progress" = "Прогресс анализа";
+"analysis.complete" = "Анализ завершен";
+"analysis.failed" = "Анализ не удался";
+"analysis.categories" = "категории";
+"analysis.processed" = "обработано";
+"analysis.title" = "Анализ фотографий";
+"analysis.usingVision" = "Используется Apple Vision для категоризации";
+"analysis.percentComplete" = "%d%% завершено";
+"analysis.readyToAnalyze" = "Готов к анализу";
+"analysis.photosInGallery" = "%d фотографий в галерее";
+"analysis.startAnalysis" = "Начать анализ";
+"analysis.runAnalysisPrompt" = "Запустите анализ для категоризации фотографий";
+"analysis.noDuplicatesFound2" = "Дубликаты не найдены";
+"analysis.noDuplicatesMessage" = "У вас нет дублирующихся фотографий";
+"analysis.deleteAllDuplicates2" = "Удалить все дубликаты";
+"analysis.photosInGroup" = "%d фото";
+"analysis.visionTitle" = "Анализ Apple Vision";
+
+/* Common Phrases */
+"common.noData" = "Нет данных";
+"common.loading" = "Загрузка...";
+"common.tryAgain" = "Попробуйте снова";
+"common.refresh" = "Обновить";
+"common.noMorePhotos" = "Больше нет фото";
+"common.totalPhotos" = "Всего фото";
+"common.categorized" = "Категоризировано";
+"common.averageConfidence" = "Средняя уверенность Vision";
+"common.analysisComplete" = "Анализ завершен";
+"common.photosCategorizationComplete" = "Фотографии категоризированы с помощью Apple Vision";
+"common.albumsNotFound" = "Альбомы не найдены";
+"common.startAnalysisPrompt" = "Начните анализ для автоматической категоризации фотографий";
+"common.photosCount" = "%d фото";
+"common.noPhotosInSeries" = "Нет фото в серии";
+"common.errorLoadingPhoto" = "Ошибка загрузки фото";
+"common.toTrash" = "В корзину";
+"common.keep" = "Оставить";
+"common.photoUnavailable" = "Фото недоступно";
+
+/* Favorites View */
+"favorites.totalPhotos" = "Всего фото";
+"favorites.favoritesCount" = "Избранные";
+"favorites.thisWeek" = "За неделю";
+"favorites.bestPhotos" = "Лучшие";
+"favorites.normalMode" = "Обычный режим";
+"favorites.swipeMode" = "Режим свайпа";
+"favorites.swipeLeft" = "Убрать";
+"favorites.swipeRight" = "Лучшие";
+"favorites.recentFavorites" = "Недавние избранные";
+"favorites.recentSubtitle" = "Последние 14 дней";
+"favorites.bestOfBest" = "Лучшие из лучших";
+"favorites.noFavoritesTitle" = "Нет избранных фотографий";
+"favorites.noFavoritesMessage" = "Избранные фото будут появляться здесь";
+"favorites.photosCount" = "%d фото";
+"favorites.photoSingle" = "фото";
+"favorites.removeFromFavorites" = "Удалить";
+
+/* Onboarding */
+"onboarding.skip" = "Пропустить";
+"onboarding.continue" = "Продолжить";
+"onboarding.grantAccess" = "Предоставить доступ";
+
+/* Onboarding Steps */
+"onboarding.rightSwipe.title" = "Оставить фото";
+"onboarding.rightSwipe.description" = "Свайпни вправо – просто пропусти фото";
+"onboarding.swipeRight.hint" = "Свайпните вправо, чтобы продолжить";
+
+"onboarding.leftSwipe.title" = "Удалить фото";
+"onboarding.leftSwipe.description" = "Свайпни влево – перекинь её в корзину";
+"onboarding.swipeLeft.hint" = "Свайпните влево, чтобы продолжить";
+
+"onboarding.doubleTap.title" = "Добавить в избранные";
+"onboarding.doubleTap.description" = "Двойной тап – добавь фото в избранные";
+"onboarding.doubleTap.hint" = "Дважды нажмите, чтобы продолжить";
+
+"onboarding.storySeries.title" = "Серии фотографий";
+"onboarding.storySeries.description" = "Серии фотографий – выберите лучший кадр из серии и удалите ненужные";
+
+"onboarding.trashBin.title" = "Управление корзиной";
+"onboarding.trashBin.description" = "Управляйте удалёнными фото – прощайтесь с ними навсегда или возвращайте в галерею";
+
+"onboarding.privacy.title" = "Ваша конфиденциальность";
+"onboarding.privacy.description" = "Ваши данные никуда не отправляются, приложение работает локально и даже без интернета. Для корректной работы приложения пожалуйста дайте права доступа к вашей галерее";

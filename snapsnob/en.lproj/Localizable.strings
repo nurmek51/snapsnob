@@ -1,0 +1,229 @@
+/* Navigation */
+"navigation.home" = "Home";
+"navigation.categories" = "Categories";
+"navigation.favorites" = "Favorites";
+"navigation.trash" = "Trash";
+
+/* Home Screen */
+"home.photoSeries" = "Photo Series";
+"home.photosProcessed" = "%d/%d photos processed";
+"home.noSinglePhotos" = "No single photos";
+"home.allPhotosInSeries" = "All your photos are part of series";
+"home.noMorePhotos" = "No more photos";
+
+/* Actions */
+"action.keep" = "Keep";
+"action.delete" = "Delete";
+"action.restore" = "Restore";
+"action.cancel" = "Cancel";
+"action.close" = "Close";
+"action.done" = "Done";
+"action.openSettings" = "Open Settings";
+"action.retry" = "Retry";
+
+/* Photo Access */
+"photo.accessDenied" = "Photo access denied";
+"photo.allowAccess" = "Please allow photo access in settings";
+"photo.loading" = "Loading photos...";
+"photo.errorLoading" = "Error loading";
+"photo.unavailable" = "Photo unavailable";
+"photo.accessRequiredMessage" = "The app requires photo access to work. Please allow access in system settings.";
+"photo.loadingImage" = "Loading image...";
+"photo.failedToLoadImage" = "Failed to load image";
+"photo.checkConnection" = "Check your internet connection";
+"photo.tryAgain" = "Try again";
+"photo.unknownError" = "Unknown error";
+"photo.loading2" = "Loading...";
+
+/* AI Analysis */
+"ai.visionAnalysis" = "Apple Vision Analysis";
+"ai.analyzing" = "Analyzing...";
+"ai.analyzingPhotos" = "Analyzing %d photos...";
+"ai.categoriesVision" = "Vision Categories";
+"ai.duplicates" = "Duplicates";
+"ai.noDuplicatesFound" = "No duplicates found";
+"ai.noDuplicatingPhotos" = "You have no duplicate photos";
+"ai.analyzePhotos" = "Analyze photos with Apple Vision";
+"ai.maximumAccuracy" = "Maximum accuracy and quality";
+
+/* Duplicates */
+"duplicates.title" = "Duplicate Photos";
+"duplicates.groups" = "Duplicate groups";
+"duplicates.canDelete" = "Can delete";
+"duplicates.willFree" = "Will free";
+"duplicates.deleteAll" = "Delete all duplicates";
+"duplicates.freeSpace" = "Free %@ space";
+"duplicates.confirmDelete" = "Delete duplicates?";
+"duplicates.deleteMessage" = "%d duplicates will be deleted. %@ space will be freed. Originals will be preserved.";
+"duplicates.downloadedDuplicates" = "Downloaded duplicates";
+"duplicates.burstDuplicates" = "Burst duplicates";
+"duplicates.similarPhotos" = "Similar photos";
+"duplicates.deletionProgress" = "Deleting duplicates...";
+"duplicates.deletionComplete" = "Deletion complete";
+"duplicates.noDuplicatesFound" = "No duplicates found";
+"duplicates.excellentWork" = "Excellent work! You have no duplicate photos in your library.";
+"duplicates.deletingDuplicates" = "Deleting duplicates...";
+"duplicates.percentComplete" = "%d%% complete";
+"duplicates.deletedSuccessfully" = "Duplicates deleted successfully!";
+"duplicates.freeUp" = "Free up";
+
+/* Themes */
+"theme.system" = "System";
+"theme.light" = "Light";
+"theme.dark" = "Dark";
+"theme.choose" = "Choose theme";
+"theme.description" = "Theme will be applied to entire app";
+"theme.systemDescription" = "Follow system settings";
+"theme.lightDescription" = "Always light theme";
+"theme.darkDescription" = "Always dark theme";
+
+/* Categories */
+"category.allPhotos" = "All photos";
+"category.viewMode" = "View mode";
+"category.swipeMode" = "Swipe mode";
+"category.normalMode" = "Normal mode";
+"category.albums" = "Albums";
+"category.categoriesNotFound" = "Categories not found";
+"category.foundCategories" = "Found Categories";
+"category.tryAnalysisAgain" = "Try analysis again or check settings";
+
+/* Trash */
+"trash.empty" = "Trash is empty";
+"trash.emptyDescription" = "Deleted photos will appear here";
+"trash.clearAll" = "Clear all";
+"trash.clearAllConfirm" = "Clear trash?";
+"trash.clearAllMessage" = "All photos in trash will be permanently deleted. This action cannot be undone.";
+"trash.titleWithCount" = "Trash (%d)";
+"trash.clear" = "Clear";
+"trash.deleteAll" = "Delete all";
+"trash.clearTrashConfirm" = "Clear trash";
+"trash.confirmPermanentDelete" = "Are you sure you want to delete all photos from trash? This action cannot be undone.";
+
+/* Favorites */
+"favorites.title" = "Favorites";
+"favorites.empty" = "No favorites";
+"favorites.emptyDescription" = "Photos you mark as favorites will appear here";
+
+/* Album Detail */
+"album.select" = "Select";
+"album.selectAll" = "Select all";
+
+/* Settings */
+"settings.title" = "Settings";
+"settings.language" = "Language";
+"settings.theme" = "Theme";
+"settings.about" = "About";
+"settings.version" = "Version";
+
+/* Language Settings */
+"language.title" = "Language";
+"language.system" = "System Language";
+"language.current" = "Current: %@";
+"language.developerOverride" = "Developer Override";
+"language.clearOverride" = "Clear Override";
+"language.resetToSystem" = "Reset to System";
+
+/* General */
+"general.loading" = "Loading...";
+"general.error" = "Error";
+"general.success" = "Success";
+"general.warning" = "Warning";
+"general.info" = "Info";
+
+/* Photo Categories */
+"photoCategory.people" = "People";
+"photoCategory.animals" = "Animals";
+"photoCategory.nature" = "Nature";
+"photoCategory.food" = "Food";
+"photoCategory.vehicles" = "Vehicles";
+"photoCategory.buildings" = "Buildings";
+"photoCategory.objects" = "Objects";
+"photoCategory.documents" = "Documents";
+"photoCategory.screenshots" = "Screenshots";
+"photoCategory.selfies" = "Selfies";
+"photoCategory.landscapes" = "Landscapes";
+"photoCategory.other" = "Other";
+
+/* Analysis Progress */
+"analysis.progress" = "Analysis Progress";
+"analysis.complete" = "Analysis Complete";
+"analysis.failed" = "Analysis Failed";
+"analysis.categories" = "categories";
+"analysis.processed" = "processed";
+"analysis.title" = "Photo Analysis";
+"analysis.usingVision" = "Using Apple Vision for categorization";
+"analysis.percentComplete" = "%d%% complete";
+"analysis.readyToAnalyze" = "Ready to analyze";
+"analysis.photosInGallery" = "%d photos in gallery";
+"analysis.startAnalysis" = "Start Analysis";
+"analysis.runAnalysisPrompt" = "Run analysis to categorize photos";
+"analysis.noDuplicatesFound2" = "No duplicates found";
+"analysis.noDuplicatesMessage" = "You have no duplicate photos";
+"analysis.deleteAllDuplicates2" = "Delete all duplicates";
+"analysis.photosInGroup" = "%d photos";
+"analysis.visionTitle" = "Apple Vision Analysis";
+
+/* Common Phrases */
+"common.noData" = "No data available";
+"common.loading" = "Loading...";
+"common.tryAgain" = "Try again";
+"common.refresh" = "Refresh";
+"common.noMorePhotos" = "No more photos";
+"common.totalPhotos" = "Total photos";
+"common.categorized" = "Categorized";
+"common.averageConfidence" = "Average Vision confidence";
+"common.analysisComplete" = "Analysis complete";
+"common.photosCategorizationComplete" = "Photos categorized using Apple Vision";
+"common.albumsNotFound" = "Albums not found";
+"common.startAnalysisPrompt" = "Start analysis for automatic photo categorization";
+"common.photosCount" = "%d photos";
+"common.noPhotosInSeries" = "No photos in series";
+"common.errorLoadingPhoto" = "Error loading photo";
+"common.toTrash" = "To Trash";
+"common.keep" = "Keep";
+"common.photoUnavailable" = "Photo unavailable";
+
+/* Favorites View */
+"favorites.totalPhotos" = "Total Photos";
+"favorites.favoritesCount" = "Favorites";
+"favorites.thisWeek" = "This Week";
+"favorites.bestPhotos" = "Best";
+"favorites.normalMode" = "Normal Mode";
+"favorites.swipeMode" = "Swipe Mode";
+"favorites.swipeLeft" = "Remove";
+"favorites.swipeRight" = "Best";
+"favorites.recentFavorites" = "Recent Favorites";
+"favorites.recentSubtitle" = "Last 14 days";
+"favorites.bestOfBest" = "Best of the Best";
+"favorites.noFavoritesTitle" = "No Favorite Photos";
+"favorites.noFavoritesMessage" = "Favorite photos will appear here";
+"favorites.photosCount" = "%d photos";
+"favorites.photoSingle" = "photo";
+"favorites.removeFromFavorites" = "Remove";
+
+/* Onboarding */
+"onboarding.skip" = "Skip";
+"onboarding.continue" = "Continue";
+"onboarding.grantAccess" = "Grant Access";
+
+/* Onboarding Steps */
+"onboarding.rightSwipe.title" = "Keep Photos";
+"onboarding.rightSwipe.description" = "Swipe right – this action skips the photo and saves it to the gallery";
+"onboarding.swipeRight.hint" = "Swipe right to continue";
+
+"onboarding.leftSwipe.title" = "Delete Photos";
+"onboarding.leftSwipe.description" = "Swipe left – this action deletes the photo and moves it to the trash";
+"onboarding.swipeLeft.hint" = "Swipe left to continue";
+
+"onboarding.doubleTap.title" = "Favorite Photos";
+"onboarding.doubleTap.description" = "Double tap – adds the photo to favorites";
+"onboarding.doubleTap.hint" = "Double tap to continue";
+
+"onboarding.storySeries.title" = "Photo Series";
+"onboarding.storySeries.description" = "Photo series – choose the best shot and remove the rest";
+
+"onboarding.trashBin.title" = "Trash Management";
+"onboarding.trashBin.description" = "Manage deleted photos – permanently delete or restore them";
+
+"onboarding.privacy.title" = "Your Privacy";
+"onboarding.privacy.description" = "Your data stays on device. This app works fully offline and does not send your photos anywhere. Please grant access to your gallery for proper functionality.";

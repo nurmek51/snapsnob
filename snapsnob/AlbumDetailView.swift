@@ -21,7 +21,7 @@ struct AlbumDetailView: View {
             if photos.isEmpty {
                 VStack(spacing: 16) {
                     ProgressView()
-                    Text("Загрузка фотографий...")
+                    Text("photo.loading".localized)
                         .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -42,7 +42,7 @@ struct AlbumDetailView: View {
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button("Готово") {
+                Button("action.done".localized) {
                     if isSelecting {
                         isSelecting = false
                         selectedPhotos.removeAll()
@@ -55,7 +55,7 @@ struct AlbumDetailView: View {
 
             ToolbarItemGroup(placement: .navigationBarTrailing) {
                 if isSelecting {
-                    Button("Выбрать все") {
+                    Button("album.selectAll".localized) {
                         selectedPhotos = Set(photos)
                     }
 
@@ -69,7 +69,7 @@ struct AlbumDetailView: View {
                         Image(systemName: "trash")
                     }
                 } else {
-                    Button("Выбрать") { isSelecting = true }
+                    Button("album.select".localized) { isSelecting = true }
                 }
             }
         }

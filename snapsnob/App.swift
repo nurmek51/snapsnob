@@ -4,37 +4,43 @@ import FirebaseAnalytics
 @main
 struct SnapsnobApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
-    @StateObject private var photoManager = PhotoManager()
-    @StateObject private var aiAnalysisManager: AIAnalysisManager
-    @StateObject private var fullScreenPhotoManager = FullScreenPhotoManager()
     @StateObject private var themeManager = ThemeManager()
-    
+    @StateObject private var localizationManager = LocalizationManager.shared
+    @StateObject private var onboardingManager = OnboardingManager.shared
+    @StateObject private var fullScreenPhotoManager = FullScreenPhotoManager()
+    @State private var photoManager: PhotoManager? = nil
+    @State private var aiAnalysisManager: AIAnalysisManager? = nil
+
     init() {
-        let photoManager = PhotoManager()
-        let aiAnalysisManager = AIAnalysisManager(photoManager: photoManager)
-        _photoManager = StateObject(wrappedValue: photoManager)
-        _aiAnalysisManager = StateObject(wrappedValue: aiAnalysisManager)
+        // Если онбординг завершён, инициализируем менеджеры сразу
+        if OnboardingManager.shared.hasCompletedOnboarding {
+            let pm = PhotoManager()
+            let ai = AIAnalysisManager(photoManager: pm)
+            _photoManager = State(initialValue: pm)
+            _aiAnalysisManager = State(initialValue: ai)
+        }
     }
-    
+
     var body: some Scene {
         WindowGroup {
-            NavigationView {
+            if onboardingManager.hasCompletedOnboarding, let photoManager, let aiAnalysisManager {
                 ContentView()
-                    .onAppear {
-                        print("[Analytics] custom_app_open event sent")
-                        Analytics.logEvent("custom_app_open", parameters: [
-                            "timestamp": Date().timeIntervalSince1970
-                        ])
-                    }
                     .environmentObject(photoManager)
                     .environmentObject(aiAnalysisManager)
                     .environmentObject(fullScreenPhotoManager)
                     .environmentObject(themeManager)
-                    .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
-                        // Clear caches when system is low on memory
-                        print("⚠️ Memory warning received - clearing image caches")
-                        photoManager.clearImageCaches()
-                    }
+                    .environmentObject(localizationManager)
+                    .environmentObject(onboardingManager)
+            } else {
+                OnboardingView(onFinish: {
+                    let pm = PhotoManager()
+                    let ai = AIAnalysisManager(photoManager: pm)
+                    self.photoManager = pm
+                    self.aiAnalysisManager = ai
+                    onboardingManager.hasCompletedOnboarding = true
+                })
+                .environmentObject(themeManager)
+                .environmentObject(onboardingManager)
             }
         }
     }

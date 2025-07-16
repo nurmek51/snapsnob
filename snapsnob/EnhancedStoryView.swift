@@ -121,11 +121,11 @@ struct EnhancedStoryView: View {
                 .font(.system(size: 60))
                 .foregroundColor(.white.opacity(0.6))
             
-            Text("Нет фото в серии")
+                                Text("common.noPhotosInSeries".localized)
                 .foregroundColor(.white)
                 .font(.headline)
             
-            Button("Закрыть") {
+                            Button("action.close".localized) {
                 print("❌ Closing empty story view")
                 onDismiss()
             }
@@ -201,7 +201,7 @@ struct EnhancedStoryView: View {
             Spacer()
             
             if currentPhotoIndex == photoSeries.photos.count - 1 {
-                Button("Готово") {
+                Button("action.done".localized) {
                     print("✅ Story completed - Done button pressed")
                     if !isDismissing {
                         isDismissing = true
@@ -273,7 +273,7 @@ struct EnhancedStoryView: View {
             if cardDragOffset.width < -20 {
                 swipeIndicator(
                     icon: "trash.fill",
-                    text: "В корзину",
+                    text: "common.toTrash".localized,
                     color: .red,
                     offset: cardDragOffset.width
                 )
@@ -284,8 +284,8 @@ struct EnhancedStoryView: View {
             // Right swipe - Keep indicator
             if cardDragOffset.width > 20 {
                 swipeIndicator(
-                    icon: "heart.fill",
-                    text: "Оставить",
+                    icon: "checkmark.circle.fill",
+                    text: "common.keep".localized,
                     color: .green,
                     offset: cardDragOffset.width
                 )
@@ -357,7 +357,7 @@ struct EnhancedStoryView: View {
             }) {
                 HStack(spacing: 8) {
                     Image(systemName: "trash.fill")
-                    Text("В корзину")
+                    Text("common.toTrash".localized)
                 }
                 .foregroundColor(themeManager.isDarkMode ? .black : .white)
                 .padding(.horizontal, 24)
@@ -376,10 +376,11 @@ struct EnhancedStoryView: View {
                 keepPhoto()
             }) {
                 HStack(spacing: 8) {
-                    Image(systemName: "heart.fill")
-                    Text("Оставить")
+                    Image(systemName: "checkmark")
+                        .foregroundColor(themeManager.isDarkMode ? AppColors.primaryText(for: false) : AppColors.primaryText(for: true))
+                    Text("common.keep".localized)
                 }
-                .foregroundColor(themeManager.isDarkMode ? .black : .white)
+                .foregroundColor(themeManager.isDarkMode ? AppColors.primaryText(for: false) : AppColors.primaryText(for: true))
                 .padding(.horizontal, 24)
                 .padding(.vertical, 14)
                 .background(
@@ -420,7 +421,7 @@ struct EnhancedStoryView: View {
                     print("🖼️ Opening fullscreen from story for photo: \(photo.asset.localIdentifier)")
                 }
             } else {
-                Text("Ошибка загрузки фото")
+                Text("common.errorLoadingPhoto".localized)
                     .foregroundColor(.white)
                     .onAppear {
                         print("❌ Current photo is nil in story fullscreen - Index: \(currentPhotoIndex)")
@@ -538,12 +539,10 @@ struct EnhancedStoryView: View {
             if isInteractive {
                 // Checkmark overlay for the keep animation
                 if showCheckmark {
-                    Image(systemName: "checkmark.circle.fill")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 120, height: 120)
-                        .foregroundColor(.white)
-                        .shadow(radius: 10)
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+                        .shadow(radius: 6)
                         .scaleEffect(actionAnimationScale)
                         .opacity(showCheckmark ? 1 : 0)
                         .animation(actionAnimation, value: showCheckmark)

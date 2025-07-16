@@ -8,66 +8,77 @@ struct Constants {
     // MARK: - UI Strings
     struct Strings {
         // Navigation
-        static let home = "Дом"
-        static let categories = "Категории"
-        static let favorites = "Избранные"
-        static let trash = "Корзина"
+        static var home: String { "navigation.home".localized }
+        static var categories: String { "navigation.categories".localized }
+        static var favorites: String { "navigation.favorites".localized }
+        static var trash: String { "navigation.trash".localized }
         
         // Home Screen
-        static let photoSeries = "Серии фото"
-        static let photosProcessed = "%d/%d фото обработано"
-        static let noSinglePhotos = "Нет одиночных фотографий"
-        static let allPhotosInSeries = "Все ваши фото являются частью серий"
-        static let noMorePhotos = "Больше нет фото"
+        static var photoSeries: String { "home.photoSeries".localized }
+        static var photosProcessed: String { "home.photosProcessed".localized }
+        static var noSinglePhotos: String { "home.noSinglePhotos".localized }
+        static var allPhotosInSeries: String { "home.allPhotosInSeries".localized }
+        static var noMorePhotos: String { "home.noMorePhotos".localized }
         
         // Actions
-        static let keep = "Оставить"
-        static let delete = "Удалить"
-        static let restore = "Восстановить"
-        static let cancel = "Отмена"
-        static let close = "Закрыть"
-        static let openSettings = "Открыть настройки"
+        static var keep: String { "action.keep".localized }
+        static var delete: String { "action.delete".localized }
+        static var restore: String { "action.restore".localized }
+        static var cancel: String { "action.cancel".localized }
+        static var close: String { "action.close".localized }
+        static var done: String { "action.done".localized }
+        static var openSettings: String { "action.openSettings".localized }
+        static var retry: String { "action.retry".localized }
         
         // Photo Access
-        static let photoAccessDenied = "Доступ к фото запрещен"
-        static let allowPhotoAccess = "Разрешите доступ к фото в настройках"
-        static let loadingPhotos = "Загрузка фотографий..."
+        static var photoAccessDenied: String { "photo.accessDenied".localized }
+        static var allowPhotoAccess: String { "photo.allowAccess".localized }
+        static var loadingPhotos: String { "photo.loading".localized }
+        static var errorLoadingPhoto: String { "photo.errorLoading".localized }
+        static var photoUnavailable: String { "photo.unavailable".localized }
         
         // AI Analysis
-        static let visionAnalysis = "Анализ Apple Vision"
-        static let analyzing = "Анализируем..."
-        static let analyzingPhotos = "Анализируем %d фото..."
-        static let categoriesVision = "Категории Vision"
-        static let duplicates = "Дубликаты"
-        static let noDuplicatesFound = "Дубликаты не найдены"
-        static let noDuplicatingPhotos = "У вас нет дублирующихся фотографий"
+        static var visionAnalysis: String { "ai.visionAnalysis".localized }
+        static var analyzing: String { "ai.analyzing".localized }
+        static var analyzingPhotos: String { "ai.analyzingPhotos".localized }
+        static var categoriesVision: String { "ai.categoriesVision".localized }
+        static var duplicates: String { "ai.duplicates".localized }
+        static var noDuplicatesFound: String { "ai.noDuplicatesFound".localized }
+        static var noDuplicatingPhotos: String { "ai.noDuplicatingPhotos".localized }
+        static var analyzePhotos: String { "ai.analyzePhotos".localized }
+        static var maximumAccuracy: String { "ai.maximumAccuracy".localized }
         
         // Duplicates
-        static let duplicatePhotos = "Duplicate Photos"
-        static let duplicateGroups = "Групп дубликатов"
-        static let canDelete = "Можно удалить"
-        static let willFree = "Освободится"
-        static let deleteAllDuplicates = "Удалить все дубликаты"
-        static let freeSpace = "Освободить %@ места"
-        static let deleteDuplicatesConfirm = "Удалить дубликаты?"
-        static let deleteDuplicatesMessage = "Будет удалено %d дубликатов. Освободится %@ места. Оригиналы будут сохранены."
+        static var duplicatePhotos: String { "duplicates.title".localized }
+        static var duplicateGroups: String { "duplicates.groups".localized }
+        static var canDelete: String { "duplicates.canDelete".localized }
+        static var willFree: String { "duplicates.willFree".localized }
+        static var deleteAllDuplicates: String { "duplicates.deleteAll".localized }
+        static var freeSpace: String { "duplicates.freeSpace".localized }
+        static var deleteDuplicatesConfirm: String { "duplicates.confirmDelete".localized }
+        static var deleteDuplicatesMessage: String { "duplicates.deleteMessage".localized }
         
         // Themes
-        static let systemTheme = "Системная"
-        static let lightTheme = "Светлая"
-        static let darkTheme = "Темная"
-        static let chooseTheme = "Выберите тему"
-        
-        // Errors
-        static let errorLoadingPhoto = "Ошибка загрузки"
-        static let photoUnavailable = "Фото недоступно"
-        static let retry = "Повторить"
+        static var systemTheme: String { "theme.system".localized }
+        static var lightTheme: String { "theme.light".localized }
+        static var darkTheme: String { "theme.dark".localized }
+        static var chooseTheme: String { "theme.choose".localized }
+        static var themeDescription: String { "theme.description".localized }
         
         // Categories
-        static let allPhotos = "Все фото"
-        static let viewMode = "Режим просмотра"
-        static let swipeMode = "Режим свайпа"
-        static let normalMode = "Обычный режим"
+        static var allPhotos: String { "category.allPhotos".localized }
+        static var viewMode: String { "category.viewMode".localized }
+        static var swipeMode: String { "category.swipeMode".localized }
+        static var normalMode: String { "category.normalMode".localized }
+        
+        // Trash
+        static var trashEmpty: String { "trash.empty".localized }
+        static var trashEmptyDescription: String { "trash.emptyDescription".localized }
+        static var trashTitleWithCount: String { "trash.titleWithCount".localized }
+        
+        // Favorites
+        static var favoritesEmpty: String { "favorites.empty".localized }
+        static var favoritesEmptyDescription: String { "favorites.emptyDescription".localized }
     }
     
     // MARK: - Layout Constants

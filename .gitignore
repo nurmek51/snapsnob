@@ -3,3 +3,14 @@ daniksnap/*
 /daniksnap/
 .daniksnap/
 .daniksnap/*
+/build/
+build/
+build/*
+.build/
+.build/*
+.build
+.build/
+.build/*
+.build
+.build/
+.build/*
