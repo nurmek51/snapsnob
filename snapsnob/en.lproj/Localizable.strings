@@ -179,7 +179,7 @@
 "common.photosCount" = "%d photos";
 "common.noPhotosInSeries" = "No photos in series";
 "common.errorLoadingPhoto" = "Error loading photo";
-"common.toTrash" = "To Trash";
+"common.toTrash" = "Trash";
 "common.keep" = "Keep";
 "common.photoUnavailable" = "Photo unavailable";
 

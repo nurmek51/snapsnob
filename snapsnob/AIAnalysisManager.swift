@@ -1460,7 +1460,7 @@ class AIAnalysisManager: ObservableObject {
     }
 
     // MARK: - Cache Management Methods
-    private func loadCache() {
+    func loadCache() {
         cacheQueue.async { [weak self] in
             guard let self = self else { return }
             

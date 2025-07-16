@@ -288,16 +288,22 @@ struct OptimizedPhotoView: View {
 class OptimizedImageLoader: ObservableObject {
     private static let sharedCache: NSCache<NSString, UIImage> = {
         let cache = NSCache<NSString, UIImage>()
-        cache.countLimit = 50 // More aggressive limit for swipe performance
-        cache.totalCostLimit = 100 * 1024 * 1024 // 100MB
+        cache.countLimit = 200 // Increased for better performance
+        cache.totalCostLimit = 150 * 1024 * 1024 // 150MB
         return cache
+    }()
+    
+    private static let imageManager: PHCachingImageManager = {
+        let manager = PHCachingImageManager()
+        manager.allowsCachingHighQualityImages = true
+        return manager
     }()
     
     @Published var image: UIImage?
     private var requestID: PHImageRequestID?
-    private let imageManager = PHCachingImageManager()
     private var currentAssetID: String?
     private var cacheObserver: NSObjectProtocol?
+    private var loadingTask: Task<Void, Never>?
     
     init() {
         // Listen for cache clear notifications
@@ -353,7 +359,7 @@ class OptimizedImageLoader: ObservableObject {
             opts.resizeMode = delivery == .fastFormat ? .fast : .exact
             opts.isSynchronous = false
             opts.version = .current
-            self.requestID = imageManager.requestImage(
+            self.requestID = Self.imageManager.requestImage(
                 for: asset,
                 targetSize: pixelSize,
                 contentMode: .aspectFill,
@@ -391,8 +397,9 @@ class OptimizedImageLoader: ObservableObject {
     }
     
     func cancelLoading() {
+        loadingTask?.cancel()
         if let requestID = requestID {
-            imageManager.cancelImageRequest(requestID)
+            Self.imageManager.cancelImageRequest(requestID)
             self.requestID = nil
         }
     }

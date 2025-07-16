@@ -18,6 +18,7 @@ struct Photo: Identifiable, Hashable {
     var isFavorite: Bool = false // Whether the user marked this photo as favourite
     var isReviewed: Bool = false // Photo has been kept (skipped) by user
     var isSuperStar: Bool = false // Whether the user marked this photo as super star (best of the best)
+    var storyInteraction: String? = nil // Track story interactions: "keep", "trash", nil = not interacted
     
     var creationDate: Date {
         asset.creationDate ?? Date()
@@ -156,6 +157,8 @@ struct PhotoSeriesData: Identifiable {
     let thumbnailPhoto: Photo
     var title: String
     var isViewed: Bool = false
+    var isCompleted: Bool = false // Track if user completed the entire story
+    var completedAt: Date? = nil // When the story was completed
     
     var dateRange: String {
         guard let firstDate = photos.first?.creationDate,
@@ -192,6 +195,12 @@ class PhotoManager: ObservableObject {
     @Published var albums: [PhotoAlbum] = []
     @Published var categorizedPhotos: [PhotoCategory: [Photo]] = [:]
     
+    // MARK: - Pagination Support for Large Libraries
+    @Published var currentPage = 0
+    @Published var hasMorePhotos = true
+    private let pageSize = 500 // Load 500 photos at a time
+    private var loadedAssetCount = 0
+    
     // MARK: - Feed Configuration Constants
     /// Time interval (in seconds) that is treated as a "series" gap. Photos that are taken within this
     /// interval from another photo are considered to be part of a series and therefore excluded from the
@@ -203,6 +212,9 @@ class PhotoManager: ObservableObject {
     
     /// Dedicated queue for heavy photo processing (series detection, feed building) to keep UI responsive.
     private let processingQueue = DispatchQueue(label: "com.nfac.PhotoManager.processing", qos: .userInitiated)
+    
+    // NEW: Queue for background photo loading
+    private let loadingQueue = DispatchQueue(label: "com.nfac.PhotoManager.loading", qos: .background)
     
     // NEW: Common thumbnail size used across HomeView cards & Story circles. Adjust once here to keep cache coherent.
     static let defaultThumbnailSize = CGSize(width: 400, height: 400)
@@ -226,13 +238,13 @@ class PhotoManager: ObservableObject {
         
         switch status {
         case .authorized, .limited:
-            loadPhotos()
+            loadPhotosPage() // Changed from loadPhotos() to loadPhotosPage()
         case .notDetermined:
             PHPhotoLibrary.requestAuthorization(for: .readWrite) { [weak self] status in
                 DispatchQueue.main.async {
                     self?.authorizationStatus = status
                     if status == .authorized || status == .limited {
-                        self?.loadPhotos()
+                        self?.loadPhotosPage() // Changed from loadPhotos()
                     }
                 }
             }
@@ -241,44 +253,116 @@ class PhotoManager: ObservableObject {
         }
     }
     
-    // MARK: - Load Photos
-    func loadPhotos() {
-        isLoading = true
+    // MARK: - Optimized Photo Loading with Pagination
+    func loadPhotosPage() {
+        guard !isLoading else { return }
         
-        let fetchOptions = PHFetchOptions()
-        fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-        fetchOptions.includeHiddenAssets = false
-        
-        allAssets = PHAsset.fetchAssets(with: .image, options: fetchOptions)
-        
-        var photos: [Photo] = []
-        allAssets?.enumerateObjects { asset, _, _ in
-            var photo = Photo(
-                asset: asset,
-                dateAdded: Date()
-            )
-            // Preserve the original "Избранное" flag
-            photo.isFavorite = asset.isFavorite
-            // Apply persisted flags
-            if self.reviewedPhotoIDs.contains(asset.localIdentifier) {
-                photo.isReviewed = true
+        loadingQueue.async { [weak self] in
+            guard let self = self else { return }
+            
+            DispatchQueue.main.async {
+                self.isLoading = true
             }
-            if self.trashedPhotoIDs.contains(asset.localIdentifier) {
-                photo.isTrashed = true
+            
+            // Fetch assets if not already done
+            if self.allAssets == nil {
+                let fetchOptions = PHFetchOptions()
+                fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+                fetchOptions.includeHiddenAssets = false
+                self.allAssets = PHAsset.fetchAssets(with: .image, options: fetchOptions)
             }
-            photos.append(photo)
+            
+            guard let assets = self.allAssets else {
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                }
+                return
+            }
+            
+            // Calculate range for current page
+            let startIndex = self.currentPage * self.pageSize
+            let endIndex = min(startIndex + self.pageSize, assets.count)
+            
+            guard startIndex < assets.count else {
+                DispatchQueue.main.async {
+                    self.hasMorePhotos = false
+                    self.isLoading = false
+                }
+                return
+            }
+            
+            var pagePhotos: [Photo] = []
+            assets.enumerateObjects(at: IndexSet(integersIn: startIndex..<endIndex), options: []) { asset, _, _ in
+                var photo = Photo(
+                    asset: asset,
+                    dateAdded: Date()
+                )
+                // Preserve the original "Избранное" flag
+                photo.isFavorite = asset.isFavorite
+                // Apply persisted flags
+                if self.reviewedPhotoIDs.contains(asset.localIdentifier) {
+                    photo.isReviewed = true
+                }
+                if self.trashedPhotoIDs.contains(asset.localIdentifier) {
+                    photo.isTrashed = true
+                }
+                pagePhotos.append(photo)
+            }
+            
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                
+                // Append to existing photos
+                self.allPhotos.append(contentsOf: pagePhotos)
+                self.loadedAssetCount = self.allPhotos.count
+                
+                // Update display photos
+                let newDisplayPhotos = pagePhotos.filter { !$0.isTrashed && !$0.isReviewed }
+                self.displayPhotos.append(contentsOf: newDisplayPhotos)
+                
+                // Update pagination state
+                self.currentPage += 1
+                self.hasMorePhotos = endIndex < assets.count
+                self.isLoading = false
+                
+                // Process series detection in background
+                self.processingQueue.async {
+                    self.detectPhotoSeriesIncremental(newPhotos: pagePhotos)
+                }
+                
+                // Load albums only on first page
+                if self.currentPage == 1 {
+                    self.loadAlbums()
+                }
+            }
         }
+    }
+    
+    // MARK: - Load More Photos (for infinite scrolling)
+    func loadMorePhotosIfNeeded(currentPhoto: Photo?) {
+        guard let currentPhoto = currentPhoto,
+              !isLoading,
+              hasMorePhotos else { return }
         
+        // Load more when we're near the end of loaded photos
+        let thresholdIndex = max(0, displayPhotos.count - 50)
+        if let currentIndex = displayPhotos.firstIndex(where: { $0.id == currentPhoto.id }),
+           currentIndex >= thresholdIndex {
+            loadPhotosPage()
+        }
+    }
+    
+    // MARK: - Incremental Series Detection
+    private func detectPhotoSeriesIncremental(newPhotos: [Photo]) {
+        // Process only camera photos from new batch
+        let newCameraPhotos = newPhotos.filter { !$0.isTrashed && isCameraPhoto($0.asset) }
+        guard !newCameraPhotos.isEmpty else { return }
+        
+        // This is a simplified incremental approach
+        // In production, you'd want to merge with existing series more intelligently
         DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            self.allPhotos = photos
-            // Provide an immediate non-empty snapshot so the UI has something to show while heavy processing occurs.
-            self.displayPhotos = photos.filter { !$0.isTrashed && !$0.isReviewed }
-            // Trigger asynchronous processing & UI update pipeline.
-            self.updateDisplayPhotos()
-            self.isLoading = false
-            // Populate albums list after the main arrays are ready
-            self.loadAlbums()
+            guard let self = self else { return }
+            self.detectPhotoSeries()
         }
     }
     
@@ -584,11 +668,76 @@ class PhotoManager: ObservableObject {
         }
     }
     
+    // MARK: - Story Interaction Tracking
+    
+    /// Mark a photo interaction within a story without affecting its reviewed status
+    func markStoryInteraction(_ photo: Photo, interaction: String) {
+        if let index = allPhotos.firstIndex(where: { $0.id == photo.id }) {
+            allPhotos[index].storyInteraction = interaction
+            print("📖 Story interaction tracked: \(interaction) for photo \(photo.asset.localIdentifier)")
+        }
+    }
+    
+    /// Complete a story series - mark all interacted photos as reviewed and move story to end
+    func completeStorySeries(_ seriesId: UUID) {
+        // Find the series
+        guard let seriesIndex = photoSeries.firstIndex(where: { $0.id == seriesId }) else {
+            print("⚠️ Could not find series to complete: \(seriesId)")
+            return
+        }
+        
+        let series = photoSeries[seriesIndex]
+        print("✅ Completing story series: \(series.title)")
+        
+        // Mark all interacted photos in the series as reviewed
+        var photosMarkedReviewed = 0
+        for photo in series.photos {
+            if let photoIndex = allPhotos.firstIndex(where: { $0.id == photo.id }) {
+                let photoData = allPhotos[photoIndex]
+                if photoData.storyInteraction == "keep" {
+                    allPhotos[photoIndex].isReviewed = true
+                    reviewedPhotoIDs.insert(photo.asset.localIdentifier)
+                    photosMarkedReviewed += 1
+                }
+                // Trash interactions are already handled
+                // Clear story interaction since it's now processed
+                allPhotos[photoIndex].storyInteraction = nil
+            }
+        }
+        
+        // Mark series as completed (ordering will be handled by orderedPhotoSeries computed property)
+        photoSeries[seriesIndex].isCompleted = true
+        photoSeries[seriesIndex].completedAt = Date()
+        photoSeries[seriesIndex].isViewed = true
+        
+        // Persist changes and update display
+        persistFlags()
+        updateDisplayPhotos()
+        
+        print("✅ Story series completed. Marked \(photosMarkedReviewed) photos as reviewed. Moved series to end.")
+    }
+    
+    /// Clear story interactions for a series (when user exits without completing)
+    func clearStoryInteractions(for seriesId: UUID) {
+        guard let series = photoSeries.first(where: { $0.id == seriesId }) else { return }
+        
+        for photo in series.photos {
+            if let index = allPhotos.firstIndex(where: { $0.id == photo.id }) {
+                allPhotos[index].storyInteraction = nil
+            }
+        }
+        print("🧹 Cleared story interactions for series: \(series.title)")
+    }
+    
     /// Non-mutating helper that performs the same logic as the old `detectPhotoSeries()` but
     /// returns the result instead of touching @Published state. Runs on a background queue.
+    /// Now works on ALL non-trashed photos to ensure series integrity regardless of reviewed status.
     private func calculateSeries(from sourcePhotos: [Photo]) -> [PhotoSeriesData] {
-        // Filter only camera photos first because that is the most expensive part of the pipeline.
-        let cameraPhotos = sourcePhotos.filter { isCameraPhoto($0.asset) }
+        // Use ALL non-trashed photos for series detection, not just non-reviewed ones
+        // This ensures series integrity is maintained even when individual photos are reviewed
+        let allNonTrashedPhotos = allPhotos.filter { !$0.isTrashed }
+        let cameraPhotos = allNonTrashedPhotos.filter { isCameraPhoto($0.asset) }
+        
         guard !cameraPhotos.isEmpty else { return [] }
 
         var seriesResult: [PhotoSeriesData] = []
@@ -729,7 +878,8 @@ class PhotoManager: ObservableObject {
             guard let self else { return }
             let newDisplay = self.allPhotos.filter { !$0.isTrashed && !$0.isReviewed }
             let newTrash = self.allPhotos.filter { $0.isTrashed }
-            let newSeries = self.calculateSeries(from: newDisplay)
+            // Series detection now works on all non-trashed photos to maintain integrity
+            let newSeries = self.calculateSeries(from: []) // Parameter ignored, uses allPhotos internally
 
             DispatchQueue.main.async {
                 // Order newest first to match Photos behaviour
@@ -743,9 +893,24 @@ class PhotoManager: ObservableObject {
     
     /// Get photos that are NOT part of any series - these should appear in the main feed
     /// Excludes favorited photos as they are already curated content
+    /// Now correctly excludes ALL series photos regardless of their reviewed status
     var nonSeriesPhotos: [Photo] {
         let seriesPhotoIds = Set(photoSeries.flatMap { $0.photos.map { $0.id } })
         return displayPhotos.filter { !seriesPhotoIds.contains($0.id) && !$0.isFavorite }
+    }
+    
+    /// Get properly ordered photo series - unviewed first, then viewed, completed at the end
+    var orderedPhotoSeries: [PhotoSeriesData] {
+        let unviewed = photoSeries.filter { !$0.isViewed && !$0.isCompleted }
+        let viewed = photoSeries.filter { $0.isViewed && !$0.isCompleted }
+        let completed = photoSeries.filter { $0.isCompleted }
+        
+        // Sort each group by creation date (newest first)
+        let sortedUnviewed = unviewed.sorted { ($0.photos.first?.creationDate ?? Date()) > ($1.photos.first?.creationDate ?? Date()) }
+        let sortedViewed = viewed.sorted { ($0.photos.first?.creationDate ?? Date()) > ($1.photos.first?.creationDate ?? Date()) }
+        let sortedCompleted = completed.sorted { ($0.completedAt ?? Date.distantPast) > ($1.completedAt ?? Date.distantPast) }
+        
+        return sortedUnviewed + sortedViewed + sortedCompleted
     }
 
     /// Determine whether the given asset originated from the system camera (as opposed to e.g. screenshots, WhatsApp, etc.)

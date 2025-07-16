@@ -177,11 +177,11 @@ struct EnhancedStoryView: View {
     private var headerView: some View {
         HStack {
             Button(action: {
-                print("❌ Story dismissed by X button")
+                print("❌ Story dismissed by X button - early dismissal")
                 if !isDismissing {
                     isDismissing = true
                     stopTimer()
-                    applyAllActions()
+                    handleEarlyDismissal()
                     onDismiss()
                 }
             }) {
@@ -476,7 +476,7 @@ struct EnhancedStoryView: View {
                         if !isDismissing {
                             isDismissing = true
                             stopTimer()
-                            applyAllActions()
+                            handleEarlyDismissal()
                             onDismiss()
                         }
                     }
@@ -516,7 +516,7 @@ struct EnhancedStoryView: View {
         isInteractive: Bool
     ) -> some View {
         ZStack {
-            // Photo
+            // Photo - Using optimized photo view for better performance
             OptimizedPhotoView(
                 photo: photo,
                 targetSize: CGSize(width: geometry.size.width, height: geometry.size.height * 0.7)
@@ -662,11 +662,11 @@ struct EnhancedStoryView: View {
     
     private func goToNextPhoto() {
         guard currentPhotoIndex < photoSeries.photos.count - 1 else {
-            print("✅ Story completed - reached end")
+            print("✅ Story completed - reached end naturally")
             if !isDismissing {
                 isDismissing = true
                 stopTimer()
-                applyAllActions()
+                applyAllActions() // This completes the story and moves it to end
                 onDismiss()
             }
             return
@@ -729,8 +729,9 @@ struct EnhancedStoryView: View {
             return
         }
         print("🗑️ MOVE TO TRASH - Photo ID: \(currentPhotoIndex), Asset: \(photo.asset.localIdentifier), Series: \(photoSeries.title)")
-        // Track the action
+        // Track the action locally and in PhotoManager
         photoActions[photo] = "trash"
+        photoManager.markStoryInteraction(photo, interaction: "trash")
         print("📊 Tracked trash action. Total actions: \(photoActions.count)")
         // Provide feedback
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
@@ -778,16 +779,16 @@ struct EnhancedStoryView: View {
         
         print("💚 KEEP - Photo ID: \(currentPhotoIndex), Asset: \(photo.asset.localIdentifier), Series: \(photoSeries.title)")
         
-        // Track the action
+        // Track the action locally and in PhotoManager
         photoActions[photo] = "keep"
+        photoManager.markStoryInteraction(photo, interaction: "keep")
         print("📊 Tracked keep action. Total actions: \(photoActions.count)")
         
         // Provide feedback
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         
-        // Mark as reviewed but NOT as favorite (keep just means don't trash)
-        photoManager.markReviewed(photo)
-        print("💚 Photo marked as reviewed (kept)")
+        // Don't mark as reviewed immediately - this will be done when story is completed
+        print("💚 Photo marked for keeping in story (will be reviewed when story completes)")
         
         // If not already animating (from swipe), show overlay
         if !isDragging {
@@ -828,9 +829,9 @@ struct EnhancedStoryView: View {
     }
     
     private func applyAllActions() {
-        print("📊 Applying all remaining actions for photo series - \(photoActions.count) actions tracked")
+        print("📊 Finalizing story series - \(photoActions.count) actions tracked")
         
-        // Count how many actions we haven't applied yet (only trash actions remain)
+        // Apply any remaining trash actions that weren't applied immediately
         var actionsApplied = 0
         for (photo, action) in photoActions {
             if action == "trash" {
@@ -841,18 +842,36 @@ struct EnhancedStoryView: View {
                     actionsApplied += 1
                 }
             }
-            // Keep actions don't need to be applied - photos are already kept
         }
         
-        print("📊 Applied \(actionsApplied) remaining actions")
+        print("📊 Applied \(actionsApplied) remaining trash actions")
         
-        // Mark series as viewed
-        if let index = photoManager.photoSeries.firstIndex(where: { $0.id == photoSeries.id }) {
-            photoManager.photoSeries[index].isViewed = true
-            print("✅ Marked series as viewed: \(photoSeries.title)")
-        } else {
-            print("⚠️ Could not find series to mark as viewed: \(photoSeries.title)")
+        // Complete the story series - this will mark keep actions as reviewed and move story to end
+        photoManager.completeStorySeries(photoSeries.id)
+        print("✅ Story series completion handled by PhotoManager")
+    }
+    
+    private func handleEarlyDismissal() {
+        print("📊 Handling early story dismissal - clearing interactions")
+        
+        // Apply any remaining trash actions that weren't applied immediately
+        var actionsApplied = 0
+        for (photo, action) in photoActions {
+            if action == "trash" {
+                // Check if photo hasn't been moved to trash yet
+                if !(photoManager.allPhotos.first(where: { $0.id == photo.id })?.isTrashed ?? false) {
+                    print("🗑️ Applying remaining trash action for photo: \(photo.asset.localIdentifier)")
+                    photoManager.moveToTrash(photo)
+                    actionsApplied += 1
+                }
+            }
         }
+        
+        print("📊 Applied \(actionsApplied) remaining trash actions")
+        
+        // Clear story interactions since user didn't complete the story
+        photoManager.clearStoryInteractions(for: photoSeries.id)
+        print("🧹 Cleared story interactions due to early dismissal")
     }
     
     private func performSwipeAnimation(_ direction: SwipeDirection, completion: @escaping () -> Void) {

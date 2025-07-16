@@ -54,6 +54,9 @@ struct HomeView: View {
     @State private var onboardingDidSwipeLeft = false
     @State private var onboardingDidDoubleTap = false
     
+    // Add SeamlessPhotoLoader instance for optimized image loading
+    @StateObject private var photoLoader = SeamlessPhotoLoader()
+    
     // Heart pop-up animation for double-tap favourite
     @State private var showHeartOverlay: Bool = false
     @State private var heartOverlayScale: CGFloat = 0.8
@@ -519,7 +522,7 @@ struct HomeView: View {
             cardWithShadow
                 .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius))
             // Photo
-            OptimizedPhotoView(photo: photo, targetSize: cardSize)
+            SeamlessPhotoView(photo: photo, targetSize: cardSize)
                 .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius))
                 .transition(.opacity.combined(with: .scale))
             
@@ -817,14 +820,14 @@ struct HomeView: View {
     // MARK: - Background Card View
     @ViewBuilder
     private func photoCardBackground(photo: Photo, index: Int) -> some View {
-        let scale = 0.98 // Very slightly smaller than main card to create subtle depth
+        let scale = 1.0 // Match main card size exactly for seamless transition
         // Remove yOffset to prevent position mismatch during transition
         ZStack {
             RoundedRectangle(cornerRadius: 24)
                 .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
                 .shadow(color: AppColors.shadow(for: themeManager.isDarkMode).opacity(0.05), 
                         radius: 2, x: 0, y: 1)
-            OptimizedPhotoView(photo: photo, targetSize: cardSize)
+            SeamlessPhotoView(photo: photo, targetSize: cardSize)
                 .clipShape(RoundedRectangle(cornerRadius: 24))
         }
         .frame(width: cardSize.width, height: cardSize.height)
@@ -890,7 +893,10 @@ struct HomeView: View {
         let photosToPreload = Array(photoQueue.prefix(4).dropFirst())
         guard !photosToPreload.isEmpty else { return }
         
-        // Use background queue for preloading
+        // Use the new SeamlessPhotoLoader for better preloading
+        photoLoader.preloadPhotos(photosToPreload, targetSize: self.cardSize)
+        
+        // Also keep the original prefetch for compatibility
         DispatchQueue.global(qos: .userInitiated).async {
             self.photoManager.prefetchThumbnails(for: photosToPreload, targetSize: self.cardSize)
         }
@@ -948,6 +954,9 @@ struct HomeView: View {
         if processedPhotos.count > 100 {
             processedPhotos.removeAll()
         }
+        
+        // Clear SeamlessPhotoLoader cache for better memory management
+        photoLoader.clearCache()
         
         // Selective cache clearing
         DispatchQueue.global(qos: .utility).async {
