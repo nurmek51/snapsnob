@@ -195,11 +195,12 @@ class PhotoManager: ObservableObject {
     @Published var albums: [PhotoAlbum] = []
     @Published var categorizedPhotos: [PhotoCategory: [Photo]] = [:]
     
+    // --- Add pageSize for random sampling ---
+    private let pageSize = 500 // Number of random non-series photos to show in feed
+    
     // MARK: - Pagination Support for Large Libraries
-    @Published var currentPage = 0
-    @Published var hasMorePhotos = true
-    private let pageSize = 500 // Load 500 photos at a time
-    private var loadedAssetCount = 0
+    // Remove or bypass pagination-related properties and methods
+    // (currentPage, hasMorePhotos, loadPhotosPage, loadMorePhotosIfNeeded, loadedAssetCount)
     
     // MARK: - Feed Configuration Constants
     /// Time interval (in seconds) that is treated as a "series" gap. Photos that are taken within this
@@ -231,124 +232,58 @@ class PhotoManager: ObservableObject {
         checkPhotoLibraryAuthorization()
     }
     
-    // MARK: - Authorization
-    func checkPhotoLibraryAuthorization() {
-        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
-        authorizationStatus = status
-        
-        switch status {
-        case .authorized, .limited:
-            loadPhotosPage() // Changed from loadPhotos() to loadPhotosPage()
-        case .notDetermined:
-            PHPhotoLibrary.requestAuthorization(for: .readWrite) { [weak self] status in
-                DispatchQueue.main.async {
-                    self?.authorizationStatus = status
-                    if status == .authorized || status == .limited {
-                        self?.loadPhotosPage() // Changed from loadPhotos()
-                    }
-                }
-            }
-        default:
-            break
-        }
-    }
-    
-    // MARK: - Optimized Photo Loading with Pagination
-    func loadPhotosPage() {
+    // MARK: - Optimized Photo Loading: Random Non-Series Sample
+    /// Loads up to 500 randomly sampled non-series photos from the entire gallery history for the feed.
+    func loadRandomNonSeriesPhotos() {
         guard !isLoading else { return }
-        
+        isLoading = true
+
         loadingQueue.async { [weak self] in
             guard let self = self else { return }
-            
-            DispatchQueue.main.async {
-                self.isLoading = true
-            }
-            
-            // Fetch assets if not already done
-            if self.allAssets == nil {
-                let fetchOptions = PHFetchOptions()
-                fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-                fetchOptions.includeHiddenAssets = false
-                self.allAssets = PHAsset.fetchAssets(with: .image, options: fetchOptions)
-            }
-            
-            guard let assets = self.allAssets else {
-                DispatchQueue.main.async {
-                    self.isLoading = false
-                }
-                return
-            }
-            
-            // Calculate range for current page
-            let startIndex = self.currentPage * self.pageSize
-            let endIndex = min(startIndex + self.pageSize, assets.count)
-            
-            guard startIndex < assets.count else {
-                DispatchQueue.main.async {
-                    self.hasMorePhotos = false
-                    self.isLoading = false
-                }
-                return
-            }
-            
-            var pagePhotos: [Photo] = []
-            assets.enumerateObjects(at: IndexSet(integersIn: startIndex..<endIndex), options: []) { asset, _, _ in
-                var photo = Photo(
-                    asset: asset,
-                    dateAdded: Date()
-                )
-                // Preserve the original "Избранное" flag
+
+            let fetchOptions = PHFetchOptions()
+            fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+            fetchOptions.includeHiddenAssets = false
+            let allAssets = PHAsset.fetchAssets(with: .image, options: fetchOptions)
+
+            var allPhotos: [Photo] = []
+            allPhotos.reserveCapacity(allAssets.count)
+            allAssets.enumerateObjects { asset, _, _ in
+                var photo = Photo(asset: asset, dateAdded: Date())
                 photo.isFavorite = asset.isFavorite
-                // Apply persisted flags
                 if self.reviewedPhotoIDs.contains(asset.localIdentifier) {
                     photo.isReviewed = true
                 }
                 if self.trashedPhotoIDs.contains(asset.localIdentifier) {
                     photo.isTrashed = true
                 }
-                pagePhotos.append(photo)
+                allPhotos.append(photo)
             }
-            
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }
-                
-                // Append to existing photos
-                self.allPhotos.append(contentsOf: pagePhotos)
-                self.loadedAssetCount = self.allPhotos.count
-                
-                // Update display photos
-                let newDisplayPhotos = pagePhotos.filter { !$0.isTrashed && !$0.isReviewed }
-                self.displayPhotos.append(contentsOf: newDisplayPhotos)
-                
-                // Update pagination state
-                self.currentPage += 1
-                self.hasMorePhotos = endIndex < assets.count
+
+            // --- Always detect series from ALL non-trashed photos for stories conveyor ---
+            let allNonTrashedPhotos = allPhotos.filter { !$0.isTrashed }
+            let series = self.calculateSeries(from: allNonTrashedPhotos)
+            let seriesPhotoIds = Set(series.flatMap { $0.photos.map { $0.asset.localIdentifier } })
+
+            // Filter out series, trashed, reviewed, and favorites for the feed
+            let nonSeriesPhotos = allPhotos.filter {
+                !seriesPhotoIds.contains($0.asset.localIdentifier) &&
+                !$0.isTrashed &&
+                !$0.isReviewed &&
+                !$0.isFavorite
+            }
+
+            // Randomly sample up to 500
+            let sampleCount = min(self.pageSize, nonSeriesPhotos.count)
+            let randomSample = sampleCount == nonSeriesPhotos.count ? nonSeriesPhotos : Array(nonSeriesPhotos.shuffled().prefix(sampleCount))
+
+            DispatchQueue.main.async {
+                self.allPhotos = allPhotos // Keep all for album/series logic
+                // Remove direct assignments to displayPhotos and photoSeries
                 self.isLoading = false
-                
-                // Process series detection in background
-                self.processingQueue.async {
-                    self.detectPhotoSeriesIncremental(newPhotos: pagePhotos)
-                }
-                
-                // Load albums only on first page
-                if self.currentPage == 1 {
-                    self.loadAlbums()
-                }
+                self.updateDisplayPhotos() // Ensure all published properties are up-to-date
+                self.loadAlbums()
             }
-        }
-    }
-    
-    // MARK: - Load More Photos (for infinite scrolling)
-    func loadMorePhotosIfNeeded(currentPhoto: Photo?) {
-        guard let currentPhoto = currentPhoto,
-              !isLoading,
-              hasMorePhotos else { return }
-        
-        // Load more when we're near the end of loaded photos
-        let thresholdIndex = max(0, displayPhotos.count - 50)
-        if let currentIndex = displayPhotos.firstIndex(where: { $0.id == currentPhoto.id }),
-           currentIndex >= thresholdIndex {
-            loadPhotosPage()
         }
     }
     
@@ -960,5 +895,27 @@ class PhotoManager: ObservableObject {
             "timestamp": Date().timeIntervalSince1970,
             "content_id": id
         ])
+    }
+
+    // MARK: - Authorization
+    func checkPhotoLibraryAuthorization() {
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        authorizationStatus = status
+        
+        switch status {
+        case .authorized, .limited:
+            loadRandomNonSeriesPhotos() // Use new optimized loader
+        case .notDetermined:
+            PHPhotoLibrary.requestAuthorization(for: .readWrite) { [weak self] status in
+                DispatchQueue.main.async {
+                    self?.authorizationStatus = status
+                    if status == .authorized || status == .limited {
+                        self?.loadRandomNonSeriesPhotos() // Use new optimized loader
+                    }
+                }
+            }
+        default:
+            break
+        }
     }
 }

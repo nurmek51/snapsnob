@@ -14,3 +14,14 @@ build/*
 .build
 .build/
 .build/*
+askhatsnap/
+askhatsnap/*
+.askhatsnap/
+.askhatsnap/*
+/askhatsnap/
+/askhatsnap/*
+.askhatsnap/
+.askhatsnap/*
+/askhatsnap/
+/askhatsnap/*
+.askhatsnap/

@@ -123,6 +123,45 @@ struct HomeView: View {
         DeviceInfo.shared.isIPad ? 40 : 24
     }
     
+    // Add this new computed property for the stories row
+    @ViewBuilder
+    private var storiesRow: some View {
+        if photoManager.isLoading || photoManager.photoSeries.isEmpty {
+            // Placeholder: show 3 gray circles as loading state, sized for device
+            let circleSize: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? 95 : 75
+            HStack(spacing: DeviceInfo.shared.screenSize.gridSpacing) {
+                ForEach(0..<3, id: \.self) { _ in
+                    Circle()
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(width: circleSize, height: circleSize)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 2)
+                        )
+                        .redacted(reason: .placeholder)
+                }
+            }
+        } else {
+            HStack(spacing: DeviceInfo.shared.screenSize.gridSpacing) {
+                ForEach(Array(photoManager.photoSeries.enumerated()), id: \.offset) { _, series in
+                    VStack(spacing: DeviceInfo.shared.spacing(0.3)) {
+                        StoryCircle(
+                            series: series,
+                            photoManager: photoManager,
+                            isViewed: series.isViewed,
+                            onTap: {
+                                print("📱 Story tapped: \(series.title)")
+                                withAnimation(AppAnimations.modal) {
+                                    fullScreenPhotoManager.selectedSeries = series
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+    
     var body: some View {
         Group {
             if DeviceInfo.shared.isIPad {
@@ -162,7 +201,7 @@ struct HomeView: View {
         // All the rest of your view modifiers (onAppear, onReceive, etc.) remain outside the Group
         .onAppear {
             print("📱 HomeView appeared")
-            if !photoManager.isLoading && !hasInitialized && !photoManager.nonSeriesPhotos.isEmpty {
+            if !photoManager.isLoading && !hasInitialized && (!photoManager.nonSeriesPhotos.isEmpty || !photoManager.photoSeries.isEmpty || !photoManager.trashedPhotos.isEmpty) {
                 hasInitialized = true
                 loadInitialPhotos()
                 scheduleIdleBounce()
@@ -174,14 +213,14 @@ struct HomeView: View {
             }
         }
         .onChange(of: photoManager.isLoading) { _, isLoading in
-            if !isLoading && !hasInitialized && !photoManager.nonSeriesPhotos.isEmpty {
+            if !isLoading && !hasInitialized && (!photoManager.nonSeriesPhotos.isEmpty || !photoManager.photoSeries.isEmpty || !photoManager.trashedPhotos.isEmpty) {
                 hasInitialized = true
                 loadInitialPhotos()
                 scheduleIdleBounce()
             }
         }
         .onChange(of: photoManager.nonSeriesPhotos) { _, newPhotos in
-            if !photoManager.isLoading && !hasInitialized && !newPhotos.isEmpty {
+            if !photoManager.isLoading && !hasInitialized && (!newPhotos.isEmpty || !photoManager.photoSeries.isEmpty || !photoManager.trashedPhotos.isEmpty) {
                 hasInitialized = true
                 loadInitialPhotos()
                 scheduleIdleBounce()
@@ -213,6 +252,7 @@ struct HomeView: View {
             }
             scheduleIdleBounce()
         }
+        // Remove .onChange blocks for photoManager.photoSeries and photoManager.trashedPhotos
         .sheet(isPresented: $showingTrash) {
             TrashView(photoManager: photoManager)
         }
@@ -361,25 +401,9 @@ struct HomeView: View {
             HStack(alignment: .center, spacing: DeviceInfo.shared.screenSize.horizontalPadding) {
                 // Stories conveyor (avatar row)
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: DeviceInfo.shared.screenSize.gridSpacing) {
-                        ForEach(Array(photoManager.photoSeries.enumerated()), id: \.offset) { _, series in
-                            VStack(spacing: DeviceInfo.shared.spacing(0.3)) {
-                                StoryCircle(
-                                    series: series,
-                                    photoManager: photoManager,
-                                    isViewed: series.isViewed,
-                                    onTap: {
-                                        print("📱 Story tapped: \(series.title)")
-                                        withAnimation(AppAnimations.modal) {
-                                            fullScreenPhotoManager.selectedSeries = series
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                    }
-                    .padding(.leading, DeviceInfo.shared.screenSize.horizontalPadding)
-                    .padding(.vertical, DeviceInfo.shared.spacing(0.2))
+                    storiesRow
+                        .padding(.leading, DeviceInfo.shared.screenSize.horizontalPadding)
+                        .padding(.vertical, DeviceInfo.shared.spacing(0.2))
                 }
                 // Trash icon and label, vertically centered with story row
                 VStack(spacing: DeviceInfo.shared.spacing(0.3)) {
@@ -766,36 +790,41 @@ struct HomeView: View {
                     // Action icon
                     Image(systemName: actionLabelIcon)
                         .font(.system(size: DeviceInfo.shared.spacing(2.0), weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(actionBannerTextColor)
                         .scaleEffect(1.1)
                         .shadow(color: .black.opacity(0.3), radius: 2, x: 1, y: 1)
                     
                     // Action text
                     Text(actionLabelText)
                         .font(.system(size: DeviceInfo.shared.spacing(1.6), weight: .heavy, design: .rounded))
-                        .foregroundColor(.white)
+                        .foregroundColor(actionBannerTextColor)
                         .shadow(color: .black.opacity(0.3), radius: 2, x: 1, y: 1)
                     
                     // Undo icon (only show if there's an action to undo)
                     if lastAction != nil {
                         Image(systemName: "arrow.uturn.left")
                             .font(.system(size: DeviceInfo.shared.spacing(1.8), weight: .bold))
-                            .foregroundColor(.white.opacity(0.9))
+                            .foregroundColor(actionBannerTextColor)
                             .shadow(color: .black.opacity(0.3), radius: 2, x: 1, y: 1)
                     }
                 }
                 .padding(.horizontal, DeviceInfo.shared.spacing(3.5))
                 .padding(.vertical, DeviceInfo.shared.spacing(1.8))
                 .background(
-                    // Simplified gradient background
-                    LinearGradient(
-                        colors: [
-                            actionBannerColor,
-                            actionBannerColor.opacity(0.8)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
+                    Group {
+                        if actionLabelText == "Undo" {
+                            Capsule().fill(Color.black)
+                        } else {
+                            LinearGradient(
+                                colors: [
+                                    actionBannerColor,
+                                    actionBannerColor.opacity(0.8)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        }
+                    }
                 )
                 .clipShape(Capsule())
                 .overlay(
@@ -984,13 +1013,14 @@ struct HomeView: View {
         // Store action for undo functionality
         lastAction = UndoAction(photo: photo, action: action, timestamp: Date())
         
+        // Always show 'Undo' as the banner text
+        showActionBanner(text: "Undo", icon: action == .trash ? "trash" : action == .favorite ? "heart.fill" : "checkmark", direction: action == .trash ? .left : action == .favorite ? .down : .right)
+        
         switch action {
         case .trash:
-            showActionBanner(text: "Removed!", icon: "trash", direction: .left)
             photoManager.moveToTrash(photo)
             animateActionAndAdvance(direction: .left)
         case .favorite:
-            showActionBanner(text: "Favorited!", icon: "heart.fill", direction: .down)
             photoManager.setFavorite(photo, isFavorite: !photo.isFavorite)
             photoManager.markReviewed(photo)
             // Update currentPhoto, photoQueue, and backgroundCards with the latest Photo
@@ -1003,7 +1033,6 @@ struct HomeView: View {
             }
             animateActionAndAdvance(direction: .down)
         case .keep:
-            showActionBanner(text: "Kept!", icon: "checkmark", direction: .right)
             photoManager.markReviewed(photo)
             animateActionAndAdvance(direction: .right)
         }
@@ -1046,8 +1075,8 @@ struct HomeView: View {
         photoOpacity = 1.0 // Start fully opaque
         photoScale = 1.0 // Start at full size immediately
         // No animation - instant appearance for smooth transitions
-        // Show confirmation
-        showActionBanner(text: "Undone!", icon: "arrow.uturn.left", direction: .right)
+        // Always show 'Undo' as the banner text
+        showActionBanner(text: "Undo", icon: "arrow.uturn.left", direction: .right)
         print("✅ Undo completed successfully")
     }
 
@@ -1101,19 +1130,14 @@ struct HomeView: View {
     
     // MARK: - Banner Color Helper
     private func getBannerColor(for text: String) -> Color {
-        switch text {
-        case "Removed!":
-            // Use app's theme-aware colors instead of vibrant red
-            return AppColors.secondaryText(for: themeManager.isDarkMode).opacity(0.8)
-        case "Favorited!":
-            // Use accent color instead of bright pink
-            return AppColors.accent(for: themeManager.isDarkMode).opacity(0.9)
-        case "Kept!":
-            // Use primary text color instead of bright green
-            return AppColors.primaryText(for: themeManager.isDarkMode).opacity(0.8)
-        default:
-            return AppColors.primaryText(for: themeManager.isDarkMode)
-        }
+        // Use a consistent accent color for the banner background
+        return AppColors.accent(for: themeManager.isDarkMode)
+    }
+
+    // MARK: - Banner Text Color Helper
+    private var actionBannerTextColor: Color {
+        // For Undo, always white; otherwise, theme-based
+        actionLabelText == "Undo" ? .white : (themeManager.isDarkMode ? .black : .white)
     }
     
     private func handleTap(photo: Photo) {
@@ -1280,7 +1304,7 @@ struct HomeView: View {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             
             // Show confirmation banner
-            showActionBanner(text: "Restored!", icon: "arrow.clockwise", direction: .right)
+            showActionBanner(text: "Undo", icon: "arrow.clockwise", direction: .right)
             
             // Schedule idle bounce
             scheduleIdleBounce()
