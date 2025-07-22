@@ -10,10 +10,12 @@ struct CategoryDetailView: View {
     // Multi-selection state
     @State private var isSelecting = false
     @State private var selectedPhotos: Set<Photo> = []
+    // Toast notification state
+    @StateObject private var toastManager = ToastManager()
     
-    // Real photos for the category from AI analysis
+    // Real photos for the category from AI analysis, filtered to exclude trashed photos
     private var categoryPhotos: [Photo] {
-        photoManager.categorizedPhotos[category] ?? []
+        (photoManager.categorizedPhotos[category] ?? []).filter { !$0.isTrashed }
     }
     
     var body: some View {
@@ -26,13 +28,19 @@ struct CategoryDetailView: View {
         }
         .constrainedToDevice(usePadding: false)
         .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
-        .navigationTitle(category.rawValue)
+        .navigationTitle(category.localizedName)
         .navigationBarTitleDisplayMode(.large)
+        // Toast notification overlay
+        .overlay(
+            ToastView(message: toastManager.toastMessage, isShowing: $toastManager.isShowingToast)
+                .environmentObject(themeManager)
+                .zIndex(1000)
+        )
         // Full-screen handled globally by ContentView
         .toolbar {
             // Leading: always 'Готово' to close view
             ToolbarItem(placement: .navigationBarLeading) {
-                Button("Готово") {
+                Button("action.done".localized) {
                     if isSelecting {
                         // Reset selection but stay on screen
                         isSelecting = false
@@ -47,21 +55,29 @@ struct CategoryDetailView: View {
             // Trailing: 'Выбрать' when idle; 'Выбрать все' + Trash when selecting
             ToolbarItemGroup(placement: .navigationBarTrailing) {
                 if isSelecting {
-                    Button("Выбрать все") {
+                    Button("album.selectAll".localized) {
                         selectedPhotos = Set(categoryPhotos)
                     }
 
                     Button(role: .destructive) {
+                        let selectedCount = selectedPhotos.count
                         for photo in selectedPhotos {
                             photoManager.moveToTrash(photo)
                         }
+                        
+                        // Show toast notification
+                        let message = selectedCount == 1 ? 
+                            "toast.photoAddedToTrash".localized : 
+                            "toast.photosAddedToTrash".localized(with: selectedCount)
+                        toastManager.showToast(message: message)
+                        
                         isSelecting = false
                         selectedPhotos.removeAll()
                     } label: {
                         Image(systemName: "trash")
                     }
                 } else {
-                    Button("Выбрать") { isSelecting = true }
+                    Button("album.select".localized) { isSelecting = true }
                 }
             }
         }

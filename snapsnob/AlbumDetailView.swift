@@ -10,19 +10,23 @@ struct AlbumDetailView: View {
     // Multi-selection state
     @State private var isSelecting = false
     @State private var selectedPhotos: Set<Photo> = []
+    // Toast notification state
+    @StateObject private var toastManager = ToastManager()
 
     // Always fetch the latest photos from PhotoManager in case the album updated after view was presented
+    // Filter out trashed photos to ensure deleted photos are not shown
     private var photos: [Photo] {
-        photoManager.albums.first(where: { $0.title == album.title })?.photos ?? album.photos
+        let albumPhotos = photoManager.albums.first(where: { $0.title == album.title })?.photos ?? album.photos
+        return albumPhotos.filter { !$0.isTrashed }
     }
 
     var body: some View {
         Group {
             if photos.isEmpty {
-                VStack(spacing: 16) {
-                    ProgressView()
-                    Text("photo.loading".localized)
-                        .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                VStack {
+                    Image(systemName: "photo")
+                        .font(.system(size: 40))
+                        .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode).opacity(0.3))
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -40,6 +44,12 @@ struct AlbumDetailView: View {
         .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea(.all, edges: .horizontal))
         .navigationTitle(album.title)
         .navigationBarTitleDisplayMode(.large)
+        // Toast notification overlay
+        .overlay(
+            ToastView(message: toastManager.toastMessage, isShowing: $toastManager.isShowingToast)
+                .environmentObject(themeManager)
+                .zIndex(1000)
+        )
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button("action.done".localized) {
@@ -60,9 +70,17 @@ struct AlbumDetailView: View {
                     }
 
                     Button(role: .destructive) {
+                        let selectedCount = selectedPhotos.count
                         for photo in selectedPhotos {
                             photoManager.moveToTrash(photo)
                         }
+                        
+                        // Show toast notification
+                        let message = selectedCount == 1 ? 
+                            "toast.photoAddedToTrash".localized : 
+                            "toast.photosAddedToTrash".localized(with: selectedCount)
+                        toastManager.showToast(message: message)
+                        
                         isSelecting = false
                         selectedPhotos.removeAll()
                     } label: {

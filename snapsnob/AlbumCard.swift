@@ -68,7 +68,7 @@ struct AlbumCard: View {
                                 .multilineTextAlignment(.leading)
                                 .fixedSize(horizontal: false, vertical: true)
                             // Show count excluding trashed photos for accuracy
-                            Text("\(album.photos.filter { !$0.isTrashed }.count) фото")
+                            Text("common.photosCount".localized(with: album.photos.filter { !$0.isTrashed }.count))
                                 .font(.system(size: DeviceInfo.shared.screenSize.fontSize.caption * 0.9))
                                 .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                         }

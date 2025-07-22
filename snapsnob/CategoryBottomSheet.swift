@@ -30,12 +30,12 @@ struct CategoryBottomSheet: View {
                     }
                     
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(category.rawValue)
+                        Text(category.localizedName)
                             .font(.title2)
                             .fontWeight(.bold)
                             .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                         
-                        Text("\(categoryPhotos.count) фото")
+                        Text("common.photosCount".localized(with: categoryPhotos.count))
                             .font(.subheadline)
                             .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                     }

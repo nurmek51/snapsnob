@@ -20,7 +20,7 @@ struct CategoriesView: View {
         return PhotoCategory.allCases.compactMap { photoCategory in
             guard let photos = categorizedPhotos[photoCategory], !photos.isEmpty else { return nil }
             return Category(
-                name: photoCategory.rawValue,
+                name: photoCategory.localizedName,
                 count: photos.count,
                 icon: photoCategory.icon,
                 color: .gray,

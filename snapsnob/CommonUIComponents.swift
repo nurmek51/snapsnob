@@ -593,4 +593,84 @@ struct EmptyStateView: View {
         }
         .padding(40)
     }
+}
+
+// MARK: - Toast Notification
+
+/// A toast notification component for showing brief success messages
+struct ToastView: View {
+    @EnvironmentObject var themeManager: ThemeManager
+    let message: String
+    @Binding var isShowing: Bool
+    @State private var scale: CGFloat = 0.8
+    @State private var opacity: Double = 0
+    
+    var body: some View {
+        if isShowing {
+            VStack {
+                Spacer()
+                
+                HStack(spacing: DeviceInfo.shared.spacing(0.6)) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                        .font(.system(size: DeviceInfo.shared.screenSize.fontSize.body, weight: .medium))
+                    
+                    Text(message)
+                        .adaptiveFont(.body)
+                        .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
+                        .multilineTextAlignment(.leading)
+                }
+                .padding(.horizontal, DeviceInfo.shared.spacing(1.0))
+                .padding(.vertical, DeviceInfo.shared.spacing(0.8))
+                .background(
+                    RoundedRectangle(cornerRadius: DeviceInfo.shared.screenSize.cornerRadius)
+                        .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
+                        .shadow(color: AppColors.shadow(for: themeManager.isDarkMode), radius: 12, x: 0, y: 4)
+                )
+                .scaleEffect(scale)
+                .opacity(opacity)
+                .onAppear {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                        scale = 1.0
+                        opacity = 1.0
+                    }
+                    
+                    // Auto-hide after 2 seconds
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                        withAnimation(.easeOut(duration: 0.3)) {
+                            scale = 0.8
+                            opacity = 0
+                        }
+                        
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            isShowing = false
+                        }
+                    }
+                }
+                
+                Spacer()
+                    .frame(height: DeviceInfo.shared.spacing(6.0)) // Bottom padding from safe area
+            }
+            .transition(.opacity.combined(with: .scale))
+        }
+    }
+}
+
+/// Toast Manager for handling toast notifications
+class ToastManager: ObservableObject {
+    @Published var isShowingToast = false
+    @Published var toastMessage = ""
+    
+    func showToast(message: String) {
+        DispatchQueue.main.async {
+            self.toastMessage = message
+            self.isShowingToast = true
+        }
+    }
+    
+    func hideToast() {
+        DispatchQueue.main.async {
+            self.isShowingToast = false
+        }
+    }
 } 

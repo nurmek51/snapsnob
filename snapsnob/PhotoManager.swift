@@ -47,22 +47,43 @@ extension Photo: @unchecked Sendable {}
 // MARK: - Photo Category
 enum PhotoCategory: String, CaseIterable, Codable, Identifiable {
     var id: String { self.rawValue }
-    case nature = "Природа"
-    case people = "Люди"
-    case food = "Еда"
-    case animals = "Животные"
-    case architecture = "Архитектура"
-    case transport = "Транспорт"
-    case technology = "Технологии"
-    case art = "Искусство"
-    case events = "События"
-    case sports = "Спорт"
-    case travel = "Путешествия"
-    case home = "Дом"
-    case work = "Работа"
-    case shopping = "Покупки"
-    case entertainment = "Развлечения"
-    case other = "Другое"
+    case nature = "nature"
+    case people = "people"
+    case food = "food"
+    case animals = "animals"
+    case architecture = "architecture"
+    case transport = "transport"
+    case technology = "technology"
+    case art = "art"
+    case events = "events"
+    case sports = "sports"
+    case travel = "travel"
+    case home = "home"
+    case work = "work"
+    case shopping = "shopping"
+    case entertainment = "entertainment"
+    case other = "other"
+    
+    var localizedName: String {
+        switch self {
+        case .nature: return "photoCategory.nature".localized
+        case .people: return "photoCategory.people".localized
+        case .food: return "photoCategory.food".localized
+        case .animals: return "photoCategory.animals".localized
+        case .architecture: return "photoCategory.buildings".localized
+        case .transport: return "photoCategory.vehicles".localized
+        case .technology: return "photoCategory.objects".localized
+        case .art: return "photoCategory.objects".localized
+        case .events: return "photoCategory.people".localized
+        case .sports: return "photoCategory.objects".localized
+        case .travel: return "photoCategory.landscapes".localized
+        case .home: return "photoCategory.objects".localized
+        case .work: return "photoCategory.documents".localized
+        case .shopping: return "photoCategory.objects".localized
+        case .entertainment: return "photoCategory.objects".localized
+        case .other: return "photoCategory.other".localized
+        }
+    }
     
     var icon: String {
         switch self {
@@ -323,12 +344,12 @@ class PhotoManager: ObservableObject {
                 }
             }
 
-            let album = PhotoAlbum(title: collection.localizedTitle ?? "Альбом", photos: photos)
+            let album = PhotoAlbum(title: collection.localizedTitle ?? "category.albums".localized, photos: photos)
             loadedAlbums.append(album)
         }
 
-        // Add system "Все фото" album at the beginning
-        let allAlbum = PhotoAlbum(title: "Все фото", photos: self.allPhotos)
+        // Add system "All photos" album at the beginning
+        let allAlbum = PhotoAlbum(title: "category.allPhotos".localized, photos: self.allPhotos)
         loadedAlbums.insert(allAlbum, at: 0)
 
         DispatchQueue.main.async {
@@ -398,7 +419,7 @@ class PhotoManager: ObservableObject {
     }
     
     private func getTitleForSeries(_ photos: [Photo]) -> String {
-        guard let firstPhoto = photos.first else { return "Серия фото" }
+        guard let firstPhoto = photos.first else { return "home.photoSeries".localized }
         
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"

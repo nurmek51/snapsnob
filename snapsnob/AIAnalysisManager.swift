@@ -59,6 +59,7 @@ import VisionKit
 import CoreImage
 import ImageIO
 import Darwin.Mach
+import CommonCrypto
 
 // MARK: - Cached Analysis Data Structures
 struct CachedAnalysisData: Codable {
@@ -1038,7 +1039,7 @@ class AIAnalysisManager: ObservableObject {
         
         return true
     }
-    
+
 
 
 
@@ -1161,47 +1162,36 @@ class AIAnalysisManager: ObservableObject {
 
     // MARK: – Safe Duplicate Detection - Real Clones Only
     private func detectDuplicates(photos: [Photo]) async {
-        log("🔍 Starting real clone detection (excluding camera photos)")
+        log("🔍 Starting exact duplicate detection with hash confirmation")
         
-        // Filter photos to exclude camera-taken images (focus on imports/downloads)
+        // Use current candidate filtering
         let candidatePhotos = photos.filter { photo in
-            // Exclude photos taken with camera (they can't be true duplicates)
             let asset = photo.asset
-            
-            // Check if photo was imported from external source (not taken with camera)
             if asset.sourceType == .typeUserLibrary || asset.sourceType == .typeCloudShared || asset.sourceType == .typeiTunesSynced {
                 return true
             }
-            
-            // Check creation vs modification dates (imports often have different dates)
             if let creationDate = asset.creationDate,
                let modificationDate = asset.modificationDate,
                abs(modificationDate.timeIntervalSince(creationDate)) > 60 {
-                return true // Likely imported/modified
+                return true
             }
-            
-            // Exclude if has location data (camera photos typically have GPS)
             if asset.location != nil {
                 return false
             }
-            
             return true
         }
         
-        log("📊 Filtering for real duplicates: \(candidatePhotos.count) candidates from \(photos.count) total photos")
+        log("📊 Candidates for duplicate check: \(candidatePhotos.count) from \(photos.count) total")
         
-        var groupsBuild: [[Photo]] = []
+        var potentialGroups: [[Photo]] = []
         var processed: Set<UUID> = []
-        
-        // For real duplicates, use exact matching with very strict threshold
-        let duplicateThreshold: Float = 0.05 // Much stricter - only near-identical images
+        let duplicateThreshold: Float = 0.05
         
         for (index, photo1) in candidatePhotos.enumerated() {
             guard !processed.contains(photo1.id), let fp1 = featurePrints[photo1.id] else { continue }
             
-            var duplicates: [Photo] = [photo1]
+            var potentials: [Photo] = [photo1]
             
-            // Check against ALL remaining photos (not just window) for exact duplicates
             for j in (index + 1)..<candidatePhotos.count {
                 let photo2 = candidatePhotos[j]
                 guard !processed.contains(photo2.id), let fp2 = featurePrints[photo2.id] else { continue }
@@ -1210,45 +1200,51 @@ class AIAnalysisManager: ObservableObject {
                     var distance: Float = 0
                     try fp1.computeDistance(&distance, to: fp2)
                     
-                    // Strict threshold for real duplicates only
-                    if distance < duplicateThreshold {
-                        // Additional validation for real duplicates
-                        if isLikelyDuplicate(photo1: photo1, photo2: photo2) {
-                            duplicates.append(photo2)
-                            processed.insert(photo2.id)
-                        }
+                    if distance < duplicateThreshold && isLikelyDuplicate(photo1: photo1, photo2: photo2) {
+                        potentials.append(photo2)
+                        processed.insert(photo2.id)
                     }
                 } catch {
                     continue
                 }
             }
             
-            if duplicates.count > 1 {
-                // Sort by quality (best first) and creation date (newer first)
-                duplicates.sort { (lhs, rhs) in
-                    let lhsQuality = imageQualityScores[lhs.id] ?? 0.5
-                    let rhsQuality = imageQualityScores[rhs.id] ?? 0.5
-                    
-                    if abs(lhsQuality - rhsQuality) > 0.1 {
-                        return lhsQuality > rhsQuality
-                    }
-                    
-                    // If quality is similar, prefer newer
-                    return lhs.creationDate > rhs.creationDate
-                }
-                groupsBuild.append(duplicates)
-                log("🎯 Found duplicate group with \(duplicates.count) photos")
+            if potentials.count > 1 {
+                potentialGroups.append(potentials)
             }
-            
             processed.insert(photo1.id)
         }
         
-        let finalGroups = groupsBuild
-        await MainActor.run {
-            self.duplicateGroups = finalGroups
-            self.analysisProgress = 1.0 // duplicate stage complete
+        // Now confirm with hash for each potential group
+        var confirmedGroups: [[Photo]] = []
+        for group in potentialGroups {
+            var hashToPhotos: [String: [Photo]] = [:]
+            for photo in group {
+                if let hash = await computeSHA256Hash(for: photo.asset) {
+                    hashToPhotos[hash, default: []].append(photo)
+                }
+            }
+            for (_, subGroup) in hashToPhotos {
+                if subGroup.count > 1 {
+                    let sortedGroup = subGroup.sorted { (lhs, rhs) in
+                        let lhsQuality = imageQualityScores[lhs.id] ?? 0.5
+                        let rhsQuality = imageQualityScores[rhs.id] ?? 0.5
+                        if abs(lhsQuality - rhsQuality) > 0.1 {
+                            return lhsQuality > rhsQuality
+                        }
+                        return lhs.creationDate > rhs.creationDate
+                    }
+                    confirmedGroups.append(sortedGroup)
+                    log("🎯 Confirmed exact duplicate group with \(sortedGroup.count) photos")
+                }
+            }
         }
-        log("✅ Real duplicate detection complete: found \(finalGroups.count) groups of true duplicates")
+        
+        await MainActor.run {
+            self.duplicateGroups = confirmedGroups
+            self.analysisProgress = 1.0
+        }
+        log("✅ Exact duplicate detection complete: found \(confirmedGroups.count) groups")
     }
     
     /// Additional validation to ensure photos are real duplicates, not just similar
@@ -1256,31 +1252,22 @@ class AIAnalysisManager: ObservableObject {
         let asset1 = photo1.asset
         let asset2 = photo2.asset
         
-        // Check if dimensions are exactly the same (true duplicates have same dimensions)
         if asset1.pixelWidth != asset2.pixelWidth || asset1.pixelHeight != asset2.pixelHeight {
             return false
         }
         
-        // Check file sizes (true duplicates should have very similar file sizes)
         let resources1 = PHAssetResource.assetResources(for: asset1)
         let resources2 = PHAssetResource.assetResources(for: asset2)
         
         if let size1 = resources1.first?.value(forKey: "fileSize") as? Int64,
            let size2 = resources2.first?.value(forKey: "fileSize") as? Int64 {
-            let sizeDiff = abs(size1 - size2)
-            let avgSize = (size1 + size2) / 2
-            let sizeVariation = Float(sizeDiff) / Float(avgSize)
-            
-            // Allow maximum 5% size variation for true duplicates
-            if sizeVariation > 0.05 {
+            if size1 != size2 {
                 return false
             }
         }
         
-        // Check creation dates - true duplicates often have exact same creation date
         if let date1 = asset1.creationDate, let date2 = asset2.creationDate {
             let timeDiff = abs(date1.timeIntervalSince(date2))
-            // Allow up to 2 seconds difference (for import timing differences)
             if timeDiff > 2.0 {
                 return false
             }
@@ -1652,4 +1639,33 @@ extension Array {
 // MARK: – Concurrency compatibility helpers
 // Instances are referenced only weakly inside @Sendable Concurrent closures, therefore this shortcut is safe.
 extension AIAnalysisManager: @unchecked Sendable {}
+
+private func computeSHA256Hash(for asset: PHAsset) async -> String? {
+    return await withCheckedContinuation { continuation in
+        let resources = PHAssetResource.assetResources(for: asset)
+        guard let resource = resources.first(where: { $0.type == .photo }) else {
+            continuation.resume(returning: nil)
+            return
+        }
+        let options = PHAssetResourceRequestOptions()
+        options.isNetworkAccessAllowed = true
+        var context = CC_SHA256_CTX()
+        CC_SHA256_Init(&context)
+        PHAssetResourceManager.default().requestData(for: resource, options: options, dataReceivedHandler: { data in
+            data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) in
+                _ = CC_SHA256_Update(&context, buffer.baseAddress, CC_LONG(buffer.count))
+            }
+        }, completionHandler: { error in
+            if let error = error {
+                print("Error fetching asset data: \(error.localizedDescription)")
+                continuation.resume(returning: nil)
+                return
+            }
+            var digest = [UInt8](repeating: 0, count: Int(CC_SHA256_DIGEST_LENGTH))
+            CC_SHA256_Final(&digest, &context)
+            let hashString = digest.map { String(format: "%02x", $0) }.joined()
+            continuation.resume(returning: hashString)
+        })
+    }
+}
 

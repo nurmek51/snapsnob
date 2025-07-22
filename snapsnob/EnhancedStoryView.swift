@@ -955,7 +955,7 @@ struct EnhancedStoryView: View {
     let mockSeries = PhotoSeriesData(
         photos: [mockPhoto, mockPhoto, mockPhoto],
         thumbnailPhoto: mockPhoto,
-        title: "Природа"
+        title: "photoCategory.nature".localized
     )
     
     EnhancedStoryView(

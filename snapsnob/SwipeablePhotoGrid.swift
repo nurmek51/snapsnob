@@ -44,122 +44,139 @@ private struct SwipeablePhotoCell: View {
         case none, removeSuperStar, addSuperStar
     }
     
-    var body: some View {
-        ZStack {
-            // Background action indicators
-            HStack {
-                // Left side - Remove Super Star status
-                if dragOffset.width < -20 {
-                    HStack {
-                        Image(systemName: "star.slash.fill")
-                            .foregroundColor(.orange)
-                            .font(.system(size: 16))
-                        Spacer()
-                    }
-                    .padding(.horizontal, 8)
-                    .opacity(min(Double(abs(dragOffset.width)) / 60.0, 1.0))
+    // Extracted: Background action indicators
+    private var backgroundIndicators: some View {
+        HStack {
+            // Left side - Remove Super Star status
+            if dragOffset.width < -20 {
+                HStack {
+                    Image(systemName: "star.slash.fill")
+                        .foregroundColor(.orange)
+                        .font(.system(size: 16))
+                    Spacer()
                 }
+                .padding(.horizontal, 8)
+                .opacity(min(Double(abs(dragOffset.width)) / 60.0, 1.0))
+            }
+            Spacer()
+            // Right side - Add super star
+            if dragOffset.width > 20 {
+                HStack {
+                    Spacer()
+                    Image(systemName: "star.fill")
+                        .foregroundColor(.yellow)
+                        .font(.system(size: 16))
+                }
+                .padding(.horizontal, 8)
+                .opacity(min(Double(dragOffset.width) / 60.0, 1.0))
+            }
+        }
+    }
+    
+    // Extracted: Photo cell content
+    private var photoCell: some View {
+        VStack(spacing: 8) {
+            ZStack(alignment: .topTrailing) {
+                PhotoImageView(
+                    photo: photo,
+                    targetSize: CGSize(width: 100, height: 100)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 12))
                 
-                Spacer()
-                
-                // Right side - Add super star
-                if dragOffset.width > 20 {
-                    HStack {
-                        Spacer()
-                        Image(systemName: "star.fill")
-                            .foregroundColor(.yellow)
-                            .font(.system(size: 16))
-                    }
-                    .padding(.horizontal, 8)
-                    .opacity(min(Double(dragOffset.width) / 60.0, 1.0))
+                // Super star badge
+                if photo.isSuperStar {
+                    Image(systemName: "star.fill")
+                        .foregroundColor(.yellow)
+                        .font(.system(size: 12))
+                        .padding(4)
+                        .background(
+                            Circle()
+                                .fill(.black.opacity(0.6))
+                        )
+                        .padding(4)
                 }
             }
-            
-            // Photo cell
-            VStack(spacing: 8) {
-                ZStack(alignment: .topTrailing) {
-                    PhotoImageView(
-                        photo: photo,
-                        targetSize: CGSize(width: 100, height: 100)
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    
-                    // Super star badge
-                    if photo.isSuperStar {
-                        Image(systemName: "star.fill")
-                            .foregroundColor(.yellow)
-                            .font(.system(size: 12))
-                            .padding(4)
-                            .background(
-                                Circle()
-                                    .fill(.black.opacity(0.6))
-                            )
-                            .padding(4)
-                    }
-                }
-                
-                // Heart button for favorites
-                Button(action: {
-                    photoManager.setFavorite(photo, isFavorite: false)
-                }) {
-                    Image(systemName: "heart.fill")
-                        .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
-                        .font(.caption2)
-                }
-                .buttonStyle(PlainButtonStyle())
+            // Heart button for favorites
+            Button(action: {
+                photoManager.setFavorite(photo, isFavorite: false)
+            }) {
+                Image(systemName: "heart.fill")
+                    .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+                    .font(.caption2)
             }
-            .offset(dragOffset)
-            .scaleEffect(isProcessingAction ? 0.95 : 1.0)
-            .opacity(isProcessingAction ? 0.8 : 1.0)
-            .onTapGesture {
-                if !isProcessingAction {
-                    onTap()
-                }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .offset(dragOffset)
+        .scaleEffect(isProcessingAction ? 0.95 : 1.0)
+        .opacity(isProcessingAction ? 0.8 : 1.0)
+        .onTapGesture {
+            if !isProcessingAction {
+                onTap()
             }
-            .gesture(
-                DragGesture()
-                    .onChanged { value in
-                        if !isProcessingAction {
-                            dragOffset = value.translation
-                            
-                            // Determine action type based on drag direction
-                            if value.translation.width < -40 {
-                                actionType = .removeSuperStar
-                            } else if value.translation.width > 40 {
-                                actionType = .addSuperStar
-                            } else {
-                                actionType = .none
-                            }
-                        }
-                    }
-                    .onEnded { value in
-                        if !isProcessingAction {
-                            handleDragEnd(value: value)
-                        }
-                    }
-            )
-            
-            // Action feedback overlay
+        }
+        .gesture(
+            DragGesture()
+                .onChanged(handleDragChanged)
+                .onEnded(handleDragEnded)
+        )
+    }
+    
+    // Extracted gesture handlers for compiler performance
+    private func handleDragChanged(_ value: DragGesture.Value) {
+        if !isProcessingAction {
+            dragOffset = value.translation
+            // Determine action type based on drag direction
+            if value.translation.width < -40 {
+                actionType = .removeSuperStar
+            } else if value.translation.width > 40 {
+                actionType = .addSuperStar
+            } else {
+                actionType = .none
+            }
+        }
+    }
+    private func handleDragEnded(_ value: DragGesture.Value) {
+        if !isProcessingAction {
+            handleDragEnd(value: value)
+        }
+    }
+    
+    // Extracted: Action feedback overlay
+    private var actionFeedbackContent: some View {
+        VStack {
+            Image(systemName: actionType == .addSuperStar ? "star.fill" : "star.slash.fill")
+                .foregroundColor(actionType == .addSuperStar ? .yellow : .orange)
+                .font(.system(size: 24))
+            Text(actionType == .addSuperStar ? "favorites.bestPhotos".localized + "!" : "favorites.bestPhotos".localized + " " + "action.delete".localized)
+                .foregroundColor(.white)
+                .font(.caption)
+                .fontWeight(.medium)
+        }
+    }
+    private var actionFeedbackOverlay: some View {
+        Group {
             if showingActionFeedback {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(.black.opacity(0.7))
-                    .overlay(
-                        VStack {
-                            Image(systemName: actionType == .addSuperStar ? "star.fill" : "star.slash.fill")
-                                .foregroundColor(actionType == .addSuperStar ? .yellow : .orange)
-                                .font(.system(size: 24))
-                            
-                            Text(actionType == .addSuperStar ? "Super Star!" : "Super Star Removed")
-                                .foregroundColor(.white)
-                                .font(.caption)
-                                .fontWeight(.medium)
-                        }
-                    )
+                    .overlay(actionFeedbackContent)
                     .transition(.opacity)
             }
         }
-        .animation(.spring(response: 0.5, dampingFraction: 0.7), value: dragOffset)
-        .animation(.easeInOut(duration: 0.2), value: isProcessingAction)
+    }
+    
+    // Extracted: Main ZStack content for compiler performance
+    private var mainContent: some View {
+        ZStack {
+            backgroundIndicators
+            photoCell
+            actionFeedbackOverlay
+        }
+    }
+    
+    var body: some View {
+        mainContent
+            .animation(.spring(response: 0.5, dampingFraction: 0.7), value: dragOffset)
+            .animation(.easeInOut(duration: 0.2), value: isProcessingAction)
     }
     
     private func handleDragEnd(value: DragGesture.Value) {

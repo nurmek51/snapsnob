@@ -33,9 +33,6 @@ struct HomeView: View {
     @State private var swipeCount: Int = 0
     
     // MARK: - Enhanced Animation States for Tinder-style transitions
-    @State private var cardAnimation: Animation? = nil
-    @State private var nextCardOpacity: Double = 0
-    @State private var nextCardScale: CGFloat = 0.85
     @State private var backgroundCards: [Photo] = []
     @State private var swipeVelocity: CGFloat = 0
     
@@ -117,6 +114,13 @@ struct HomeView: View {
     @State private var favoriteIconScale: CGFloat = 1.0
     @State private var favoriteIconRotation: Double = 0.0
     @State private var showFavoriteAnimation = false
+    
+    // Add state for action buttons animation
+    @State private var actionButtonsVisible: Bool = true
+    
+    // MARK: - Loading Animation States
+    @State private var loadingAnimationPhase: Int = 0
+    @State private var loadingAnimationTimer: Timer?
     
     // MARK: - Card Corner Radius (iPad only)
     private var cardCornerRadius: CGFloat {
@@ -352,16 +356,73 @@ struct HomeView: View {
     
     @ViewBuilder
     private var loadingView: some View {
-        VStack(spacing: 20) {
-            ProgressView()
-                .scaleEffect(1.5)
-                            Text("photo.loading".localized)
-                .font(.body)
-                .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+        VStack(spacing: DeviceInfo.shared.spacing(2.0)) {
+            // App icon/logo placeholder
+            Image(systemName: "photo.stack")
+                .font(.system(size: UIDevice.current.userInterfaceIdiom == .pad ? 80 : 60, weight: .light))
+                .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+                .opacity(0.8)
+            
+            // Loading title
+            Text("photo.loading".localized)
+                .adaptiveFont(.title)
+                .fontWeight(.semibold)
+                .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
+                .multilineTextAlignment(.center)
+            
+            // Progress section
+            VStack(spacing: DeviceInfo.shared.spacing(1.0)) {
+                // Progress bar
+                ProgressView(value: Double(photoManager.processedPhotosCount), total: Double(max(photoManager.allPhotos.count, 1)))
+                    .progressViewStyle(LinearProgressViewStyle(tint: AppColors.accent(for: themeManager.isDarkMode)))
+                    .frame(height: DeviceInfo.shared.spacing(0.4))
+                    .scaleEffect(x: 1.0, y: UIDevice.current.userInterfaceIdiom == .pad ? 1.5 : 1.2, anchor: .center)
+                
+                // Progress text
+                HStack {
+                    Text("home.photosProcessed".localized(with: photoManager.processedPhotosCount, photoManager.allPhotos.count))
+                        .adaptiveFont(.caption)
+                        .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                    
+                    Spacer()
+                    
+                    // Percentage
+                    Text("\(Int((Double(photoManager.processedPhotosCount) / Double(max(photoManager.allPhotos.count, 1))) * 100))%")
+                        .adaptiveFont(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+                }
+                .padding(.horizontal, DeviceInfo.shared.spacing(0.5))
+            }
+            .frame(maxWidth: UIDevice.current.userInterfaceIdiom == .pad ? 400 : 280)
+            .padding(.horizontal, DeviceInfo.shared.spacing(1.0))
+            
+            // Loading animation dots
+            HStack(spacing: DeviceInfo.shared.spacing(0.3)) {
+                ForEach(0..<3, id: \.self) { index in
+                    Circle()
+                        .fill(AppColors.accent(for: themeManager.isDarkMode))
+                        .frame(width: UIDevice.current.userInterfaceIdiom == .pad ? 12 : 8, height: UIDevice.current.userInterfaceIdiom == .pad ? 12 : 8)
+                        .scaleEffect(loadingDotScale(for: index))
+                        .opacity(loadingDotOpacity(for: index))
+                        .animation(
+                            .easeInOut(duration: 1.2)
+                            .repeatForever(autoreverses: false)
+                            .delay(Double(index) * 0.2),
+                            value: loadingAnimationPhase
+                        )
+                }
+            }
+            .padding(.top, DeviceInfo.shared.spacing(1.0))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(AppColors.background(for: themeManager.isDarkMode))
         .onAppear {
             print("📱 HomeView loading photos...")
+            startLoadingAnimation()
+        }
+        .onDisappear {
+            stopLoadingAnimation()
         }
     }
     
@@ -560,10 +621,6 @@ struct HomeView: View {
         .offset(x: dragOffset.width + idleOffset, y: dragOffset.height)
         .scaleEffect(photoScale)
         .opacity(photoOpacity)
-        .animation(cardAnimation, value: dragOffset)
-        .animation(cardAnimation, value: dragRotation)
-        .animation(cardAnimation, value: photoScale)
-        .animation(cardAnimation, value: photoOpacity)
         .gesture(swipeGesture)
         .highPriorityGesture(doubleTapGesture)
         .onTapGesture { if !isProcessingAction { handleTap(photo: photo) } }
@@ -666,6 +723,9 @@ struct HomeView: View {
                 keepButton
             }
             .padding(.bottom, DeviceInfo.shared.screenSize.horizontalPadding * 2)
+            .scaleEffect(actionButtonsVisible ? 1.0 : 0.85)
+            .opacity(actionButtonsVisible ? 1.0 : 0.0)
+            .animation(.spring(response: 0.45, dampingFraction: 0.8), value: actionButtonsVisible)
         }
     }
     
@@ -714,14 +774,12 @@ struct HomeView: View {
                     // Cancel any pending idle bounce while user is interacting
                     idleBounceWorkItem?.cancel()
                     
-                    // Smooth real-time updates
-                    withAnimation(.interactiveSpring(response: 0.15, dampingFraction: 1)) {
-                        dragOffset = value.translation
-                        // More responsive rotation with velocity consideration
-                        let velocity = value.velocity.width
-                        dragRotation = Double(value.translation.width / 20) + Double(velocity / 500)
-                        dragRotation = max(-45, min(45, dragRotation)) // Clamp rotation
-                    }
+                    // Direct updates for smooth dragging
+                    dragOffset = value.translation
+                    // More responsive rotation with velocity consideration
+                    let velocity = value.velocity.width
+                    dragRotation = Double(value.translation.width / 20) + Double(velocity / 500)
+                    dragRotation = max(-45, min(45, dragRotation)) // Clamp rotation
                     
                     // Track velocity for physics-based animations
                     swipeVelocity = value.velocity.width
@@ -939,6 +997,7 @@ struct HomeView: View {
         withAnimation(AppAnimations.cardTransition) {
             photoOpacity = 0
             photoScale = 0.95
+            actionButtonsVisible = false // Hide buttons with outgoing card
         }
 
         // 2️⃣ After the fade-out completes, swap the data & prepare next card
@@ -966,10 +1025,15 @@ struct HomeView: View {
             swipeCount += 1
             if swipeCount % 10 == 0 { cleanupMemory() }
 
-            // 3️⃣ Fade the new card in smoothly
-            withAnimation(AppAnimations.smoothEntrance) {
-                photoOpacity = 1.0
-                photoScale = 1.0
+            // 3️⃣ Instantly show the new card, no animation or bounce
+            photoOpacity = 1.0
+            photoScale = 1.0
+            actionButtonsVisible = false // Start hidden
+            // Animate buttons in after a short delay for polish
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+                    actionButtonsVisible = true
+                }
             }
 
             // Finish transition & re-enable interactions
@@ -1170,9 +1234,10 @@ struct HomeView: View {
             }
         } else {
             // Snap back with spring physics
-            cardAnimation = snapBackSpringAnimation
-            dragOffset = .zero
-            dragRotation = 0
+            withAnimation(snapBackSpringAnimation) {
+                dragOffset = .zero
+                dragRotation = 0
+            }
             
             // Restart idle bounce timer after user cancels swipe
             scheduleIdleBounce()
@@ -1200,16 +1265,16 @@ struct HomeView: View {
         }
         
         // Use physics-based spring animation
-        cardAnimation = swipeSpringAnimation
-        dragOffset = targetOffset
-        dragRotation = targetRotation
-        photoOpacity = 0
-        photoScale = 0.8
+        withAnimation(swipeSpringAnimation) {
+            dragOffset = targetOffset
+            dragRotation = targetRotation
+            photoOpacity = 0
+            photoScale = 0.8
+        }
         
         // Advance to next photo with precisely timed delay to prevent flash
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             // Reset all states
-            self.cardAnimation = nil
             self.dragOffset = .zero
             self.dragRotation = 0
             self.swipeVelocity = 0
@@ -1322,16 +1387,43 @@ struct HomeView: View {
             "photo_id": photoID
         ])
     }
-}
 
-// MARK: - Supporting Types
+    // MARK: - Loading Animation Helpers
+    
+    private func startLoadingAnimation() {
+        loadingAnimationTimer?.invalidate()
+        loadingAnimationTimer = Timer.scheduledTimer(withTimeInterval: 1.2, repeats: true) { _ in
+            withAnimation(.easeInOut(duration: 0.6)) {
+                loadingAnimationPhase += 1
+            }
+        }
+    }
+    
+    private func stopLoadingAnimation() {
+        loadingAnimationTimer?.invalidate()
+        loadingAnimationTimer = nil
+    }
+    
+    private func loadingDotScale(for index: Int) -> CGFloat {
+        let phase = loadingAnimationPhase % 3
+        return phase == index ? 1.3 : 0.8
+    }
+    
+    private func loadingDotOpacity(for index: Int) -> Double {
+        let phase = loadingAnimationPhase % 3
+        return phase == index ? 1.0 : 0.4
+    }
+    
+    // MARK: - Supporting Types
 
-enum SwipeDirection {
-    case left, right, down
-}
+    enum SwipeDirection {
+        case left, right, down
+    }
 
-// Components have been moved to CommonUIComponents.swift
+    // Components have been moved to CommonUIComponents.swift
 
-#Preview {
-    HomeView()
+    // Remove or comment out the #Preview macro to fix circular reference error
+    // #Preview {
+    //     HomeView()
+    // }
 }

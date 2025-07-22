@@ -79,7 +79,7 @@ struct AIAnalysisView: View {
     }
     
     private func getDuplicateGroupType(for photos: [Photo]) -> String {
-        guard !photos.isEmpty else { return "Дубликаты" }
+        guard !photos.isEmpty else { return "ai.duplicates".localized }
         
         // Анализируем тип дубликатов
         let assets = photos.map { $0.asset }
@@ -95,12 +95,12 @@ struct AIAnalysisView: View {
             let hasImportedPhotos = assets.contains { $0.sourceType == .typeUserLibrary }
             
             if hasImportedPhotos {
-                return "Скачанные дубликаты"
+                return "duplicates.downloadedDuplicates".localized
             } else {
-                return "Точные дубликаты"
+                return "duplicates.burstDuplicates".localized
             }
         } else {
-            return "Похожие фото"
+            return "duplicates.similarPhotos".localized
         }
     }
     
@@ -119,7 +119,13 @@ struct AIAnalysisView: View {
 
     @ViewBuilder
     private var categoriesSection: some View {
-        if !visionCategories.isEmpty {
+        if aiAnalysisManager.isAnalyzing {
+            // Show shimmer placeholder grid while analyzing
+            VStack(alignment: .leading, spacing: DeviceInfo.shared.spacing(0.8)) {
+                categoryHeader
+                shimmerCategoryGrid
+            }
+        } else if !visionCategories.isEmpty {
             VStack(alignment: .leading, spacing: DeviceInfo.shared.spacing(0.8)) {
                 categoryHeader
                 categoryGrid
@@ -135,22 +141,39 @@ struct AIAnalysisView: View {
 
     // MARK: - Smaller UI components
     private var analyzingStatusView: some View {
-        VStack(spacing: DeviceInfo.shared.spacing(0.6)) {
+        VStack(spacing: DeviceInfo.shared.spacing(1.2)) {
             analyzingHeader
             analyzingProgress
         }
-        .adaptivePadding(1.2)
+        .adaptivePadding(2.0) // Increased padding for larger container
         .background(statusBackground)
     }
 
     private var readyToAnalyzeView: some View {
         VStack(spacing: DeviceInfo.shared.spacing(0.8)) {
             readyHeader
-            // Кнопка запуска анализа больше не нужна, анализ запускается автоматически
-            // startAnalyzeButton
+            reanalyzeButton
         }
-        .adaptivePadding(1.2)
+        .adaptivePadding(2.0) // Increased padding for larger container
         .background(statusBackground)
+    }
+
+    private var reanalyzeButton: some View {
+        Button(action: { aiAnalysisManager.forceReanalyze() }) {
+            HStack(spacing: 8) {
+                Image(systemName: "arrow.clockwise")
+                    .font(.system(size: 17, weight: .semibold))
+                Text("analysis.reanalyze".localized)
+                    .font(.system(size: 17, weight: .semibold))
+            }
+            .foregroundColor(themeManager.isDarkMode ? .black : .white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(themeManager.isDarkMode ? Color.white : AppColors.accent(for: false))
+            .clipShape(RoundedRectangle(cornerRadius: DeviceInfo.shared.screenSize.cornerRadius))
+            .shadow(color: AppColors.shadow(for: themeManager.isDarkMode).opacity(0.15), radius: 4, x: 0, y: 2)
+        }
+        .padding(.top, DeviceInfo.shared.spacing(1.0))
     }
 
     private var analyzingHeader: some View {
@@ -172,17 +195,18 @@ struct AIAnalysisView: View {
     }
 
     private var analyzingProgress: some View {
-        VStack(spacing: DeviceInfo.shared.spacing(0.3)) {
+        VStack(spacing: DeviceInfo.shared.spacing(0.6)) {
             ProgressView(value: aiAnalysisManager.analysisProgress)
                 .progressViewStyle(LinearProgressViewStyle(tint: AppColors.accent(for: themeManager.isDarkMode)))
-                .scaleEffect(y: 2)
+                .scaleEffect(x: 1, y: 4) // Make progress bar much thicker
+                .frame(height: 24)
             HStack {
                 Text("analysis.percentComplete".localized(with: Int(aiAnalysisManager.analysisProgress * 100)))
-                    .adaptiveFont(.caption)
+                    .adaptiveFont(.title) // Use .title instead of .title3
                     .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                 Spacer()
                 Text(aiAnalysisManager.cacheStatus)
-                    .adaptiveFont(.caption)
+                    .adaptiveFont(.body)
                     .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
             }
         }
@@ -265,18 +289,28 @@ struct AIAnalysisView: View {
     private var categoryGrid: some View {
         LazyVGrid(columns: categoryGridColumns, spacing: DeviceInfo.shared.screenSize.gridSpacing) {
             ForEach(visionCategories) { category in
-                Button {
+                CategoryResultCard(category: category) {
                     if let pc = PhotoCategory(rawValue: category.name) {
                         withAnimation(AppAnimations.modal) {
                             selectedCategory = pc
                         }
                     }
-                } label: {
-                    CategoryResultCard(category: category)
-                        .environmentObject(themeManager)
                 }
-                .buttonStyle(PlainButtonStyle())
+                .environmentObject(themeManager)
                 .id(category.id)
+            }
+        }
+        .padding(.horizontal, DeviceInfo.shared.screenSize.horizontalPadding)
+    }
+
+    // Shimmer placeholder grid for loading state
+    private var shimmerCategoryGrid: some View {
+        let placeholderCount = 4 // or 6 for more shimmer cards
+        let columns = categoryGridColumns
+        return LazyVGrid(columns: columns, spacing: DeviceInfo.shared.screenSize.gridSpacing) {
+            ForEach(0..<placeholderCount, id: \.self) { _ in
+                ShimmerCategoryCard()
+                    .environmentObject(themeManager)
             }
         }
         .padding(.horizontal, DeviceInfo.shared.screenSize.horizontalPadding)
@@ -315,7 +349,7 @@ struct AIAnalysisView: View {
                         Image(systemName: "xmark")
                     }
                     .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
-                    .accessibilityLabel("Закрыть")
+                    .accessibilityLabel("action.close".localized)
                 }
 
                 // Duplicates access on the right (always visible)
@@ -323,21 +357,28 @@ struct AIAnalysisView: View {
                     Button {
                         showingDuplicates = true
                     } label: {
-                        ZStack(alignment: .topTrailing) {
-                            Image(systemName: "doc.on.doc")
+                        HStack(spacing: 8) {
+                            // Remove the icon, keep only the badge if present
                             if aiAnalysisManager.duplicateGroups.count > 0 {
                                 Text("\(aiAnalysisManager.duplicateGroups.count)")
-                                    .font(.system(size: 9))
+                                    .font(.system(size: 12, weight: .bold))
                                     .padding(4)
-                                    .background(Color.orange)
+                                    .background(Color.red)
                                     .foregroundColor(.white)
                                     .clipShape(Circle())
-                                    .offset(x: 8, y: -6)
+                                    .offset(x: 0, y: -8)
                             }
+                            Text("analysis.duplicates".localized)
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                         }
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 14)
+                        .background(AppColors.cardBackground(for: themeManager.isDarkMode))
+                        .clipShape(Capsule())
+                        .shadow(color: AppColors.shadow(for: themeManager.isDarkMode).opacity(0.10), radius: 2, x: 0, y: 1)
                     }
-                    .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
-                    .accessibilityLabel("Дубликаты")
+                    .accessibilityLabel("analysis.duplicates".localized)
                 }
             }
         }
@@ -356,7 +397,6 @@ struct AIAnalysisView: View {
             }
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
-            .interactiveDismissDisabled()
         }
         .background(AppColors.background(for: themeManager.isDarkMode).ignoresSafeArea())
         .onAppear {
@@ -371,7 +411,7 @@ struct AIAnalysisView: View {
     private var enhancedAnalysisStatusView: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("AI Analysis Status")
+                Text("analysis.title".localized)
                     .font(.headline)
                     .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                 
@@ -397,7 +437,7 @@ struct AIAnalysisView: View {
                 // Progress bar with detailed info
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
-                        Text("Progress: \(Int(status.progress * 100))%")
+                        Text("analysis.progress".localized + ": \(Int(status.progress * 100))%")
                             .font(.caption)
                             .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                         
@@ -418,7 +458,7 @@ struct AIAnalysisView: View {
                 // Performance metrics
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Processed")
+                        Text("analysis.processed".localized)
                             .font(.caption2)
                             .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                         Text("\(status.photosProcessed)")
@@ -429,7 +469,7 @@ struct AIAnalysisView: View {
                     Spacer()
                     
                     VStack(alignment: .center, spacing: 2) {
-                        Text("Classified")
+                        Text("analysis.categories".localized)
                             .font(.caption2)
                             .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                         Text("\(status.classificationsFound)")
@@ -440,7 +480,7 @@ struct AIAnalysisView: View {
                     Spacer()
                     
                     VStack(alignment: .trailing, spacing: 2) {
-                        Text("Speed")
+                        Text("analysis.speed".localized)
                             .font(.caption2)
                             .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                         Text(status.throughput)
@@ -455,7 +495,7 @@ struct AIAnalysisView: View {
                         .fill(status.isRunning ? Color.green : Color.gray)
                         .frame(width: 6, height: 6)
                     
-                    Text("Mode: \(status.currentMode)")
+                    Text("analysis.mode".localized + ": \(status.currentMode)")
                         .font(.caption2)
                         .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                 }
@@ -516,7 +556,7 @@ struct VisionCategoriesView: View {
                             .font(.title3)
                             .fontWeight(.medium)
                         
-                        Text("Запустите анализ для категоризации фотографий")
+                        Text("common.startAnalysisPrompt".localized)
                             .font(.body)
                             .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                             .multilineTextAlignment(.center)
@@ -736,96 +776,207 @@ struct VisionCategoryPhotosView: View {
 struct CategoryResultCard: View {
     @EnvironmentObject var themeManager: ThemeManager
     let category: VisionCategory
+    let onTap: () -> Void
+    @State private var isPressed = false
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Thumbnail grid (showing up to 4 photos)
-            Group {
-                if category.photos.count == 1 {
-                    // Single photo
-                    PhotoImageView(
-                        photo: category.photos[0].photo,
-                        targetSize: CGSize(width: 200, height: 200)
-                    )
-                    .aspectRatio(1, contentMode: .fill)
-                    .clipped()
-                } else if category.photos.count >= 2 {
-                    // Grid of photos
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 1), count: 2), spacing: 1) {
-                        ForEach(Array(category.photos.prefix(4).enumerated()), id: \.offset) { index, visionPhoto in
+        Button(action: {
+            print("🎯 Category result card tapped: \(category.name)")
+            onTap()
+        }) {
+            VStack(spacing: 0) {
+                // Cover Image with rounded top corners (stretches full card width)
+                Group {
+                    GeometryReader { geo in
+                        if category.photos.count == 1 {
+                            // Single photo
                             PhotoImageView(
-                                photo: visionPhoto.photo,
-                                targetSize: CGSize(width: 100, height: 100)
+                                photo: category.photos[0].photo,
+                                targetSize: CGSize(width: geo.size.width * UIScreen.main.scale,
+                                                   height: geo.size.height * UIScreen.main.scale)
                             )
-                            .aspectRatio(1, contentMode: .fill)
+                            .frame(width: geo.size.width, height: geo.size.height)
                             .clipped()
+                        } else if category.photos.count >= 2 {
+                            // Grid of photos
+                            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 1), count: 2), spacing: 1) {
+                                ForEach(Array(category.photos.prefix(4).enumerated()), id: \.offset) { index, visionPhoto in
+                                    PhotoImageView(
+                                        photo: visionPhoto.photo,
+                                        targetSize: CGSize(width: geo.size.width * UIScreen.main.scale / 2,
+                                                           height: geo.size.height * UIScreen.main.scale / 2)
+                                    )
+                                    .frame(width: geo.size.width / 2, height: geo.size.height / 2)
+                                    .clipped()
+                                }
+                            }
+                            .frame(width: geo.size.width, height: geo.size.height)
+                        } else {
+                            // Fallback placeholder
+                            Rectangle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [AppColors.secondaryBackground(for: themeManager.isDarkMode), AppColors.secondaryBackground(for: themeManager.isDarkMode).opacity(0.5)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .overlay(
+                                    Image(systemName: "photo")
+                                        .font(.system(size: DeviceInfo.shared.screenSize.fontSize.title * 1.8))
+                                        .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                                 )
+                                .frame(width: geo.size.width, height: geo.size.height)
                         }
                     }
-                } else {
-                    // Fallback placeholder
-                    Rectangle()
-                        .fill(AppColors.secondaryBackground(for: themeManager.isDarkMode))
-                        .aspectRatio(1, contentMode: .fill)
-                        .overlay(
-                            Image(systemName: "photo")
-                                .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                        )
+                    // 16:9 aspect ratio aligns with categories view visual language
+                    .aspectRatio(16.0/9.0, contentMode: .fit)
                 }
-            }
-            .frame(height: 120)
-            .clipShape(
-                .rect(
-                    topLeadingRadius: DeviceInfo.shared.screenSize.cornerRadius,
-                    bottomLeadingRadius: 0,
-                    bottomTrailingRadius: 0,
-                    topTrailingRadius: DeviceInfo.shared.screenSize.cornerRadius
+                .clipShape(
+                    .rect(
+                        topLeadingRadius: DeviceInfo.shared.screenSize.cornerRadius,
+                        bottomLeadingRadius: 0,
+                        bottomTrailingRadius: 0,
+                        topTrailingRadius: DeviceInfo.shared.screenSize.cornerRadius
+                    )
                 )
-            )
-            
-            // Category info
-            VStack(spacing: DeviceInfo.shared.spacing(0.3)) {
-                HStack {
-                    VStack(alignment: .leading, spacing: DeviceInfo.shared.spacing(0.1)) {
-                        Text(category.name)
-                            .adaptiveFont(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
-                            .lineLimit(1)
+                
+                // Content Section with rounded bottom corners
+                VStack(spacing: DeviceInfo.shared.spacing(0.3)) {
+                    HStack(spacing: DeviceInfo.shared.spacing(0.6)) {
+                        // Icon
+                        ZStack {
+                            Circle()
+                                .fill(AppColors.secondaryBackground(for: themeManager.isDarkMode))
+                                .frame(width: DeviceInfo.shared.spacing(1.8), 
+                                     height: DeviceInfo.shared.spacing(1.8))
+                            
+                            Image(systemName: "brain.head.profile")
+                                .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                                .font(.system(size: DeviceInfo.shared.screenSize.fontSize.caption * 1.4, weight: .semibold))
+                        }
                         
-                        Text("\(category.totalCount) фото")
-                            .font(.system(size: DeviceInfo.shared.screenSize.fontSize.caption * 0.9))
-                            .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                        // Title and Count
+                        VStack(alignment: .leading, spacing: DeviceInfo.shared.spacing(0.1)) {
+                            Text(category.name)
+                                .adaptiveFont(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
+                                .lineLimit(2)
+                            
+                            Text("common.photosCount".localized(with: category.totalCount))
+                                .font(.system(size: DeviceInfo.shared.screenSize.fontSize.caption * 0.9))
+                                .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                        }
+                        
+                        Spacer()
+                        
+                        // Confidence indicator
+                        if let firstPhoto = category.photos.first {
+                            Text("\(firstPhoto.confidence)%")
+                                .font(.system(size: DeviceInfo.shared.screenSize.fontSize.caption * 0.8))
+                                .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
+                                .padding(.horizontal, DeviceInfo.shared.spacing(0.4))
+                                .padding(.vertical, DeviceInfo.shared.spacing(0.2))
+                                .background(AppColors.accent(for: themeManager.isDarkMode).opacity(0.1))
+                                .clipShape(Capsule())
+                        }
                     }
-                    
+                }
+                .padding(DeviceInfo.shared.spacing(0.8))
+                .background(
+                    RoundedRectangle(cornerRadius: DeviceInfo.shared.screenSize.cornerRadius)
+                        .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
+                        .clipShape(
+                            .rect(
+                                topLeadingRadius: 0,
+                                bottomLeadingRadius: DeviceInfo.shared.screenSize.cornerRadius,
+                                bottomTrailingRadius: DeviceInfo.shared.screenSize.cornerRadius,
+                                topTrailingRadius: 0
+                            )
+                        )
+                )
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+        .background(
+            RoundedRectangle(cornerRadius: DeviceInfo.shared.screenSize.cornerRadius)
+                .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
+                .shadow(
+                    color: AppColors.shadow(for: themeManager.isDarkMode),
+                    radius: isPressed ? 4 : 8,
+                    x: 0,
+                    y: isPressed ? 2 : 4
+                )
+        )
+        .scaleEffect(isPressed ? 0.98 : 1.0)
+        .animation(.easeInOut(duration: 0.15), value: isPressed)
+        .onLongPressGesture(minimumDuration: 0) {
+            // Handle press completion
+        } onPressingChanged: { pressing in
+            isPressed = pressing
+        }
+    }
+}
+
+// MARK: - Shimmer Category Card
+private struct ShimmerCategoryCard: View {
+    @EnvironmentObject var themeManager: ThemeManager
+    var body: some View {
+        VStack(spacing: 0) {
+            // Static placeholder cover with photo icon
+            Rectangle()
+                .fill(AppColors.secondaryBackground(for: themeManager.isDarkMode))
+                .frame(height: 90)
+                .overlay(
+                    Image(systemName: "photo")
+                        .font(.system(size: 36))
+                        .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode).opacity(0.3))
+                )
+                .clipShape(
+                    .rect(
+                        topLeadingRadius: DeviceInfo.shared.screenSize.cornerRadius,
+                        bottomLeadingRadius: 0,
+                        bottomTrailingRadius: 0,
+                        topTrailingRadius: DeviceInfo.shared.screenSize.cornerRadius
+                    )
+                )
+            VStack(spacing: DeviceInfo.shared.spacing(0.3)) {
+                HStack(spacing: DeviceInfo.shared.spacing(0.6)) {
+                    ZStack {
+                        Circle()
+                            .fill(AppColors.secondaryBackground(for: themeManager.isDarkMode))
+                            .frame(width: DeviceInfo.shared.spacing(1.8), height: DeviceInfo.shared.spacing(1.8))
+                        Image(systemName: "brain.head.profile")
+                            .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode).opacity(0.1))
+                            .font(.system(size: DeviceInfo.shared.screenSize.fontSize.caption * 1.4, weight: .semibold))
+                    }
                     Spacer()
-                    
-                    // Confidence indicator
-                    if let firstPhoto = category.photos.first {
-                        Text("\(firstPhoto.confidence)%")
-                            .font(.system(size: DeviceInfo.shared.screenSize.fontSize.caption * 0.8))
-                            .foregroundColor(AppColors.accent(for: themeManager.isDarkMode))
-                            .padding(.horizontal, DeviceInfo.shared.spacing(0.4))
-                            .padding(.vertical, DeviceInfo.shared.spacing(0.2))
-                            .background(AppColors.accent(for: themeManager.isDarkMode).opacity(0.1))
-                            .clipShape(Capsule())
-                    }
                 }
             }
             .padding(DeviceInfo.shared.spacing(0.8))
-            .background(AppColors.cardBackground(for: themeManager.isDarkMode))
-            .clipShape(
-                .rect(
-                    topLeadingRadius: 0,
-                    bottomLeadingRadius: DeviceInfo.shared.screenSize.cornerRadius,
-                    bottomTrailingRadius: DeviceInfo.shared.screenSize.cornerRadius,
-                    topTrailingRadius: 0
-                )
+            .background(
+                RoundedRectangle(cornerRadius: DeviceInfo.shared.screenSize.cornerRadius)
+                    .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
+                    .clipShape(
+                        .rect(
+                            topLeadingRadius: 0,
+                            bottomLeadingRadius: DeviceInfo.shared.screenSize.cornerRadius,
+                            bottomTrailingRadius: DeviceInfo.shared.screenSize.cornerRadius,
+                            topTrailingRadius: 0
+                        )
+                    )
             )
         }
         .background(
             RoundedRectangle(cornerRadius: DeviceInfo.shared.screenSize.cornerRadius)
                 .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
-                .shadow(color: AppColors.shadow(for: themeManager.isDarkMode), radius: 8, x: 0, y: 2)
+                .shadow(
+                    color: AppColors.shadow(for: themeManager.isDarkMode),
+                    radius: 8,
+                    x: 0,
+                    y: 4
+                )
         )
     }
 }

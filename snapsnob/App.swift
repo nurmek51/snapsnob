@@ -92,7 +92,7 @@ struct SplashView: View {
                         value: isAnimating
                     )
                 
-                Text("Loading...")
+                Text("general.loading".localized)
                     .font(.headline)
                     .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
             }

@@ -1,0 +1,236 @@
+/* Navigation */
+"navigation.home" = "Басты бет";
+"navigation.categories" = "Санаттар";
+"navigation.favorites" = "Таңдаулылар";
+"navigation.trash" = "Себет";
+
+/* Home Screen */
+"home.photoSeries" = "Фото сериялары";
+"home.photosProcessed" = "%d/%d фото өңделді";
+"home.noSinglePhotos" = "Жалғыз фото жоқ";
+"home.allPhotosInSeries" = "Барлық фотоңыз серия бөлігінде";
+"home.noMorePhotos" = "Басқа фото жоқ";
+
+/* Actions */
+"action.keep" = "Сақтау";
+"action.delete" = "Жою";
+"action.restore" = "Қайтару";
+"action.cancel" = "Болдырмау";
+"action.close" = "Жабу";
+"action.done" = "Дайын";
+"action.openSettings" = "Параметрлерді ашу";
+"action.retry" = "Қайталау";
+
+/* Photo Access */
+"photo.accessDenied" = "Фотоларға рұқсат жоқ";
+"photo.allowAccess" = "Параметрлерде фотоға кіруге рұқсат беріңіз";
+"photo.loading" = "Фотолар жүктелуде...";
+"photo.errorLoading" = "Жүктеу қатесі";
+"photo.unavailable" = "Фото қолжетімсіз";
+"photo.accessRequiredMessage" = "Қосымшаның жұмыс істеу үшін фотоға рұқсат қажет. Жүйелік параметрлерде фотоларға рұқсат беріңіз.";
+"photo.loadingImage" = "Фото жүктелуде...";
+"photo.failedToLoadImage" = "Фотолар жүктеу сәтсіз өтті";
+"photo.checkConnection" = "Интернет байланысыңызды тексеріңіз";
+"photo.tryAgain" = "Қайталау";
+"photo.unknownError" = "Белгісіз қате";
+"photo.loading2" = "Жүктелуде...";
+
+/* AI Analysis */
+"ai.visionAnalysis" = "Apple Vision талдауы";
+"ai.analyzing" = "Талдау...";
+"ai.analyzingPhotos" = "%d фотолар талдауда...";
+"ai.categoriesVision" = "Vision санаттары";
+"ai.duplicates" = "Көшірмелер";
+"ai.noDuplicatesFound" = "Көшірме табылмады";
+"ai.noDuplicatingPhotos" = "Сізде көшірме фото жоқ";
+"ai.analyzePhotos" = "Apple Vision арқылы фото талдау";
+"ai.maximumAccuracy" = "Максималды дәлдік пен сапа";
+
+/* Duplicates */
+"duplicates.title" = "Көшірме фотолар";
+"duplicates.groups" = "Көшірме топтары";
+"duplicates.canDelete" = "Жоюға болады";
+"duplicates.willFree" = "Босайды";
+"duplicates.deleteAll" = "Барлық көшірмелерді жою";
+"duplicates.freeSpace" = "%@ кеңістігін босату";
+"duplicates.confirmDelete" = "Көшірмелерді жою керек пе?";
+"duplicates.deleteMessage" = "%d көшірме жойылады. %@ кеңістігі босатылады. Түпнұсқалар сақталады.";
+"duplicates.downloadedDuplicates" = "Жүктелген көшірмелер";
+"duplicates.burstDuplicates" = "Жарылыс көшірмелері";
+"duplicates.similarPhotos" = "Ұқсас фотолар";
+"duplicates.deletionProgress" = "Көшірмелер жойылуда...";
+"duplicates.deletionComplete" = "Жою аяқталды";
+"duplicates.noDuplicatesFound" = "Көшірме табылмады";
+"duplicates.excellentWork" = "Тамаша жұмыс! Сіздің галлереянызда көшірме фото жоқ.";
+"duplicates.deletingDuplicates" = "Көшірмелер жойылуда...";
+"duplicates.percentComplete" = "%d%% аяқталды";
+"duplicates.deletedSuccessfully" = "Көшірмелер сәтті жойылды!";
+"duplicates.freeUp" = "Босату";
+
+/* Themes */
+"theme.system" = "Жүйе";
+"theme.light" = "Жарық";
+"theme.dark" = "Қараңғы";
+"theme.choose" = "Жүйе түсін таңдау";
+"theme.description" = "Түсті бүкіл қосымшаға қолданылады";
+"theme.systemDescription" = "Жүйелік параметрлерді ұстану";
+"theme.lightDescription" = "Әрқашан жарық түс";
+"theme.darkDescription" = "Әрқашан қараңғы түс";
+
+/* Categories */
+"category.allPhotos" = "Барлық фотолар";
+"category.viewMode" = "Көру режимі";
+"category.swipeMode" = "Свайп режимі";
+"category.normalMode" = "Қалыпты режим";
+"category.albums" = "Альбомдар";
+"category.categoriesNotFound" = "Санаттар табылмады";
+"category.foundCategories" = "Табылған санаттар";
+"category.tryAnalysisAgain" = "Талдауды қайталау немесе параметрлерді тексеру";
+
+/* Trash */
+"trash.empty" = "Себет бос";
+"trash.emptyDescription" = "Жойылған фотолар мұнда пайда болады";
+"trash.clearAll" = "Барлығын тазалау";
+"trash.clearAllConfirm" = "Себетті тазалау керек пе?";
+"trash.clearAllMessage" = "Себеттегі барлық фотолар мәңгі жойылады. Бұл әрекетті кері қайтаруға болмайды.";
+"trash.titleWithCount" = "Себет (%d)";
+"trash.clear" = "Тазалау";
+"trash.deleteAll" = "Барлығын жою";
+"trash.clearTrashConfirm" = "Себетті тазалау";
+"trash.confirmPermanentDelete" = "Себеттен барлық фотоларды жоюға сенімдісіз бе? Бұл әрекетті кері қайтаруға болмайды.";
+
+/* Favorites */
+"favorites.title" = "Таңдаулылар";
+"favorites.empty" = "Таңдаулы жоқ";
+"favorites.emptyDescription" = "Таңдаулы деп белгілеген фотолар мұнда пайда болады";
+
+/* Album Detail */
+"album.select" = "Таңдау";
+"album.selectAll" = "Барлығын таңдау";
+
+/* Settings */
+"settings.title" = "Параметрлер";
+"settings.language" = "Тіл";
+"settings.theme" = "Қосымшаның түсі";
+"settings.about" = "Туралы";
+"settings.version" = "Нұсқа";
+
+/* Language Settings */
+"language.title" = "Тіл";
+"language.system" = "Жүйелік тіл";
+"language.current" = "Ағымдағы: %@";
+"language.developerOverride" = "Әзірлеушінің өзгертуі";
+"language.clearOverride" = "Өзгертуді тазалау";
+"language.resetToSystem" = "Жүйеге қайтару";
+
+/* General */
+"general.loading" = "Жүктелуде...";
+"general.error" = "Қате";
+"general.success" = "Сәтті";
+"general.warning" = "Ескерту";
+"general.info" = "Ақпарат";
+
+/* Photo Categories */
+"photoCategory.people" = "Адамдар";
+"photoCategory.animals" = "Жануарлар";
+"photoCategory.nature" = "Табиғат";
+"photoCategory.food" = "Тамақ";
+"photoCategory.vehicles" = "Көліктер";
+"photoCategory.buildings" = "Ғимараттар";
+"photoCategory.objects" = "Заттар";
+"photoCategory.documents" = "Құжаттар";
+"photoCategory.screenshots" = "Скриншоттар";
+"photoCategory.selfies" = "Селфи";
+"photoCategory.landscapes" = "Ландшафттар";
+"photoCategory.other" = "Басқа";
+
+/* Analysis Progress */
+"analysis.progress" = "Талдау прогрессі";
+"analysis.complete" = "Талдау аяқталды";
+"analysis.failed" = "Талдау сәтсіз";
+"analysis.categories" = "Санаттар";
+"analysis.processed" = "өңделді";
+"analysis.title" = "Фото талдауы";
+"analysis.usingVision" = "Санаттау үшін Apple Vision қолданылуда";
+"analysis.percentComplete" = "%d%% аяқталды";
+"analysis.readyToAnalyze" = "Талдауға дайын";
+"analysis.reanalyze" = "Қайта талдау";
+"analysis.photosInGallery" = "Галереяда %d фото";
+"analysis.startAnalysis" = "Талдауды бастау";
+"analysis.runAnalysisPrompt" = "Фотоларды санаттау үшін талдауды жүргізу";
+"analysis.noDuplicatesFound2" = "Көшірме табылмады";
+"analysis.duplicates" = "Көшірмелер";
+"analysis.noDuplicatesMessage" = "Сізде көшірме фото жоқ";
+"analysis.deleteAllDuplicates2" = "Барлық көшірмелерді жою";
+"analysis.photosInGroup" = "%d фото";
+"analysis.visionTitle" = "Apple Vision талдауы";
+
+/* Common Phrases */
+"common.noData" = "Деректер жоқ";
+"common.loading" = "Жүктелуде...";
+"common.tryAgain" = "Қайталау";
+"common.refresh" = "Жаңарту";
+"common.noMorePhotos" = "Басқа фото жоқ";
+"common.totalPhotos" = "Жалпы фотолар";
+"common.categorized" = "Санатталған";
+"common.averageConfidence" = "Орташа Vision сенімділігі";
+"common.analysisComplete" = "Талдау аяқталды";
+"common.photosCategorizationComplete" = "Apple Vision арқылы фотолар санатталды";
+"common.albumsNotFound" = "Альбомдар табылмады";
+"common.startAnalysisPrompt" = "Автоматты фото санаттау үшін талдауды бастау";
+"common.photosCount" = "%d фото";
+"common.noPhotosInSeries" = "Серияда фото жоқ";
+"common.errorLoadingPhoto" = "Фото жүктеу қатесі";
+"common.toTrash" = "Себет";
+"common.keep" = "Сақтау";
+"common.photoUnavailable" = "Фото қолжетімді емес";
+
+
+/* Favorites View */
+"favorites.totalPhotos" = "Жалпы фотолар";
+"favorites.favoritesCount" = "Таңдаулылар";
+"favorites.thisWeek" = "Бұл апта";
+"favorites.bestPhotos" = "Ең жақсы";
+"favorites.normalMode" = "Қалыпты режим";
+"favorites.swipeMode" = "Свайп режимі";
+"favorites.swipeLeft" = "Жою";
+"favorites.swipeRight" = "Ең жақсы";
+"favorites.recentFavorites" = "Соңғы таңдаулылар";
+"favorites.recentSubtitle" = "Соңғы 14 күн";
+"favorites.bestOfBest" = "Ең жақсылардың ең жақсысы";
+"favorites.noFavoritesTitle" = "Таңдаулы фото жоқ";
+"favorites.noFavoritesMessage" = "Таңдаулы фотолар мұнда пайда болады";
+"favorites.photosCount" = "%d фото";
+"favorites.photoSingle" = "фото";
+"favorites.removeFromFavorites" = "Жою";
+
+/* Onboarding */
+"onboarding.skip" = "Өткізу";
+"onboarding.continue" = "Жалғастыру";
+"onboarding.grantAccess" = "Рұқсат беру";
+
+/* Toast Messages */
+"toast.photoAddedToTrash" = "1 фото себетке қосылды";
+"toast.photosAddedToTrash" = "%d фото себетке қосылды";
+
+/* Onboarding Steps */
+"onboarding.rightSwipe.title" = "Фотоларды сақтау";
+"onboarding.rightSwipe.description" = "Оңға свайп – бұл әрекет фотодан өту және оны галереяға сақтау";
+"onboarding.swipeRight.hint" = "Жалғастыру үшін оңға свайп";
+
+"onboarding.leftSwipe.title" = "Фотоларды жою";
+"onboarding.leftSwipe.description" = "Солға свайп – бұл әрекет фотодан өту және оны себетке жылжыту";
+"onboarding.swipeLeft.hint" = "Жалғастыру үшін солға свайп";
+
+"onboarding.doubleTap.title" = "Фотоларды таңдаулы ету";
+"onboarding.doubleTap.description" = "Қос түрту – фотодан өту және оны таңдаулыларға қосу";
+"onboarding.doubleTap.hint" = "Жалғастыру үшін қос түрту";
+
+"onboarding.storySeries.title" = "Фото сериясы";
+"onboarding.storySeries.description" = "Фото сериясы – ең жақсы сәтті таңдау және қалғандарын жою";
+
+"onboarding.trashBin.title" = "Себет басқаруы";
+"onboarding.trashBin.description" = "Жойылған фотоларды басқару – мәңгі жою немесе қалпына келтіру";
+
+"onboarding.privacy.title" = "Сіздің құпиялылығыңыз";
+"onboarding.privacy.description" = "Сіздің деректеріңіз құрылғыда қалады. Бұл қосымша толығымен офлайн жұмыс істейді және фотоларды ешқайда жібермейді. Дұрыс жұмыс істеу үшін галереяға кіруге рұқсат беріңіз."; 

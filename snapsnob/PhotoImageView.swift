@@ -20,13 +20,9 @@ struct PhotoImageView: View {
                     .fill(AppColors.secondaryBackground(for: themeManager.isDarkMode))
                     .frame(width: targetSize.width, height: targetSize.height)
                     .overlay(
-                        VStack(spacing: 8) {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: AppColors.secondaryText(for: themeManager.isDarkMode)))
-                            Text("photo.loading2".localized)
-                                .font(.caption)
-                                .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
-                        }
+                        Image(systemName: "photo")
+                            .font(.title2)
+                            .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode).opacity(0.3))
                     )
             } else if imageLoader.hasError {
                 Rectangle()

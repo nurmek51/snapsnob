@@ -102,13 +102,10 @@ struct FullScreenPhotoView: View {
             Color.black.opacity(max(0.0, 0.85 - min(abs(dismissOffset.height) / 120.0, 0.85))).ignoresSafeArea()
             
             if isLoading {
-                VStack(spacing: 16) {
-                    ProgressView()
-                        .tint(.white)
-                        .scaleEffect(1.5)
-                    Text("photo.loadingImage".localized)
-                        .foregroundColor(.white)
-                        .font(.headline)
+                VStack {
+                    Image(systemName: "photo")
+                        .font(.system(size: 60))
+                        .foregroundColor(.white.opacity(0.3))
                 }
                 .onAppear {
                     print("🔄 FullScreen: Showing loading state")
@@ -264,7 +261,7 @@ struct FullScreenPhotoView: View {
                                 .foregroundColor(.white)
                             
                             if photoGroup.count > 1 {
-                                Text("\(currentIndex + 1) из \(photoGroup.count)")
+                                Text("\(currentIndex + 1) " + "common.photosCount".localized(with: photoGroup.count).replacingOccurrences(of: "\(photoGroup.count) ", with: ""))
                                     .font(.caption)
                                     .foregroundColor(.white.opacity(0.7))
                             }

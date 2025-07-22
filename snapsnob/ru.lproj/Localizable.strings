@@ -162,6 +162,8 @@
 "analysis.deleteAllDuplicates2" = "Удалить все дубликаты";
 "analysis.photosInGroup" = "%d фото";
 "analysis.visionTitle" = "Анализ Apple Vision";
+"analysis.reanalyze" = "Анализировать снова";
+"analysis.duplicates" = "Дубликаты";
 
 /* Common Phrases */
 "common.noData" = "Нет данных";
@@ -205,6 +207,10 @@
 "onboarding.skip" = "Пропустить";
 "onboarding.continue" = "Продолжить";
 "onboarding.grantAccess" = "Предоставить доступ";
+
+/* Toast Messages */
+"toast.photoAddedToTrash" = "1 фото добавлено в корзину";
+"toast.photosAddedToTrash" = "%d фото добавлено в корзину";
 
 /* Onboarding Steps */
 "onboarding.rightSwipe.title" = "Оставить фото";

@@ -112,7 +112,7 @@ struct LanguageSelectorView: View {
             }
             Button("action.cancel".localized, role: .cancel) { }
         } message: {
-            Text("Select language for developer testing. This will override system language detection.")
+            Text("language.developerOverride".localized)
         }
         .id(localizationManager.currentLanguage) // Force redraw on language change
     }
@@ -197,6 +197,8 @@ struct LanguageOptionCard: View {
             return "textformat.abc"
         case .russian:
             return "textformat"
+        case .kazakh:
+            return "textformat.abc.dottedunderline"
         }
     }
 }

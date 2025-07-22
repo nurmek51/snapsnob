@@ -162,6 +162,8 @@
 "analysis.deleteAllDuplicates2" = "Delete all duplicates";
 "analysis.photosInGroup" = "%d photos";
 "analysis.visionTitle" = "Apple Vision Analysis";
+"analysis.reanalyze" = "Re-analyze";
+"analysis.duplicates" = "Duplicates";
 
 /* Common Phrases */
 "common.noData" = "No data available";
@@ -205,6 +207,10 @@
 "onboarding.skip" = "Skip";
 "onboarding.continue" = "Continue";
 "onboarding.grantAccess" = "Grant Access";
+
+/* Toast Messages */
+"toast.photoAddedToTrash" = "1 photo added to trash";
+"toast.photosAddedToTrash" = "%d photos added to trash";
 
 /* Onboarding Steps */
 "onboarding.rightSwipe.title" = "Keep Photos";

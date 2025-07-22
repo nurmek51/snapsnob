@@ -1,5 +1,10 @@
 import SwiftUI
 
+// MARK: - Shared SwipeDirection for onboarding and cards
+enum SwipeDirection {
+    case left, right, down
+}
+
 struct OnboardingView: View {
     var onFinish: (() -> Void)? = nil
     @StateObject private var onboardingManager = OnboardingManager.shared
@@ -119,7 +124,7 @@ struct OnboardingView: View {
                                         .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode).opacity(0.3))
                                 )
                                 .frame(width: storyCircleSize, height: storyCircleSize)
-                            Text("Series \(index + 1)")
+                            Text("home.photoSeries".localized + " \(index + 1)")
                                 .font(.system(size: 10))
                                 .foregroundColor(.white.opacity(0.5))
                         }
@@ -191,7 +196,7 @@ struct OnboardingView: View {
                                         .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode).opacity(0.3))
                                 )
                                 .frame(width: storyCircleSize, height: storyCircleSize)
-                            Text("Series \(index + 1)")
+                            Text("home.photoSeries".localized + " \(index + 1)")
                                 .font(.system(size: 10))
                                 .foregroundColor(.white.opacity(0.5))
                         }
@@ -538,7 +543,7 @@ struct InteractiveOnboardingCard: View {
                         Image(systemName: "photo")
                             .font(.system(size: 60))
                             .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode).opacity(0.3))
-                        Text("Sample Photo")
+                        Text("photo.unavailable".localized)
                             .font(.title2)
                             .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode).opacity(0.5))
                         Spacer()
@@ -558,9 +563,9 @@ struct InteractiveOnboardingCard: View {
                     
                     if abs(value.translation.width) > horizontalThreshold {
                         if value.translation.width < 0 {
-                            onSwipeCompleted?(.left)
+                            onSwipeCompleted?(SwipeDirection.left)
                         } else {
-                            onSwipeCompleted?(.right)
+                            onSwipeCompleted?(SwipeDirection.right)
                         }
                     }
                     

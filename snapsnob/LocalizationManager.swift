@@ -5,6 +5,7 @@ import SwiftUI
 enum SupportedLanguage: String, CaseIterable {
     case english = "en"
     case russian = "ru"
+    case kazakh = "kk"
     
     var displayName: String {
         switch self {
@@ -12,6 +13,8 @@ enum SupportedLanguage: String, CaseIterable {
             return "English"
         case .russian:
             return "Русский"
+        case .kazakh:
+            return "Қазақша"
         }
     }
     
@@ -21,6 +24,8 @@ enum SupportedLanguage: String, CaseIterable {
             return "English"
         case .russian:
             return "Русский"
+        case .kazakh:
+            return "Қазақша"
         }
     }
 }
@@ -69,6 +74,15 @@ class LocalizationManager: ObservableObject {
             
             for supportedLang in SupportedLanguage.allCases {
                 if langCode == supportedLang.rawValue {
+                    return supportedLang
+                }
+            }
+        }
+        
+        // Also check for full language codes (e.g., "kk-KZ" for Kazakh)
+        for preferredLang in preferredLanguages {
+            for supportedLang in SupportedLanguage.allCases {
+                if preferredLang.hasPrefix(supportedLang.rawValue) {
                     return supportedLang
                 }
             }

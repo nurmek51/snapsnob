@@ -80,7 +80,7 @@ struct NewDuplicatesView: View {
         VStack(spacing: 16) {
             // Title and Stats
             VStack(spacing: 12) {
-                Text("Duplicate Photos")
+                Text("duplicates.title".localized)
                     .font(UIDevice.current.userInterfaceIdiom == .pad ? .largeTitle : .title2)
                     .fontWeight(.bold)
                     .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
@@ -196,6 +196,7 @@ struct NewDuplicatesView: View {
                         groupIndex: groupIndex + 1,
                         selectedToKeep: $selectedToKeep,
                         photoManager: photoManager,
+                        aiManager: aiManager,
                         onPhotoTap: onPhotoTap
                     )
                 }
@@ -336,24 +337,28 @@ struct NewDuplicateGroupCard: View {
     let groupIndex: Int
     @Binding var selectedToKeep: Set<UUID>
     let photoManager: PhotoManager
+    let aiManager: AIAnalysisManager
     let onPhotoTap: (Photo) -> Void
     
     var body: some View {
+        // Break up complex expressions for compiler
+        let groupCountString = "(\(group.count) " + "common.photosCount".localized(with: group.count).replacingOccurrences(of: "\(group.count) ", with: "") + ")"
+        let keepDeleteString = "common.keep".localized + " 1, " + "action.delete".localized + " \(group.count - 1)"
         VStack(spacing: 16) {
             // Group Header
             HStack {
-                Text("Duplicate Group \(groupIndex)")
+                Text("duplicates.groups".localized + " \(groupIndex)")
                     .font(.headline)
                     .fontWeight(.semibold)
                     .foregroundColor(AppColors.primaryText(for: themeManager.isDarkMode))
                 
-                Text("(\(group.count) photos)")
+                Text(groupCountString)
                     .font(.caption)
                     .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
                 
                 Spacer()
                 
-                Text("Keep 1, Delete \(group.count - 1)")
+                Text(keepDeleteString)
                     .font(.caption)
                     .foregroundColor(.red)
                     .padding(.horizontal, 8)
@@ -384,6 +389,24 @@ struct NewDuplicateGroupCard: View {
                     )
                 }
             }
+            HStack(spacing: 16) {
+                Button("Keep Original, Delete Duplicates") {
+                    keepOriginalDeleteDuplicates()
+                }
+                .buttonStyle(.bordered)
+                
+                Button("Delete All") {
+                    deleteAll()
+                }
+                .buttonStyle(.bordered)
+                .tint(.red)
+                
+                Button("Apply Changes") {
+                    applyChanges()
+                }
+                .buttonStyle(.borderedProminent)
+            }
+            .padding(.top, 16)
         }
         .padding(16)
         .background(
@@ -396,20 +419,44 @@ struct NewDuplicateGroupCard: View {
         )
     }
     
-    private func toggleSelection(for photo: Photo) {
-        if selectedToKeep.contains(photo.id) {
-            // Ensure at least one photo is selected per group
-            let groupSelected = group.filter { selectedToKeep.contains($0.id) }
-            if groupSelected.count > 1 {
-                selectedToKeep.remove(photo.id)
-            }
-        } else {
-            // Remove other selections from this group and select this one
+    private func keepOriginalDeleteDuplicates() {
+        if let best = group.sorted(by: { $0.qualityScore > $1.qualityScore }).first {
             for p in group {
                 selectedToKeep.remove(p.id)
             }
+            selectedToKeep.insert(best.id)
+        }
+    }
+
+    private func deleteAll() {
+        for p in group {
+            selectedToKeep.remove(p.id)
+        }
+    }
+
+    private func applyChanges() {
+        let toDelete = group.filter { !selectedToKeep.contains($0.id) }
+        for photo in toDelete {
+            photoManager.moveToTrash(photo)
+        }
+        // Remove this group from aiManager.duplicateGroups by comparing ids
+        if let index = aiManager.duplicateGroups.firstIndex(where: { groupIdsEqual($0, group) }) {
+            aiManager.duplicateGroups.remove(at: index)
+        }
+    }
+    
+    private func toggleSelection(for photo: Photo) {
+        if selectedToKeep.contains(photo.id) {
+            selectedToKeep.remove(photo.id)
+        } else {
             selectedToKeep.insert(photo.id)
         }
+    }
+    
+    private func groupIdsEqual(_ a: [Photo], _ b: [Photo]) -> Bool {
+        let aIds = a.map { $0.id }.sorted(by: { $0.uuidString < $1.uuidString })
+        let bIds = b.map { $0.id }.sorted(by: { $0.uuidString < $1.uuidString })
+        return aIds == bIds
     }
 }
 
@@ -444,7 +491,22 @@ struct NewDuplicatePhotoCard: View {
                                     .font(.title2)
                                     .foregroundColor(.white)
                                 
-                                Text("DELETE")
+                                Text("action.delete".localized)
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.white)
+                            }
+                        )
+                } else {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(.black.opacity(0.5))
+                        .overlay(
+                            VStack {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.title2)
+                                    .foregroundColor(.white)
+                                
+                                Text("common.keep".localized)
                                     .font(.caption)
                                     .fontWeight(.bold)
                                     .foregroundColor(.white)
@@ -462,7 +524,7 @@ struct NewDuplicatePhotoCard: View {
                                     .foregroundColor(isSelected ? .green : .white)
                                     .font(.system(size: 16))
                                 
-                                Text(isSelected ? "KEEP" : "DELETE")
+                                Text(isSelected ? "common.keep".localized : "action.delete".localized)
                                     .font(.caption2)
                                     .fontWeight(.bold)
                                     .foregroundColor(isSelected ? .green : .white)
