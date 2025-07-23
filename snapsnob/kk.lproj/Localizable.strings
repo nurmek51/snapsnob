@@ -207,7 +207,7 @@
 /* Onboarding */
 "onboarding.skip" = "Өткізу";
 "onboarding.continue" = "Жалғастыру";
-"onboarding.grantAccess" = "Рұқсат беру";
+"onboarding.grantAccess" = "Жалғастыру";
 
 /* Toast Messages */
 "toast.photoAddedToTrash" = "1 фото себетке қосылды";

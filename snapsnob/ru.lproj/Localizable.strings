@@ -206,7 +206,7 @@
 /* Onboarding */
 "onboarding.skip" = "Пропустить";
 "onboarding.continue" = "Продолжить";
-"onboarding.grantAccess" = "Предоставить доступ";
+"onboarding.grantAccess" = "Продолжить";
 
 /* Toast Messages */
 "toast.photoAddedToTrash" = "1 фото добавлено в корзину";

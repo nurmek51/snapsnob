@@ -35,38 +35,6 @@
 "photo.unknownError" = "Unknown error";
 "photo.loading2" = "Loading...";
 
-/* AI Analysis */
-"ai.visionAnalysis" = "Apple Vision Analysis";
-"ai.analyzing" = "Analyzing...";
-"ai.analyzingPhotos" = "Analyzing %d photos...";
-"ai.categoriesVision" = "Vision Categories";
-"ai.duplicates" = "Duplicates";
-"ai.noDuplicatesFound" = "No duplicates found";
-"ai.noDuplicatingPhotos" = "You have no duplicate photos";
-"ai.analyzePhotos" = "Analyze photos with Apple Vision";
-"ai.maximumAccuracy" = "Maximum accuracy and quality";
-
-/* Duplicates */
-"duplicates.title" = "Duplicate Photos";
-"duplicates.groups" = "Duplicate groups";
-"duplicates.canDelete" = "Can delete";
-"duplicates.willFree" = "Will free";
-"duplicates.deleteAll" = "Delete all duplicates";
-"duplicates.freeSpace" = "Free %@ space";
-"duplicates.confirmDelete" = "Delete duplicates?";
-"duplicates.deleteMessage" = "%d duplicates will be deleted. %@ space will be freed. Originals will be preserved.";
-"duplicates.downloadedDuplicates" = "Downloaded duplicates";
-"duplicates.burstDuplicates" = "Burst duplicates";
-"duplicates.similarPhotos" = "Similar photos";
-"duplicates.deletionProgress" = "Deleting duplicates...";
-"duplicates.deletionComplete" = "Deletion complete";
-"duplicates.noDuplicatesFound" = "No duplicates found";
-"duplicates.excellentWork" = "Excellent work! You have no duplicate photos in your library.";
-"duplicates.deletingDuplicates" = "Deleting duplicates...";
-"duplicates.percentComplete" = "%d%% complete";
-"duplicates.deletedSuccessfully" = "Duplicates deleted successfully!";
-"duplicates.freeUp" = "Free up";
-
 /* Themes */
 "theme.system" = "System";
 "theme.light" = "Light";
@@ -86,6 +54,8 @@
 "category.categoriesNotFound" = "Categories not found";
 "category.foundCategories" = "Found Categories";
 "category.tryAnalysisAgain" = "Try analysis again or check settings";
+"category.noPhotos" = "No photos in category";
+"category.noPhotosDescription" = "Photos you organize into this category will appear here";
 
 /* Trash */
 "trash.empty" = "Trash is empty";
@@ -144,27 +114,6 @@
 "photoCategory.landscapes" = "Landscapes";
 "photoCategory.other" = "Other";
 
-/* Analysis Progress */
-"analysis.progress" = "Analysis Progress";
-"analysis.complete" = "Analysis Complete";
-"analysis.failed" = "Analysis Failed";
-"analysis.categories" = "categories";
-"analysis.processed" = "processed";
-"analysis.title" = "Photo Analysis";
-"analysis.usingVision" = "Using Apple Vision for categorization";
-"analysis.percentComplete" = "%d%% complete";
-"analysis.readyToAnalyze" = "Ready to analyze";
-"analysis.photosInGallery" = "%d photos in gallery";
-"analysis.startAnalysis" = "Start Analysis";
-"analysis.runAnalysisPrompt" = "Run analysis to categorize photos";
-"analysis.noDuplicatesFound2" = "No duplicates found";
-"analysis.noDuplicatesMessage" = "You have no duplicate photos";
-"analysis.deleteAllDuplicates2" = "Delete all duplicates";
-"analysis.photosInGroup" = "%d photos";
-"analysis.visionTitle" = "Apple Vision Analysis";
-"analysis.reanalyze" = "Re-analyze";
-"analysis.duplicates" = "Duplicates";
-
 /* Common Phrases */
 "common.noData" = "No data available";
 "common.loading" = "Loading...";
@@ -172,12 +121,9 @@
 "common.refresh" = "Refresh";
 "common.noMorePhotos" = "No more photos";
 "common.totalPhotos" = "Total photos";
-"common.categorized" = "Categorized";
-"common.averageConfidence" = "Average Vision confidence";
-"common.analysisComplete" = "Analysis complete";
-"common.photosCategorizationComplete" = "Photos categorized using Apple Vision";
+"common.select" = "Select";
+"common.done" = "Done";
 "common.albumsNotFound" = "Albums not found";
-"common.startAnalysisPrompt" = "Start analysis for automatic photo categorization";
 "common.photosCount" = "%d photos";
 "common.noPhotosInSeries" = "No photos in series";
 "common.errorLoadingPhoto" = "Error loading photo";
