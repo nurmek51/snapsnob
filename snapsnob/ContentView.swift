@@ -33,6 +33,11 @@ struct ContentView: View {
                                     Image(systemName: "heart.fill")
                                     Text("navigation.favorites".localized)
                                 }
+                            EnhancedVideoView()
+                                .tabItem {
+                                    Image(systemName: "video.fill")
+                                    Text("Video")
+                                }
                         }
                         .frame(maxWidth: 700) // You can adjust maxWidth for iPad look
                         .padding(.horizontal, 32)
@@ -57,6 +62,11 @@ struct ContentView: View {
                             .tabItem {
                                 Image(systemName: "heart.fill")
                                 Text("navigation.favorites".localized)
+                            }
+                        EnhancedVideoView()
+                            .tabItem {
+                                Image(systemName: "video.fill")
+                                Text("Video")
                             }
                     }
                     .accentColor(AppColors.accent(for: themeManager.isDarkMode))

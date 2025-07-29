@@ -35,6 +35,19 @@
 "photo.unknownError" = "Неизвестная ошибка";
 "photo.loading2" = "Загрузка...";
 
+/* Video Access */
+"video.accessDenied" = "Доступ к видео запрещен";
+"video.accessRequiredMessage" = "Для работы приложения необходим доступ к видео. Разрешите доступ в настройках системы.";
+"video.loading" = "Загрузка видео...";
+"video.noVideosFound" = "Видео не найдены";
+"video.emptyLibraryMessage" = "Ваша видеотека пуста.";
+
+/* Video Screen */
+"video.videoSeries" = "Серии видео";
+"video.seriesCount" = "%d видео";
+"video.videosProcessed" = "%d/%d видео обработано";
+"video.noMoreVideos" = "Больше нет видео";
+
 /* AI Analysis */
 "ai.visionAnalysis" = "Анализ Apple Vision";
 "ai.analyzing" = "Анализируем...";

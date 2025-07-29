@@ -1416,9 +1416,7 @@ struct HomeView: View {
     
     // MARK: - Supporting Types
 
-    enum SwipeDirection {
-        case left, right, down
-    }
+    // SwipeDirection is defined in OnboardingView.swift
 
     // Components have been moved to CommonUIComponents.swift
 

@@ -60,7 +60,7 @@ struct AIAnalysisView: View {
                 )
             }
             return VisionCategory(
-                name: category.rawValue,
+                name: category.localizedName,
                 photos: preview,
                 totalCount: photos.count
             )

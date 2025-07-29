@@ -673,4 +673,68 @@ class ToastManager: ObservableObject {
             self.isShowingToast = false
         }
     }
+}
+
+// MARK: - Video Series Circle
+
+/// A circular component for displaying video series in the header
+struct VideoSeriesCircle: View {
+    @EnvironmentObject var themeManager: ThemeManager
+    let series: [Video]
+    let videoManager: VideoManager
+    let onTap: () -> Void
+    
+    private var circleSize: CGFloat {
+        UIDevice.current.userInterfaceIdiom == .pad ? 95 : 75
+    }
+    
+    private var firstVideo: Video? {
+        series.first
+    }
+    
+    var body: some View {
+        Button(action: onTap) {
+            ZStack {
+                // Background circle
+                Circle()
+                    .fill(AppColors.cardBackground(for: themeManager.isDarkMode))
+                    .frame(width: circleSize, height: circleSize)
+                    .overlay(
+                        Circle()
+                            .stroke(AppColors.border(for: themeManager.isDarkMode), lineWidth: 2)
+                    )
+                
+                // Video thumbnail or placeholder
+                if let video = firstVideo {
+                    SeamlessVideoView(video: video, targetSize: CGSize(width: circleSize - 4, height: circleSize - 4), autoPlay: false)
+                        .clipShape(Circle())
+                        .frame(width: circleSize - 4, height: circleSize - 4)
+                } else {
+                    Image(systemName: "video.fill")
+                        .font(.system(size: circleSize * 0.4))
+                        .foregroundColor(AppColors.secondaryText(for: themeManager.isDarkMode))
+                }
+                
+                // Video count badge
+                if series.count > 1 {
+                    VStack {
+                        HStack {
+                            Spacer()
+                            Text("\(series.count)")
+                                .font(.caption2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(AppColors.accent(for: themeManager.isDarkMode))
+                                .clipShape(Capsule())
+                        }
+                        Spacer()
+                    }
+                    .frame(width: circleSize, height: circleSize)
+                }
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
 } 

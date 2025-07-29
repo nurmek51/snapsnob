@@ -364,6 +364,7 @@ class AIAnalysisManager: ObservableObject {
         saveCache()
     }
 
+    @MainActor
     private func clearAnalysisData(keepCached: Bool = false) {
         if !keepCached {
             // Clear everything including cache

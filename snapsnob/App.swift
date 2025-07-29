@@ -10,6 +10,7 @@ struct SnapsnobApp: App {
     @StateObject private var fullScreenPhotoManager = FullScreenPhotoManager()
     @State private var photoManager: PhotoManager? = nil
     @State private var aiAnalysisManager: AIAnalysisManager? = nil
+    @State private var videoManager: VideoManager? = nil
     @State private var isInitializing = true
 
     init() {
@@ -19,10 +20,11 @@ struct SnapsnobApp: App {
     var body: some Scene {
         WindowGroup {
             if !isInitializing && onboardingManager.hasCompletedOnboarding, 
-               let photoManager, let aiAnalysisManager {
+               let photoManager, let aiAnalysisManager, let videoManager {
                 ContentView()
                     .environmentObject(photoManager)
                     .environmentObject(aiAnalysisManager)
+                    .environmentObject(videoManager)
                     .environmentObject(fullScreenPhotoManager)
                     .environmentObject(themeManager)
                     .environmentObject(localizationManager)
@@ -58,9 +60,15 @@ struct SnapsnobApp: App {
         // Initialize AIAnalysisManager but don't start analysis yet
         let ai = AIAnalysisManager(photoManager: pm)
         
+        // Initialize VideoManager on background queue
+        let vm = await Task.detached(priority: .userInitiated) {
+            await VideoManager()
+        }.value
+        
         // Update state on main thread
         self.photoManager = pm
         self.aiAnalysisManager = ai
+        self.videoManager = vm
         self.isInitializing = false
         
         // Start AI analysis in background after UI is loaded

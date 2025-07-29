@@ -35,6 +35,19 @@
 "photo.unknownError" = "Unknown error";
 "photo.loading2" = "Loading...";
 
+/* Video Access */
+"video.accessDenied" = "Video access denied";
+"video.accessRequiredMessage" = "The app requires video access to work. Please allow access in system settings.";
+"video.loading" = "Loading videos...";
+"video.noVideosFound" = "No videos found";
+"video.emptyLibraryMessage" = "Your video library appears to be empty.";
+
+/* Video Screen */
+"video.videoSeries" = "Video Series";
+"video.seriesCount" = "%d videos";
+"video.videosProcessed" = "%d/%d videos processed";
+"video.noMoreVideos" = "No more videos";
+
 /* AI Analysis */
 "ai.visionAnalysis" = "Apple Vision Analysis";
 "ai.analyzing" = "Analyzing...";

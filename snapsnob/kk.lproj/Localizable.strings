@@ -35,6 +35,19 @@
 "photo.unknownError" = "Белгісіз қате";
 "photo.loading2" = "Жүктелуде...";
 
+/* Video Access */
+"video.accessDenied" = "Видеоға қол жетімділік жоқ";
+"video.accessRequiredMessage" = "Қолданба жұмыс істеу үшін видеоға қол жетімділік қажет. Жүйе параметрлерінде рұқсат беріңіз.";
+"video.loading" = "Видеолар жүктелуде...";
+"video.noVideosFound" = "Видеолар табылмады";
+"video.emptyLibraryMessage" = "Сіздің видео кітапханаңыз бос.";
+
+/* Video Screen */
+"video.videoSeries" = "Видео сериялары";
+"video.seriesCount" = "%d видео";
+"video.videosProcessed" = "%d/%d видео өңделді";
+"video.noMoreVideos" = "Басқа видео жоқ";
+
 /* AI Analysis */
 "ai.visionAnalysis" = "Apple Vision талдауы";
 "ai.analyzing" = "Талдау...";

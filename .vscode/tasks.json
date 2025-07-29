@@ -1,0 +1,22 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build and Run SnapSnob",
+			"type": "shell",
+			"command": "xcodebuild",
+			"args": [
+				"-scheme",
+				"snapsnob",
+				"-destination",
+				"platform=iOS Simulator,name=iPhone 15 Pro",
+				"build"
+			],
+			"group": "build",
+			"isBackground": false,
+			"problemMatcher": [
+				"$gcc"
+			]
+		}
+	]
+}
